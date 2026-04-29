@@ -1,0 +1,32 @@
+# Quartus generated output directories
+db/
+incremental_db/
+output_files/
+simulation/
+greybox_tmp/
+
+# Quartus generated files
+*.qws          # Workspace settings
+*.bak          # Backup files
+*.rpt          # Report files
+*.summary      # Summary files
+*.smsg         # Suppressed messages
+*.pin          # Pin files
+*.sof          # SRAM Object File (bitstream)
+*.pof          # Programmer Object File
+*.jdi          # JTAG Debug Info
+*.jic          # JTAG Indirect Config
+*.rbf          # Raw Binary File
+*.elf          # Compiled ELF (if using NIOS II)
+*.map          # Map files
+*.done         # Done files
+*.flow.rpt
+*.fit.rpt
+*.asm.rpt
+*.sta.rpt
+*.tan.rpt
+
+# Temporary / OS files
+*.tmp
+.DS_Store
+Thumbs.db
