@@ -1,1 +1,60 @@
 Tasks that need to be completed will be stated here.
+
+=======================================================
+INTERIM SUBMISSION (Due: Thursday, 14th May, 1:00 pm)
+=======================================================
+
+[ ] 1. MOUSE INTERFACE
+      - Implement PS/2 mouse driver in VHDL
+      - Read and decode mouse data packets
+      - Use mouse input to control an object (e.g. ball movement) OR
+        display the received data packet on the seven-segment display
+
+[ ] 2. DIP SWITCHES & PUSH-BUTTONS
+      - Demonstrate working DIP switches (e.g. use one to toggle a mode)
+      - Demonstrate working push-buttons (e.g. use as start/pause trigger)
+      - Show output on seven-segment display as evidence of functionality
+
+[ ] 3. SEVEN-SEGMENT DISPLAY
+      - Display meaningful data (e.g. mouse packet values, score placeholder, mode indicator)
+
+[ ] 4. VGA DISPLAY – MOVING BALL
+      - Display a moving ball on the VGA screen (640x480 resolution)
+      - Implement mouse or button control over the ball's movement
+      - Ensure ball behaves differently from the base provided design
+
+[ ] 5. VGA DISPLAY – TEXT RENDERING
+      - Display different sizes of text on the VGA screen
+      - Prepare for in-game messages: START, END, MODE, SCORE, TIME
+
+[ ] 6. DESIGN REPORT (2-page max, due with submission)
+      - Write up the game strategy and design specifications
+      - Create a block diagram showing all components and their interfaces
+      - Draw the high-level state machine (FSM) of the game
+      - Ensure writing has a logical flow (formal structure not required)
+
+[ ] 7. INTERIM CANVAS SUBMISSION
+      - Zip all project files (VHDL code, simulation results, report)
+      - Submit zipped folder on Canvas by Thursday, 14th May 1:00 pm
+      - Prepare a demo for the interim interview (Thu 14th May, 2–5 pm)
+
+=======================================================
+FINAL SUBMISSION (Due: Thursday, 28th May)
+=======================================================
+
+[ ] 8.  Implement full Flappy Bird game logic in VHDL
+[ ] 9.  Bird physics: gravity/free-fall, mouse-controlled flapping, up/down movement
+[ ] 10. Obstacle generation using LFSR (pseudo-random number generator)
+[ ] 11. Gift/collectible items (e.g. health, special abilities)
+[ ] 12. Scrolling screen motion (speed increases per level)
+[ ] 13. At least 3 difficulty levels in GAME mode
+[ ] 14. TRAINING mode (lowest level, no level progression)
+[ ] 15. Mode selection via DIP switch; start/pause via push-buttons
+[ ] 16. Initial/splash screen GUI on power-up or reset
+[ ] 17. Life/health point system; bird dies when health depletes
+[ ] 18. Score, time, and level display on screen
+[ ] 19. Pause/resume functionality
+[ ] 20. Analyse resource utilisation and timing (Quartus synthesis reports)
+[ ] 21. Final report (5–6 pages using provided template, due 28th May 11:59 pm)
+[ ] 22. Individual peer assessment forms (due 28th May 11:59 pm)
+[ ] 23. Final Canvas submission of zipped project files (due 28th May 1:00 pm)
