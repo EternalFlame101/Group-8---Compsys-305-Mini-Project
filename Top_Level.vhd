@@ -2,13 +2,13 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 
 entity Top_Level is
-	port (CLOCK_50 : in std_logic;
+	port (CLOCK_50 				: in std_logic;
 			VGA_R, VGA_G, VGA_B 	: out std_logic_vector(3 downto 0);
-			VGA_HS, VGA_VS : out std_logic;
-			KEY 		: in std_logic_vector(3 downto 0));
+			VGA_HS, VGA_VS 		: out std_logic;
+			KEY 						: in std_logic_vector(3 downto 0));
 end entity Top_Level;
 
-architecture beh of Top_Level is
+architecture game_behaviour of Top_Level is
 	-- components
 	component Clock_Divider is
 		generic (input_clock_frequency  : positive := 50_000_000;
@@ -18,10 +18,11 @@ architecture beh of Top_Level is
 				enable_pulse : out std_logic);
 	end component Clock_Divider;
 
-	component bouncy_ball is
-		port(pb1, pb2, clk, vert_sync	: IN std_logic;
-			  pixel_row, pixel_column	: IN std_logic_vector(9 DOWNTO 0);
-			  red, green, blue 			: OUT std_logic);		
+	component Bouncy_Ball is
+	port (clock, enable_pulse, vertical_sync : in std_logic;
+			push_button_1, push_button_2 	 	  : in std_logic;
+         pixel_row, pixel_column	 		     : in std_logic_vector(9 downto 0);
+			red, green, blue 			 		     : out std_logic);
 	end component bouncy_ball;
 	
 	component VGA_Sync is
@@ -65,5 +66,4 @@ begin
 	VGA_B  <= blue_out & "000";
 	VGA_HS <= horzi_sync;
 	VGA_VS <= vert_sync;
-end architecture beh;
-
+end architecture game_behaviour;
