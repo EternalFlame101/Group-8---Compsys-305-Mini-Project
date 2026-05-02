@@ -1,7 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
+use IEEE.std_logic_signed.all;
 
 entity Bouncy_Ball is
 	port (clock, enable_pulse, vertical_sync : in std_logic;

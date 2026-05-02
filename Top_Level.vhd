@@ -36,7 +36,7 @@ architecture game_behaviour of Top_Level is
 	
 	-- signals
 	signal enable_pulse 							: std_logic;
-	signal vert_sync, horzi_sync    			: std_logic;
+	signal vertical_sync, horizontal_sync  : std_logic;
 	
 	signal red, green, blue 					: std_logic;
 	signal red_out, green_out, blue_out 	: std_logic;
@@ -47,8 +47,9 @@ begin
 	divider : Clock_Divider port map (input_clock => CLOCK_50, enable_pulse => enable_pulse);
 	
 	-- ball
-	ball : bouncy_ball port map (pb1 => KEY(0), pb2 => KEY(1), clk => CLOCK_50,
-													vert_sync =>  vert_sync, 
+	ball : bouncy_ball port map (push_button_1 => KEY(0), push_button_2 => KEY(1), clock => CLOCK_50,
+													enable_pulse => enable_pulse,
+													vertical_sync => vertical_sync, 
 													pixel_row => pixel_row, pixel_column => pixel_column,
 													red => red, green => green, blue => blue);
 	
@@ -56,14 +57,14 @@ begin
 	VGA : VGA_Sync port map (clock => CLOCK_50, enable_pulse => enable_pulse, 
 									 red => red, green => green, blue => blue,
 									 red_out => red_out, green_out => green_out, blue_out => blue_out,
-									 horizontal_sync_out => horzi_sync,
-									 vertical_sync_out => vert_sync,
+									 horizontal_sync_out => horizontal_sync,
+									 vertical_sync_out => vertical_sync,
 									 pixel_row => pixel_row, pixel_column => pixel_column);
 									 
 	-- port 
 	VGA_R  <= red_out & "000";
 	VGA_G  <= green_out & "000";
 	VGA_B  <= blue_out & "000";
-	VGA_HS <= horzi_sync;
-	VGA_VS <= vert_sync;
+	VGA_HS <= horizontal_sync;
+	VGA_VS <= vertical_sync;
 end architecture game_behaviour;
