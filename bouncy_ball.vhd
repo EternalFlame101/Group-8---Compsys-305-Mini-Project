@@ -10,7 +10,7 @@ entity Bouncy_Ball is
 			red, green, blue 			 		     : out std_logic);		
 end entity Bouncy_Ball;
 
-architecture bouncy_ball_behavior of bouncy_ball is
+architecture bouncy_ball_behavior of Bouncy_Ball is
 	signal ball_on				: std_logic;
 	signal size 				: std_logic_vector(9 downto 0);  
 	signal ball_y_position	: std_logic_vector(9 downto 0);
@@ -31,9 +31,9 @@ begin
 
 	-- Colours for pixel data on video signal
 	-- Changing the background and ball colour by push buttons
-	Red 	<= push_button_1;
-	Green <= (not push_button_2) and (not ball_on);
-	Blue 	<= not ball_on;
+	red 	<= push_button_1;
+	green <= (not push_button_2) and (not ball_on);
+	blue 	<= not ball_on;
 
 
 	Move_Ball: process (vertical_sync)  	
