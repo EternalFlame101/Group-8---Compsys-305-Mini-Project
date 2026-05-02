@@ -48,10 +48,10 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name VHDL_FILE VGASync.vhd
-set_global_assignment -name VHDL_FILE mouse.vhd
-set_global_assignment -name VHDL_FILE ClockDivider.vhd
-set_global_assignment -name VHDL_FILE char_rom.vhd
-set_global_assignment -name VHDL_FILE bouncy_ball.vhd
-set_global_assignment -name VHDL_FILE ball.vhd
-set_global_assignment -name VHDL_FILE TopLevel.vhd
+set_global_assignment -name VHDL_FILE VGA_Sync.vhd
+set_global_assignment -name VHDL_FILE Top_Level.vhd
+set_global_assignment -name VHDL_FILE Mouse.vhd
+set_global_assignment -name VHDL_FILE Clock_Divider.vhd
+set_global_assignment -name VHDL_FILE Char_Rom.vhd
+set_global_assignment -name VHDL_FILE Bouncy_Ball.vhd
+set_global_assignment -name VHDL_FILE Ball.vhd
