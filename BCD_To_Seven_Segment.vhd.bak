@@ -21,6 +21,5 @@ begin
 							 "0000000" when BCD_digit = "1000" else -- 8
 							 "0010000" when BCD_digit = "1001" else -- 9
 							 "1000000" when BCD_digit = "0000" else -- 0
-							 "0001110" when BCD_digit = "1111" else -- F
 							 "1111111";
-end architecture bcd_to_seven_segment_behaviour; 
+end architecture bcd_to_seven_seg_behaviour; 

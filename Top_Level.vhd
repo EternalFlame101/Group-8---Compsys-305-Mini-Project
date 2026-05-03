@@ -2,10 +2,12 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 
 entity Top_Level is
-	port (CLOCK_50 				: in std_logic;
-			VGA_R, VGA_G, VGA_B 	: out std_logic_vector(3 downto 0);
-			VGA_HS, VGA_VS 		: out std_logic;
-			KEY 						: in std_logic_vector(3 downto 0));
+	port (CLOCK_50 			  			  : in std_logic;
+			SW 					  			  : in std_logic_vector(9 downto 0);
+			KEY 					  			  : in std_logic_vector(3 downto 0);
+			HEX0, HEX1, HEX2, HEX3, HEX5 : out std_logic_vector(6 downto 0);
+			VGA_R, VGA_G, VGA_B 			  : out std_logic_vector(3 downto 0);
+			VGA_HS, VGA_VS 	           : out std_logic);						
 end entity Top_Level;
 
 architecture game_behaviour of Top_Level is
@@ -19,15 +21,25 @@ architecture game_behaviour of Top_Level is
 	end component Clock_Divider;
 	
 	component VGA_Sync is
-		 port (clock                           : in  std_logic;  -- 50MHz
-				 enable_pulse                    : in  std_logic;  -- 25MHz enable
-			    red, green, blue                : in  std_logic_vector(3 downto 0);
-			    red_out, green_out, blue_out    : out std_logic_vector(3 downto 0);
-			    horizontal_sync_out             : out std_logic;
-			    vertical_sync_out               : out std_logic;
-			    video_on                        : out std_logic;
-			    pixel_row, pixel_column         : out std_logic_vector(9 downto 0));
+		 port (clock                        : in  std_logic;  -- 50MHz
+				 enable_pulse                 : in  std_logic;  -- 25MHz enable
+			    red, green, blue             : in  std_logic_vector(3 downto 0);
+			    red_out, green_out, blue_out : out std_logic_vector(3 downto 0);
+			    horizontal_sync_out          : out std_logic;
+			    vertical_sync_out            : out std_logic;
+			    video_on                     : out std_logic;
+			    pixel_row, pixel_column      : out std_logic_vector(9 downto 0));
 	end component VGA_Sync;
+	
+	component Colour_Changer is
+		port (clock, vertical_sync         				  					 		  : in std_logic;
+				dip_switch_0, dip_switch_1, dip_switch_2, dip_switch_3 		  : in std_logic;
+				push_button_0, push_button_1, push_button_2, push_button_3 	  : in std_logic;
+				seven_segment_display_digit_0, seven_segment_display_digit_1,
+				seven_segment_display_digit_2, seven_segment_display_digit_3,
+				seven_segment_display_digit_5 										  : out std_logic_vector(6 downto 0);
+				red_out, green_out, blue_out                           		  : out std_logic_vector(3 downto 0));
+	end component Colour_Changer;
 	
 	-- signals
 	signal enable_pulse 							: std_logic;
@@ -50,6 +62,14 @@ begin
 									 vertical_sync_out => vertical_sync,
 									 video_on => video_on,
 									 pixel_row => pixel_row, pixel_column => pixel_column);
+									 
+	Background_Colour : Colour_Changer port map (clock => CLOCK_50, vertical_sync => vertical_sync,
+																dip_switch_0 => SW(0), dip_switch_1 => SW(1), dip_switch_2 => SW(2), dip_switch_3 => SW(3),
+																push_button_0 => KEY(0), push_button_1 => KEY(1), push_button_2 => KEY(2), push_button_3 => KEY(3),
+																seven_segment_display_digit_0 => HEX0, seven_segment_display_digit_1 => HEX1,
+																seven_segment_display_digit_2 => HEX2, seven_segment_display_digit_3 => HEX3,
+																seven_segment_display_digit_5 => HEX5,
+																red_out => red, green_out => green, blue_out => blue);
 									 
 	-- port 
 	VGA_R  <= red_out;
