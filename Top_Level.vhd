@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
+use ieee.std_logic_arith.all;
 
 entity Top_Level is
 	port (CLOCK_50 			  			  : in std_logic;
@@ -31,15 +32,16 @@ architecture game_behaviour of Top_Level is
 			    pixel_row, pixel_column      : out std_logic_vector(9 downto 0));
 	end component VGA_Sync;
 	
-	component ROM_Display is
-		port (clock, v_sync 			  		  : in std_logic;
+	component Word_Display is
+		generic (STR_LEN : positive := 16);
+
+		port (clock, v_sync : in std_logic;
+				characters : in std_logic_vector((STR_LEN * 6 - 1) downto 0);
 				pixel_row, pixel_column		  : in std_logic_vector(9 downto 0);
 				-- x and y will be bottom left most pixel
 				x_pos, y_pos					  : in std_logic_vector(9 downto 0);
-				-- what character it is from the 512
-				character 			  			  : in std_logic_vector(5 downto 0);
 				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
-	end component ROM_Display;
+	end component Word_Display;
 	
 	-- signals
 	signal enable_pulse 							: std_logic;
@@ -64,12 +66,21 @@ begin
 									 pixel_row => pixel_row, pixel_column => pixel_column);
 		
 	-- displaying letter on screen
-	char_disp : ROM_Display port map (clock => CLOCK_50, v_sync => vertical_sync,
-												 pixel_row => pixel_row, pixel_column => pixel_column,
-												 x_pos => "0011001000", y_pos => "0011001000",
-												 character => "000001",
-												 red_out => red, green_out => green, blue_out => blue);
-	
+	line_of_text : Word_Display
+						generic map (STR_LEN => 4)
+						port map (clock          => CLOCK_50,
+									 v_sync         => vertical_sync,
+									 characters     => "000011" &   -- C = 3
+															 "001000" &   -- H = 8
+															 "010101" &   -- U = 21
+															 "000100",    -- D = 4
+									 pixel_row      => pixel_row,
+									 pixel_column   => pixel_column,
+									 x_pos          => conv_std_logic_vector(304, 10),
+									 y_pos          => conv_std_logic_vector(236, 10),
+									 red_out        => red,
+									 green_out      => green,
+									 blue_out       => blue);
 									 
 	-- port 
 	VGA_R  <= red_out;
