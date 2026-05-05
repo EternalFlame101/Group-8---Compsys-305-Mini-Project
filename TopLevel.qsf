@@ -53,7 +53,6 @@ set_global_assignment -name VHDL_FILE Top_Level.vhd
 set_global_assignment -name VHDL_FILE Mouse.vhd
 set_global_assignment -name VHDL_FILE Clock_Divider.vhd
 set_global_assignment -name VHDL_FILE Char_Rom.vhd
-set_global_assignment -name VHDL_FILE Bouncy_Ball.vhd
 set_global_assignment -name VHDL_FILE Ball.vhd
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
