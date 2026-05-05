@@ -1,77 +1,69 @@
-LIBRARY ieee;
-USE ieee.std_logic_1164.all;
-USE IEEE.STD_LOGIC_ARITH.all;
-USE IEEE.STD_LOGIC_UNSIGNED.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
-LIBRARY altera_mf;
-USE altera_mf.all;
+library altera_mf;
+use altera_mf.all;
 
-ENTITY char_rom IS
-	PORT
-	(
-		character_address	:	IN STD_LOGIC_VECTOR (5 DOWNTO 0);
-		font_row, font_col	:	IN STD_LOGIC_VECTOR (2 DOWNTO 0);
-		clock				: 	IN STD_LOGIC ;
-		rom_mux_output		:	OUT STD_LOGIC
-	);
-END char_rom;
+entity char_rom is
+	port(character_address	:	in std_logic_vector (5 downto 0);
+		  font_row, font_col	:	in std_logic_vector (2 downto 0);
+	     clock					: 	in std_logic ;
+		  rom_mux_output		:	out std_logic);
+end char_rom;
 
 
-ARCHITECTURE SYN OF char_rom IS
+architecture syn of char_rom is
 
-	SIGNAL rom_data		: STD_LOGIC_VECTOR (7 DOWNTO 0);
-	SIGNAL rom_address	: STD_LOGIC_VECTOR (8 DOWNTO 0);
+	signal rom_data		: std_logic_vector (7 downto 0);
+	signal rom_address	: std_logic_vector (8 downto 0);
 
-	COMPONENT altsyncram
-	GENERIC (
-		address_aclr_a			: STRING;
-		clock_enable_input_a	: STRING;
-		clock_enable_output_a	: STRING;
-		init_file				: STRING;
-		intended_device_family	: STRING;
-		lpm_hint				: STRING;
-		lpm_type				: STRING;
-		numwords_a				: NATURAL;
-		operation_mode			: STRING;
-		outdata_aclr_a			: STRING;
-		outdata_reg_a			: STRING;
-		widthad_a				: NATURAL;
-		width_a					: NATURAL;
-		width_byteena_a			: NATURAL
-	);
-	PORT (
-		clock0		: IN STD_LOGIC ;
-		address_a	: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
-		q_a			: OUT STD_LOGIC_VECTOR (7 DOWNTO 0)
-	);
-	END COMPONENT;
+	component altsyncram
+	generic (
+		address_aclr_a				: string;
+		clock_enable_input_a		: string;
+		clock_enable_output_a	: string;
+		init_file					: string;
+		intended_device_family	: string;
+		lpm_hint						: string;
+		lpm_type						: string;
+		numwords_a					: natural;
+		operation_mode				: string;
+		outdata_aclr_a				: string;
+		outdata_reg_a				: string;
+		widthad_a					: natural;
+		width_a						: natural;
+		width_byteena_a			: natural);
+	port (clock0		: in std_logic ;
+			address_a	: in std_logic_vector (8 downto 0);
+			q_a			: out std_logic_vector (7 downto 0));
+	end component;
 
-BEGIN
+begin
 
 	altsyncram_component : altsyncram
-	GENERIC MAP (
-		address_aclr_a => "NONE",
-		clock_enable_input_a => "BYPASS",
-		clock_enable_output_a => "BYPASS",
+	generic map (
+		address_aclr_a => "none",
+		clock_enable_input_a => "bypass",
+		clock_enable_output_a => "bypass",
 		init_file => "tcgrom.mif",
-		intended_device_family => "Cyclone III",
-		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
+		intended_device_family => "cyclone iii",
+		lpm_hint => "enable_runtime_mod=no",
 		lpm_type => "altsyncram",
 		numwords_a => 512,
-		operation_mode => "ROM",
-		outdata_aclr_a => "NONE",
-		outdata_reg_a => "UNREGISTERED",
+		operation_mode => "rom",
+		outdata_aclr_a => "none",
+		outdata_reg_a => "unregistered",
 		widthad_a => 9,
 		width_a => 8,
-		width_byteena_a => 1
-	)
-	PORT MAP (
+		width_byteena_a => 1)
+	port map (
 		clock0 => clock,
 		address_a => rom_address,
-		q_a => rom_data
-	);
+		q_a => rom_data);
 
 	rom_address <= character_address & font_row;
-	rom_mux_output <= rom_data (CONV_INTEGER(NOT font_col(2 DOWNTO 0)));
+	rom_mux_output <= rom_data (conv_integer(not font_col(2 downto 0)));
 
-END SYN;
+end syn;
