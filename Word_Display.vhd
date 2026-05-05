@@ -4,7 +4,8 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity Word_Display is
-	generic (STR_LEN : positive := 16);
+	generic (STR_LEN : positive := 16;
+				SCALE : positive := 1);
 
 	port (clock, v_sync : in std_logic;
 			characters : in std_logic_vector((STR_LEN * 6 - 1) downto 0);
@@ -17,6 +18,8 @@ end entity Word_Display;
 architecture rtl of Word_Display is
 	-- components
 	component ROM_Display is
+		generic(SCALE : positive := 1);
+		
 		port (clock, v_sync 			  		  : in std_logic;
 				pixel_row, pixel_column		  : in std_logic_vector(9 downto 0);
 				-- x and y will be bottom left most pixel
@@ -34,10 +37,11 @@ architecture rtl of Word_Display is
 begin
 	-- for generator loop
 	generate_line : for i in 0 to STR_LEN - 1 generate
-		disp_char : ROM_Display port map (clock => clock, v_sync => v_sync,
+		disp_char : ROM_Display generic map (SCALE => SCALE)
+										port map (clock => clock, v_sync => v_sync,
 													 pixel_row => pixel_row,
 													 pixel_column => pixel_column,
-													 x_pos => x_pos + conv_std_logic_vector(i * 8, 10),
+													 x_pos => x_pos + conv_std_logic_vector(i * 8 * SCALE, 10),
 													 y_pos => y_pos,
 													 character => characters((STR_LEN - i) * 6 - 1 downto (STR_LEN - i - 1) * 6),
 													 red_out => array_red(i), 

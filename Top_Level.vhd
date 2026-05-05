@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
 entity Top_Level is
 	port (CLOCK_50 			  			  : in std_logic;
@@ -33,7 +34,8 @@ architecture game_behaviour of Top_Level is
 	end component VGA_Sync;
 	
 	component Word_Display is
-		generic (STR_LEN : positive := 16);
+		generic (STR_LEN : positive := 16;
+					SCALE : positive := 1);
 
 		port (clock, v_sync : in std_logic;
 				characters : in std_logic_vector((STR_LEN * 6 - 1) downto 0);
@@ -67,7 +69,8 @@ begin
 		
 	-- displaying letter on screen
 	line_of_text : Word_Display
-						generic map (STR_LEN => 4)
+						generic map (STR_LEN => 4,
+										 SCALE => 2)
 						port map (clock          => CLOCK_50,
 									 v_sync         => vertical_sync,
 									 characters     => "000011" &   -- C = 3
