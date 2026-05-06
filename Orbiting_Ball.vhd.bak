@@ -7,7 +7,6 @@ entity Orbiting_Ball is
     port (clock, vertical_sync    : in std_logic;
           pixel_row, pixel_column : in std_logic_vector(9 downto 0);
           radius                  : in std_logic_vector(6 downto 0);
-			 dip_switch_9            : in std_logic;
           ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
 end entity Orbiting_Ball;
 
@@ -83,12 +82,10 @@ begin
             vertical_sync_previous <= vertical_sync;
             -- Detect rising edge of vertical_sync (end of sync pulse = start of new frame)
             if (vertical_sync_previous = '0') and (vertical_sync = '1') then
-                if dip_switch_9 = '0' then
-                    if phase = 63 then
-                        phase <= 0;
-                    else
-                        phase <= phase + 1;
-                    end if;
+                if phase = 63 then
+                    phase <= 0;
+                else
+                    phase <= phase + 1;
                 end if;
             end if;
         end if;

@@ -37,6 +37,7 @@ architecture game_behaviour of Top_Level is
     port (clock, vertical_sync    : in std_logic;
           pixel_row, pixel_column : in std_logic_vector(9 downto 0);
           radius                  : in std_logic_vector(6 downto 0);
+			 dip_switch_9            : in std_logic;
           ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
 	end component Orbiting_Ball;
 	
@@ -78,6 +79,7 @@ begin
 	Ball : Orbiting_Ball port map (clock => CLOCK_50, vertical_sync => vertical_sync,
 											 pixel_row => pixel_row, pixel_column => pixel_column,
 											 radius => conv_std_logic_vector(100, 7),
+											 dip_switch_9 => SW(9),
 											 ball_x_out => ball_x_out, ball_y_out => ball_y_out);
 											 
 	-- White ball on black background
