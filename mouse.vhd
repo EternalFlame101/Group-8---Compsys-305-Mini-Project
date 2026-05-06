@@ -4,13 +4,13 @@ use  ieee.std_logic_arith.all;
 use  ieee.std_logic_unsigned.all;
 
 entity Mouse is
-   port( clock_25mhz, enable_pulse, reset 		: in std_logic;
-         mouse_data					: inout std_logic;
-         mouse_clk 					: inout std_logic;
-         left_button, right_button	: out std_logic;
-		 mouse_cursor_row 			: out std_logic_vector(9 downto 0); 
-		 mouse_cursor_column 		: out std_logic_vector(9 downto 0));       	
-end Mouse use;
+   port(clock_25mhz, enable_pulse, reset : in std_logic;
+        mouse_data							  : inout std_logic;
+        mouse_clk 					        : inout std_logic;
+        left_button, right_button	     : out std_logic;
+		  mouse_cursor_row 			        : out std_logic_vector(9 downto 0); 
+		  mouse_cursor_column 		        : out std_logic_vector(9 downto 0));       	
+end entity Mouse;
 
 architecture mouse_behavior of Mouse is
 	type state_type is (inhibit_trans, load_command, load_command2, wait_output_ready,
