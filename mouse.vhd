@@ -3,19 +3,18 @@ use  ieee.std_logic_1164.all;
 use  ieee.std_logic_arith.all;
 use  ieee.std_logic_unsigned.all;
 
-entity mouse is
+entity Mouse is
    port( clock_25mhz, enable_pulse, reset 		: in std_logic;
          mouse_data					: inout std_logic;
          mouse_clk 					: inout std_logic;
          left_button, right_button	: out std_logic;
 		 mouse_cursor_row 			: out std_logic_vector(9 downto 0); 
 		 mouse_cursor_column 		: out std_logic_vector(9 downto 0));       	
-end mouse;
+end Mouse use;
 
-architecture behavior of mouse is
-
-type state_type is (inhibit_trans, load_command, load_command2, wait_output_ready,
-					wait_cmd_ack, input_packets);
+architecture mouse_behavior of Mouse is
+	type state_type is (inhibit_trans, load_command, load_command2, wait_output_ready,
+						wait_cmd_ack, input_packets);
 -- Signals for mouse
 signal mouse_state							: state_type;
 signal inhibit_wait_count					: std_logic_vector(11 downto 0);
@@ -270,4 +269,4 @@ elsif mouse_clk_filter'event and mouse_clk_filter='0' then
 end if;
 end process recv_uart;
 
-end behavior;
+end mouse_behavior;
