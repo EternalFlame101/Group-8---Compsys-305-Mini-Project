@@ -1,4 +1,4 @@
-library IEEE;
+library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
@@ -6,15 +6,15 @@ use ieee.std_logic_unsigned.all;
 library altera_mf;
 use altera_mf.all;
 
-entity Char_Rom is
+entity char_rom is
 	port(character_address	:	in std_logic_vector (5 downto 0);
 		  font_row, font_col	:	in std_logic_vector (2 downto 0);
 	     clock					: 	in std_logic ;
 		  rom_mux_output		:	out std_logic);
-end Char_Rom;
+end char_rom;
 
 
-architecture char_rom_behaviour of Char_Rom is
+architecture syn of char_rom is
 
 	signal rom_data		: std_logic_vector (7 downto 0);
 	signal rom_address	: std_logic_vector (8 downto 0);
@@ -66,4 +66,4 @@ begin
 	rom_address <= character_address & font_row;
 	rom_mux_output <= rom_data (conv_integer(not font_col(2 downto 0)));
 
-end char_rom_behaviour;
+end syn;
