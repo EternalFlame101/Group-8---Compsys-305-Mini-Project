@@ -1,273 +1,273 @@
------
---Pong game 2018
------
-LIBRARY IEEE;
-USE  IEEE.STD_LOGIC_1164.all;
-USE  IEEE.STD_LOGIC_ARITH.all;
-USE  IEEE.STD_LOGIC_UNSIGNED.all;
+library ieee;
+use  ieee.std_logic_1164.all;
+use  ieee.std_logic_arith.all;
+use  ieee.std_logic_unsigned.all;
 
-ENTITY MOUSE IS
-   PORT( clock_25Mhz, reset 		: IN std_logic;
-         mouse_data					: INOUT std_logic;
-         mouse_clk 					: INOUT std_logic;
-         left_button, right_button	: OUT std_logic;
-		 mouse_cursor_row 			: OUT std_logic_vector(9 DOWNTO 0); 
-		 mouse_cursor_column 		: OUT std_logic_vector(9 DOWNTO 0));       	
-END MOUSE;
+entity mouse is
+   port( clock_25mhz, enable_pulse, reset 		: in std_logic;
+         mouse_data					: inout std_logic;
+         mouse_clk 					: inout std_logic;
+         left_button, right_button	: out std_logic;
+		 mouse_cursor_row 			: out std_logic_vector(9 downto 0); 
+		 mouse_cursor_column 		: out std_logic_vector(9 downto 0));       	
+end mouse;
 
-ARCHITECTURE behavior OF MOUSE IS
+architecture behavior of mouse is
 
-TYPE STATE_TYPE IS (INHIBIT_TRANS, LOAD_COMMAND,LOAD_COMMAND2, WAIT_OUTPUT_READY,
-					WAIT_CMD_ACK, INPUT_PACKETS);
--- Signals for Mouse
-SIGNAL mouse_state							: state_type;
-SIGNAL inhibit_wait_count					: std_logic_vector(11 DOWNTO 0);
-SIGNAL CHARIN, CHAROUT						: std_logic_vector(7 DOWNTO 0);
-SIGNAL new_cursor_row, new_cursor_column 	: std_logic_vector(9 DOWNTO 0);
-SIGNAL cursor_row, cursor_column 			: std_logic_vector(9 DOWNTO 0);
-SIGNAL INCNT, OUTCNT, mSB_OUT 				: std_logic_vector(3 DOWNTO 0);
-SIGNAL PACKET_COUNT 						: std_logic_vector(1 DOWNTO 0);
-SIGNAL SHIFTIN 								: std_logic_vector(8 DOWNTO 0);
-SIGNAL SHIFTOUT 							: std_logic_vector(10 DOWNTO 0);
-SIGNAL PACKET_CHAR1, PACKET_CHAR2, 
-		PACKET_CHAR3 						: std_logic_vector(7 DOWNTO 0); 
-SIGNAL MOUSE_CLK_BUF, DATA_READY, READ_CHAR	: std_logic;
-SIGNAL i									: integer;
-SIGNAL cursor, iready_set, break, toggle_next, 
+type state_type is (inhibit_trans, load_command, load_command2, wait_output_ready,
+					wait_cmd_ack, input_packets);
+-- Signals for mouse
+signal mouse_state							: state_type;
+signal inhibit_wait_count					: std_logic_vector(11 downto 0);
+signal charin, charout						: std_logic_vector(7 downto 0);
+signal new_cursor_row, new_cursor_column 	: std_logic_vector(9 downto 0);
+signal cursor_row, cursor_column 			: std_logic_vector(9 downto 0);
+signal incnt, outcnt, msb_out 				: std_logic_vector(3 downto 0);
+signal packet_count 						: std_logic_vector(1 downto 0);
+signal shiftin 								: std_logic_vector(8 downto 0);
+signal shiftout 							: std_logic_vector(10 downto 0);
+signal packet_char1, packet_char2, 
+		packet_char3 						: std_logic_vector(7 downto 0); 
+signal mouse_clk_buf, data_ready, read_char	: std_logic;
+signal i									: integer;
+signal cursor, iready_set, break, toggle_next, 
 		output_ready, send_char, send_data 	: std_logic;
-SIGNAL MOUSE_DATA_DIR, MOUSE_DATA_OUT, MOUSE_DATA_BUF, 
-		MOUSE_CLK_DIR 						: std_logic;
-SIGNAL MOUSE_CLK_FILTER 					: std_logic;
-SIGNAL filter 								: std_logic_vector(7 DOWNTO 0);
+signal mouse_data_dir, mouse_data_out, mouse_data_buf, 
+		mouse_clk_dir 						: std_logic;
+signal mouse_clk_filter 					: std_logic;
+signal filter 								: std_logic_vector(7 downto 0);
 
 
-BEGIN
+
+begin
 
 mouse_cursor_row <= cursor_row;
 mouse_cursor_column <= cursor_column;
 
 			-- tri_state control logic for mouse data and clock lines
-MOUSE_DATA <= 'Z' WHEN MOUSE_DATA_DIR = '0' ELSE MOUSE_DATA_BUF;
-MOUSE_CLK <=  'Z' WHEN MOUSE_CLK_DIR = '0' ELSE MOUSE_CLK_BUF;
+mouse_data <= 'Z' when mouse_data_dir = '0' else mouse_data_buf;
+mouse_clk <=  'Z' when mouse_clk_dir = '0' else mouse_clk_buf;
 			-- state machine to send init command and start recv process.
-	PROCESS (reset, clock_25Mhz)
-	BEGIN
-		IF reset = '1' THEN
-			mouse_state <= INHIBIT_TRANS;
+	process (reset, clock_25mhz)
+	begin
+		if reset = '1' then
+			mouse_state <= inhibit_trans;
 			inhibit_wait_count <= conv_std_logic_vector(0,12);
-			SEND_DATA <= '0';
-		ELSIF clock_25Mhz'EVENT AND clock_25Mhz = '1' THEN
-			CASE mouse_state IS
--- Mouse powers up and sends self test codes, AA and 00 out before board is downloaded
--- Pull clock line low to inhibit any transmissions from mouse
--- Need at least 60usec to stop a transmission in progress
--- Note: This is perhaps optional since mouse should not be tranmitting
-				WHEN INHIBIT_TRANS =>
-				inhibit_wait_count <= inhibit_wait_count + 1;
-				IF inhibit_wait_count(11 DOWNTO 10) = "11" THEN
-						mouse_state <= LOAD_COMMAND;
-				END IF;
-					-- Enable Streaming Mode Command, F4
-						charout <= "11110100";
-					-- Pull data low to signal data available to mouse
-				WHEN LOAD_COMMAND =>
-						SEND_DATA <= '1';
-						mouse_state <= LOAD_COMMAND2;
-				WHEN LOAD_COMMAND2 =>
-						SEND_DATA <= '1';
-						mouse_state <= WAIT_OUTPUT_READY;
-		-- Wait for Mouse to Clock out all bits in command.
-		-- Command sent is F4, Enable Streaming Mode
-		-- This tells the mouse to start sending 3-byte packets with movement data
-				WHEN WAIT_OUTPUT_READY =>
-					SEND_DATA <= '0';
-			-- Output Ready signals that all data is clocked out of shift register
-					IF OUTPUT_READY='1' THEN
-						mouse_state <= WAIT_CMD_ACK;
-					ELSE
-						mouse_state <= WAIT_OUTPUT_READY;
-					END IF;
-		-- Wait for Mouse to send back Command Acknowledge, FA
-				WHEN WAIT_CMD_ACK =>
-					SEND_DATA <= '0';
-					IF IREADY_SET='1' THEN
-						mouse_state <= INPUT_PACKETS;
-					END IF;
-		-- Release clock_25Mhz and data lines and go into mouse input mode
-		-- Stay in this state and recieve 3-byte mouse data packets forever
-		-- Default rate is 100 packets per second
-				WHEN INPUT_PACKETS =>
-						mouse_state <= INPUT_PACKETS;
-			END CASE;
-		END IF;
-	END PROCESS;
+			send_data <= '0';
+		elsif rising_edge(clock_25mhz) then
+			if enable_pulse = '1' then
+				case mouse_state is
+	-- mouse powers up and sends self test codes, aa and 00 out before board is downloaded
+	-- pull clock line low to inhibit any transmissions from mouse
+	-- need at least 60usec to stop a transmission in progress
+	-- note: this is perhaps optional since mouse should not be tranmitting
+					when inhibit_trans =>
+					inhibit_wait_count <= inhibit_wait_count + 1;
+					if inhibit_wait_count(11 downto 10) = "11" then
+							mouse_state <= load_command;
+					end if;
+						-- enable streaming mode command, f4
+							charout <= "11110100";
+						-- pull data low to signal data available to mouse
+					when load_command =>
+							send_data <= '1';
+							mouse_state <= load_command2;
+					when load_command2 =>
+							send_data <= '1';
+							mouse_state <= wait_output_ready;
+			-- wait for mouse to clock out all bits in command.
+			-- command sent is f4, enable streaming mode
+			-- this tells the mouse to start sending 3-byte packets with movement data
+					when wait_output_ready =>
+						send_data <= '0';
+				-- output ready signals that all data is clocked out of shift register
+						if output_ready='1' then
+							mouse_state <= wait_cmd_ack;
+						else
+							mouse_state <= wait_output_ready;
+						end if;
+			-- wait for mouse to send back command acknowledge, fa
+					when wait_cmd_ack =>
+						send_data <= '0';
+						if iready_set='1' then
+							mouse_state <= input_packets;
+						end if;
+			-- release clock_25mhz and data lines and go into mouse input mode
+			-- stay in this state and recieve 3-byte mouse data packets forever
+			-- default rate is 100 packets per second
+					when input_packets =>
+							mouse_state <= input_packets;
+				end case;
+			end if;
+		end if;
+	end process;
 
-	WITH mouse_state SELECT
--- Mouse Data Tri-state control line: '1' DE0 drives, '0'=Mouse Drives
-		MOUSE_DATA_DIR 	<=	'0'	WHEN INHIBIT_TRANS,
-							'0'	WHEN LOAD_COMMAND,
-							'0'	WHEN LOAD_COMMAND2,
-							'1'	WHEN WAIT_OUTPUT_READY,
-							'0'	WHEN WAIT_CMD_ACK,
-							'0'	WHEN INPUT_PACKETS;
--- Mouse Clock Tri-state control line: '1' DE0 drives, '0'=Mouse Drives
-	WITH mouse_state SELECT
-		MOUSE_CLK_DIR 	<=	'1'	WHEN INHIBIT_TRANS,
-							'1'	WHEN LOAD_COMMAND,
-							'1'	WHEN LOAD_COMMAND2,
-							'0'	WHEN WAIT_OUTPUT_READY,
-							'0'	WHEN WAIT_CMD_ACK,
-							'0'	WHEN INPUT_PACKETS;
-	WITH mouse_state SELECT
--- Input to DE0 tri-state buffer mouse clock_25Mhz line
-		MOUSE_CLK_BUF 	<=	'0'	WHEN INHIBIT_TRANS,
-							'1'	WHEN LOAD_COMMAND,
-							'1'	WHEN LOAD_COMMAND2,
-							'1'	WHEN WAIT_OUTPUT_READY,
-							'1'	WHEN WAIT_CMD_ACK,
-							'1'	WHEN INPUT_PACKETS;
+	with mouse_state select
+-- mouse data tri-state control line: '1' de0 drives, '0'=mouse drives
+		mouse_data_dir 	<=	'0'	when inhibit_trans,
+							'0'	when load_command,
+							'0'	when load_command2,
+							'1'	when wait_output_ready,
+							'0'	when wait_cmd_ack,
+							'0'	when input_packets;
+-- mouse clock tri-state control line: '1' de0 drives, '0'=mouse drives
+	with mouse_state select
+		mouse_clk_dir 	<=	'1'	when inhibit_trans,
+							'1'	when load_command,
+							'1'	when load_command2,
+							'0'	when wait_output_ready,
+							'0'	when wait_cmd_ack,
+							'0'	when input_packets;
+	with mouse_state select
+-- input to de0 tri-state buffer mouse clock_25mhz line
+		mouse_clk_buf 	<=	'0'	when inhibit_trans,
+							'1'	when load_command,
+							'1'	when load_command2,
+							'1'	when wait_output_ready,
+							'1'	when wait_cmd_ack,
+							'1'	when input_packets;
 
 -- filter for mouse clock
-PROCESS
-BEGIN
-		WAIT UNTIL clock_25Mhz'event and clock_25Mhz = '1';
-		filter(7 DOWNTO 1) <= filter(6 DOWNTO 0);
-		filter(0) <= MOUSE_CLK;
-		IF filter = "11111111" THEN
-			MOUSE_CLK_FILTER <= '1';
-		ELSIF filter = "00000000" THEN
-			MOUSE_CLK_FILTER <= '0';
-		END IF;
-END PROCESS;
+process
+begin
+		wait until clock_25mhz'event and clock_25mhz = '1';
+		filter(7 downto 1) <= filter(6 downto 0);
+		filter(0) <= mouse_clk;
+		if filter = "11111111" then
+			mouse_clk_filter <= '1';
+		elsif filter = "00000000" then
+			mouse_clk_filter <= '0';
+		end if;
+end process;
 
-	--This process sends serial data going to the mouse
-SEND_UART: PROCESS (send_data, Mouse_clK_filter)
-BEGIN
-IF SEND_DATA = '1' THEN
-	OUTCNT <= "0000";
-    SEND_CHAR <= '1';
-	OUTPUT_READY <= '0';
-		-- Send out Start Bit(0) + Command(F4) + Parity  Bit(0) + Stop Bit(1)
-	SHIFTOUT(8 DOWNTO 1) <= CHAROUT ;
-		-- START BIT
-	SHIFTOUT(0) <= '0';
-		-- COMPUTE ODD PARITY BIT
-	SHIFTOUT(9) <=  not (charout(7) xor charout(6) xor charout(5) xor 
-		charout(4) xor Charout(3) xor charout(2) xor charout(1) xor 
+	--this process sends serial data going to the mouse
+send_uart: process (send_data, mouse_clk_filter)
+begin
+if send_data = '1' then
+	outcnt <= "0000";
+    send_char <= '1';
+	output_ready <= '0';
+		-- send out start bit(0) + command(f4) + parity  bit(0) + stop bit(1)
+	shiftout(8 downto 1) <= charout ;
+		-- start bit
+	shiftout(0) <= '0';
+		-- compute odd parity bit
+	shiftout(9) <=  not (charout(7) xor charout(6) xor charout(5) xor 
+		charout(4) xor charout(3) xor charout(2) xor charout(1) xor 
 		charout(0));
-		-- STOP BIT 
-	SHIFTOUT(10) <= '1';
-		-- Data Available Flag to Mouse
-		-- Tells mouse to clock out command data (is also start bit)
-    MOUSE_DATA_BUF <= '0';
+		-- stop bit 
+	shiftout(10) <= '1';
+		-- data available flag to mouse
+		-- tells mouse to clock out command data (is also start bit)
+    mouse_data_buf <= '0';
 
-ELSIF(MOUSE_CLK_filter'event and MOUSE_CLK_filter='0') THEN
-IF MOUSE_DATA_DIR='1' THEN
-		-- SHIFT OUT NEXT SERIAL BIT
-  IF SEND_CHAR = '1' THEN
-		-- Loop through all bits in shift register
-        IF OUTCNT <= "1001" THEN
-         OUTCNT <= OUTCNT + 1;
-		-- Shift out next bit to mouse
-         SHIFTOUT(9 DOWNTO 0) <= SHIFTOUT(10 DOWNTO 1);
-		 SHIFTOUT(10) <= '1';
-         MOUSE_DATA_BUF <= SHIFTOUT(1);
-		 OUTPUT_READY <= '0';
-		-- END OF CHARACTER
-	 ELSE
-     	SEND_CHAR <= '0';
-		-- Signal the character has been output
-		OUTPUT_READY <= '1';
-		OUTCNT <= "0000";
-	END IF;
-  END IF;
-END IF;
-END IF;
-END PROCESS SEND_UART;
+elsif(mouse_clk_filter'event and mouse_clk_filter='0') then
+if mouse_data_dir='1' then
+		-- shift out next serial bit
+  if send_char = '1' then
+		-- loop through all bits in shift register
+        if outcnt <= "1001" then
+         outcnt <= outcnt + 1;
+		-- shift out next bit to mouse
+         shiftout(9 downto 0) <= shiftout(10 downto 1);
+		 shiftout(10) <= '1';
+         mouse_data_buf <= shiftout(1);
+		 output_ready <= '0';
+		-- end of character
+	 else
+     	send_char <= '0';
+		-- signal the character has been output
+		output_ready <= '1';
+		outcnt <= "0000";
+	end if;
+  end if;
+end if;
+end if;
+end process send_uart;
 
-RECV_UART: PROCESS(reset, mouse_clk_filter)
-BEGIN
-IF RESET='1' THEN
-	INCNT <= "0000";
-    READ_CHAR <= '0';
-	PACKET_COUNT <= "00";
-    LEFT_BUTTON <= '0';
-    RIGHT_BUTTON <= '0';
-	CHARIN <= "00000000";
-ELSIF MOUSE_CLK_FILTER'event and MOUSE_CLK_FILTER='0' THEN
-	IF MOUSE_DATA_DIR='0' THEN
- 		IF MOUSE_DATA='0' AND READ_CHAR='0' THEN
-			READ_CHAR<= '1';
-    		IREADY_SET<= '0';
- 		ELSE
-		-- SHIFT IN NEXT SERIAL BIT
-  		IF READ_CHAR = '1' THEN
-        	IF INCNT < "1001" THEN
-         		INCNT <= INCNT + 1;
-         		SHIFTIN(7 DOWNTO 0) <= SHIFTIN(8 DOWNTO 1);
-         		SHIFTIN(8) <= MOUSE_DATA;
-	 			IREADY_SET <= '0';
-		-- END OF CHARACTER
-	 		ELSE
-	 			CHARIN <= SHIFTIN(7 DOWNTO 0);
-     			READ_CHAR <= '0';
-	 			IREADY_SET <= '1';
-  	 			PACKET_COUNT <= PACKET_COUNT + 1;
-		-- PACKET_COUNT = "00" IS ACK COMMAND
-				IF PACKET_COUNT = "00" THEN
-		-- Set Cursor to middle of screen
-				    cursor_column <= CONV_STD_LOGIC_VECTOR(320,10);
-    				cursor_row <= CONV_STD_LOGIC_VECTOR(240,10);
-				    NEW_cursor_column <= CONV_STD_LOGIC_VECTOR(320,10);
-    				NEW_cursor_row <= CONV_STD_LOGIC_VECTOR(240,10);
-				ELSIF PACKET_COUNT = "01" THEN
-					PACKET_CHAR1 <= SHIFTIN(7 DOWNTO 0);
-	-- Limit Cursor on Screen Edges. Check for left screen limit
-	-- All numbers are positive only, and need to check for zero wrap around.
-	-- Set limits higher since mouse can move up to 128 pixels in one packet
-					IF (cursor_row < 128) AND ((NEW_cursor_row > 256) OR
-						(NEW_cursor_row < 2)) THEN
-						cursor_row <= CONV_STD_LOGIC_VECTOR(0,10);
-			-- Check for right screen limit
-					ELSIF NEW_cursor_row > 480 THEN
-						cursor_row <= CONV_STD_LOGIC_VECTOR(480,10);
-					ELSE
-						cursor_row <= NEW_cursor_row;
-					END IF;
-			-- Check for top screen limit
-					IF (cursor_column < 128)  AND ((NEW_cursor_column > 256)  OR
-						(NEW_cursor_column < 2)) THEN
-						cursor_column <= CONV_STD_LOGIC_VECTOR(0,10);
-			-- Check for bottom screen limit
-					ELSIF NEW_cursor_column > 640 THEN
-						cursor_column <= CONV_STD_LOGIC_VECTOR(640,10);
-					ELSE
-						cursor_column <= NEW_cursor_column;
-					END IF;
-  				ELSIF PACKET_COUNT = "10" THEN
-					PACKET_CHAR2 <= SHIFTIN(7 DOWNTO 0);
-  				ELSIF PACKET_COUNT = "11" THEN
-					PACKET_CHAR3 <= SHIFTIN(7 DOWNTO 0);
-  				END IF;
-	 			INCNT <= conv_std_logic_vector(0,4);
-  				IF PACKET_COUNT = "11" THEN
-    				PACKET_COUNT <= "01";
-		-- Packet Complete, so process data in packet
-		-- Sign extend X AND Y two's complement motion values and 
-		-- add to Current Cursor Address
-		-- Y Motion is Negative since up is a lower row address
-    				NEW_cursor_row <= cursor_row - (PACKET_CHAR3(7) & 
-								PACKET_CHAR3(7) & PACKET_CHAR3);
-    				NEW_cursor_column <= cursor_column + (PACKET_CHAR2(7) & 
-								PACKET_CHAR2(7) & PACKET_CHAR2);
-    				LEFT_BUTTON <= PACKET_CHAR1(0);
-    				RIGHT_BUTTON <= PACKET_CHAR1(1);
-  				END IF;
-			END IF;
-  		END IF;
- 	END IF;
- END IF;
-END IF;
-END PROCESS RECV_UART;
+recv_uart: process(reset, mouse_clk_filter)
+begin
+if reset='1' then
+	incnt <= "0000";
+    read_char <= '0';
+	packet_count <= "00";
+    left_button <= '0';
+    right_button <= '0';
+	charin <= "00000000";
+elsif mouse_clk_filter'event and mouse_clk_filter='0' then
+	if mouse_data_dir='0' then
+ 		if mouse_data='0' and read_char='0' then
+			read_char<= '1';
+    		iready_set<= '0';
+ 		else
+		-- shift in next serial bit
+  		if read_char = '1' then
+        	if incnt < "1001" then
+         		incnt <= incnt + 1;
+         		shiftin(7 downto 0) <= shiftin(8 downto 1);
+         		shiftin(8) <= mouse_data;
+	 			iready_set <= '0';
+		-- end of character
+	 		else
+	 			charin <= shiftin(7 downto 0);
+     			read_char <= '0';
+	 			iready_set <= '1';
+  	 			packet_count <= packet_count + 1;
+		-- packet_count = "00" is ack command
+				if packet_count = "00" then
+		-- set cursor to middle of screen
+				    cursor_column <= conv_std_logic_vector(320,10);
+    				cursor_row <= conv_std_logic_vector(240,10);
+				    new_cursor_column <= conv_std_logic_vector(320,10);
+    				new_cursor_row <= conv_std_logic_vector(240,10);
+				elsif packet_count = "01" then
+					packet_char1 <= shiftin(7 downto 0);
+	-- limit cursor on screen edges. check for left screen limit
+	-- all numbers are positive only, and need to check for zero wrap around.
+	-- set limits higher since mouse can move up to 128 pixels in one packet
+					if (cursor_row < 128) and ((new_cursor_row > 256) or
+						(new_cursor_row < 2)) then
+						cursor_row <= conv_std_logic_vector(0,10);
+			-- check for right screen limit
+					elsif new_cursor_row > 480 then
+						cursor_row <= conv_std_logic_vector(480,10);
+					else
+						cursor_row <= new_cursor_row;
+					end if;
+			-- check for top screen limit
+					if (cursor_column < 128)  and ((new_cursor_column > 256)  or
+						(new_cursor_column < 2)) then
+						cursor_column <= conv_std_logic_vector(0,10);
+			-- check for bottom screen limit
+					elsif new_cursor_column > 640 then
+						cursor_column <= conv_std_logic_vector(640,10);
+					else
+						cursor_column <= new_cursor_column;
+					end if;
+  				elsif packet_count = "10" then
+					packet_char2 <= shiftin(7 downto 0);
+  				elsif packet_count = "11" then
+					packet_char3 <= shiftin(7 downto 0);
+  				end if;
+	 			incnt <= conv_std_logic_vector(0,4);
+  				if packet_count = "11" then
+    				packet_count <= "01";
+		-- packet complete, so process data in packet
+		-- sign extend x and y two's complement motion values and 
+		-- add to current cursor address
+		-- y motion is negative since up is a lower row address
+    				new_cursor_row <= cursor_row - (packet_char3(7) & 
+								packet_char3(7) & packet_char3);
+    				new_cursor_column <= cursor_column + (packet_char2(7) & 
+								packet_char2(7) & packet_char2);
+    				left_button <= packet_char1(0);
+    				right_button <= packet_char1(1);
+  				end if;
+			end if;
+  		end if;
+ 	end if;
+ end if;
+end if;
+end process recv_uart;
 
-END behavior;
+end behavior;
