@@ -33,30 +33,38 @@ architecture game_behaviour of Top_Level is
 			    pixel_row, pixel_column      : out std_logic_vector(9 downto 0));
 	end component VGA_Sync;
 	
-	component Word_Display is
-		generic (STR_LEN : positive := 16;
-					SCALE : positive := 1);
-
-		port (clock, v_sync : in std_logic;
-				characters : in std_logic_vector((STR_LEN * 6 - 1) downto 0);
-				pixel_row, pixel_column		  : in std_logic_vector(9 downto 0);
-				-- x and y will be bottom left most pixel
-				x_pos, y_pos					  : in std_logic_vector(9 downto 0);
-				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
-	end component Word_Display;
+	component Orbiting_Ball is
+    port (clock, vertical_sync    : in std_logic;
+          pixel_row, pixel_column : in std_logic_vector(9 downto 0);
+          radius                  : in std_logic_vector(6 downto 0);
+          ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
+	end component Orbiting_Ball;
 	
 	-- signals
-	signal enable_pulse 							: std_logic;
-	signal vertical_sync, horizontal_sync  : std_logic;
-	signal video_on								: std_logic;
+	signal enable_pulse 						  : std_logic;
+	signal vertical_sync, horizontal_sync : std_logic;
+	signal video_on							  : std_logic;
 	
-	signal red, green, blue 					: std_logic_vector(3 downto 0);
-	signal red_out, green_out, blue_out 	: std_logic_vector(3 downto 0);
-	signal pixel_row, pixel_column			: std_logic_vector(9 downto 0);
+	signal red, green, blue 				  : std_logic_vector(3 downto 0);
+	signal red_out, green_out, blue_out   : std_logic_vector(3 downto 0);
+	signal pixel_row, pixel_column		  : std_logic_vector(9 downto 0);
+	
+	signal ball_on 							  : std_logic;
+	signal ball_size							  : std_logic_vector(9 downto 0);
+	signal ball_x_out, ball_y_out  		  : std_logic_vector(9 downto 0);
 	
 begin
+	ball_size <= conv_std_logic_vector(8, 10);
+
+	-- Draw ball: same bounding-box check as Orbiting_Ball uses internally
+	ball_on <= '1' when (('0' & ball_x_out <= '0' & pixel_column + ball_size) and
+								('0' & pixel_column <= '0' & ball_x_out + ball_size) and
+								('0' & ball_y_out <= pixel_row + ball_size) and
+								('0' & pixel_row <= ball_y_out + ball_size)) 
+						else '0';
+
 	-- Clock Divider
-	divider : Clock_Divider port map (input_clock => CLOCK_50, enable_pulse => enable_pulse);
+	Divider : Clock_Divider port map (input_clock => CLOCK_50, enable_pulse => enable_pulse);
 	
 	-- VGA defining
 	VGA : VGA_Sync port map (clock => CLOCK_50, enable_pulse => enable_pulse, 
@@ -66,25 +74,17 @@ begin
 									 vertical_sync_out => vertical_sync,
 									 video_on => video_on,
 									 pixel_row => pixel_row, pixel_column => pixel_column);
-		
-	-- displaying letter on screen
-	line_of_text : Word_Display
-						generic map (STR_LEN => 4,
-										 SCALE => 2)
-						port map (clock          => CLOCK_50,
-									 v_sync         => vertical_sync,
-									 characters     => "000011" &   -- C = 3
-															 "001000" &   -- H = 8
-															 "010101" &   -- U = 21
-															 "000100",    -- D = 4
-									 pixel_row      => pixel_row,
-									 pixel_column   => pixel_column,
-									 x_pos          => conv_std_logic_vector(304, 10),
-									 y_pos          => conv_std_logic_vector(236, 10),
-									 red_out        => red,
-									 green_out      => green,
-									 blue_out       => blue);
 									 
+	Ball : Orbiting_Ball port map (clock => CLOCK_50, vertical_sync => vertical_sync,
+											 pixel_row => pixel_row, pixel_column => pixel_column,
+											 radius => conv_std_logic_vector(100, 7),
+											 ball_x_out => ball_x_out, ball_y_out => ball_y_out);
+											 
+	-- White ball on black background
+	red   <= (others => ball_on);
+	green <= (others => ball_on);
+	blue  <= (others => ball_on);
+							 
 	-- port 
 	VGA_R  <= red_out;
 	VGA_G  <= green_out;

@@ -32,7 +32,7 @@ begin
 	begin
 		if rising_edge(clock) then
 			vertical_sync_previous <= vertical_sync;
-			if ((vertical_sync_previous = '1') and (vertical_sync = '0')) then
+			if ((vertical_sync_previous = '0') and (vertical_sync = '1')) then
 				if (push_button_3 = '0') then
 					red_register     <= "0000";
 					green_register   <= "0000";
