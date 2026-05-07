@@ -5,17 +5,17 @@ use IEEE.std_logic_unsigned.all;
 
 entity Ball is
 	generic (SIZE_CONST : positive := 8);
-	port (clock, enable_pulse 		: in std_logic;
-			pixel_row, pixel_column	: in std_logic_vector(9 downto 0);
-			ball_x, ball_y : in std_logic_vector(9 downto 0);
-			red, green, blue 			: out std_logic_vector(3 downto 0));		
+	
+		port (pixel_column, pixel_row	: in  std_logic_vector(9 downto 0);
+				ball_x, ball_y 			: in  std_logic_vector(9 downto 0);
+				red, green, blue 			: out std_logic_vector(3 downto 0));		
 end entity Ball;
 
-architecture ball_behavior of ball is
-	signal ball_on									 : std_logic;
-	signal size 									 : std_logic_vector(9 downto 0);  
+architecture ball_behavior of Ball is
+	signal ball_on	: std_logic;
+	signal size 	: std_logic_vector(9 downto 0);  
 begin           
-	size <= conv_std_logic_vector(SIZE_CONST,10);
+	size <= conv_std_logic_vector(SIZE_CONST, 10);
 
 	ball_on <= '1' when (('0' & ball_x <= pixel_column + size) 
 						and ('0' & pixel_column <= ball_x + size) -- x_position - size <= pixel_column <= x_position + size
