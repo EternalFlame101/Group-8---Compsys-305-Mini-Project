@@ -3,7 +3,7 @@ use IEEE.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
-entity Top_Level is
+entity TopLevel2 is
    port (CLOCK_50                     : in    std_logic;
          RESET_N                      : in    std_logic;
          KEY                          : in    std_logic_vector(3 downto 0);
@@ -13,9 +13,9 @@ entity Top_Level is
          HEX0, HEX1, HEX2, HEX3, HEX5 : out   std_logic_vector(6 downto 0);
 			PS2_DAT                      : inout std_logic;
          PS2_CLK                      : inout std_logic);
-end entity Top_Level;
+end entity TopLevel2;
 
-architecture game_behaviour of Top_Level is
+architecture game_behaviour2 of TopLevel2 is
 
 	-- Clock Divider (pll)
 	component pll is
@@ -285,4 +285,4 @@ begin
    VGA_B  <= blue_out;
    VGA_HS <= horizontal_sync;
 	VGA_VS <= vertical_sync;
-end architecture game_behaviour;
+end architecture game_behaviour2;
