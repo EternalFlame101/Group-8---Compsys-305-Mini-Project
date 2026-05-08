@@ -4,7 +4,7 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity VGA_Sync is
-   port (clock, enable_pulse                    : in  std_logic;
+   port (clock                  						: in  std_logic;
 			red, green, blue             				: in  std_logic_vector(3 downto 0);
 			video_on                     				: out std_logic;
 			horizontal_sync_out, vertical_sync_out : out std_logic;
@@ -34,17 +34,15 @@ begin
    process(clock)
 	begin
 		if rising_edge(clock) then
-			if enable_pulse = '1' then
-				if horizontal_count = 799 then
-					horizontal_count <= (others => '0');
-					if vertical_count = 524 then
-						vertical_count <= (others => '0');
-					else
-						vertical_count <= vertical_count + 1;
-					end if;
+			if horizontal_count = 799 then
+				horizontal_count <= (others => '0');
+				if vertical_count = 524 then
+					vertical_count <= (others => '0');
 				else
-					horizontal_count <= horizontal_count + 1;
+					vertical_count <= vertical_count + 1;
 				end if;
+			else
+				horizontal_count <= horizontal_count + 1;
 			end if;
 		end if;
 	end process;
