@@ -41,14 +41,14 @@ architecture game_behaviour of Top_Level is
             red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0));
    end component Graphics_Manager;
 
-   component Mouse is
-      port (clock_25mhz, reset 		  : in    std_logic;
-            left_button, right_button : out   std_logic;
-            mouse_cursor_row          : out   std_logic_vector(9 downto 0);
-            mouse_cursor_column       : out   std_logic_vector(9 downto 0);
-            mouse_data                : inout std_logic;
-            mouse_clk                 : inout std_logic);
-   end component Mouse;
+	component Mouse is
+		port (clock, reset              : in    std_logic;
+				left_button, right_button : out   std_logic;
+				mouse_cursor_row          : out   std_logic_vector(9 downto 0);
+				mouse_cursor_column       : out   std_logic_vector(9 downto 0);
+				mouse_data                : inout std_logic;
+				mouse_clock               : inout std_logic);
+	end component Mouse;
 
    component Orbiting_Ball is
       port (clock, vertical_sync    : in  std_logic;
@@ -151,10 +151,10 @@ begin
 
    -- Mouse controller
    Mouse_Controller : Mouse
-      port map (clock_25mhz         => CLOCK_50,
+      port map (clock         		=> CLOCK_50,
                 reset               => not RESET_N,
                 mouse_data          => PS2_DAT,
-                mouse_clk           => PS2_CLK,
+                mouse_clock         => PS2_CLK,
                 left_button         => left_click,
                 right_button        => right_click,
                 mouse_cursor_row    => mouse_row,
@@ -204,7 +204,7 @@ begin
                                      "001100" &  -- L = 12
 												 "001100" &  -- L = 12
 												 "001111" &  -- O = 15
-                                     "100001" &  -- space = 33
+                                     "100000" &  -- space = 32
                                      "010111" &  -- W = 23
                                      "001111" &  -- O = 15
                                      "010010" &  -- R = 18
@@ -213,7 +213,7 @@ begin
 						 pixel_row      => pixel_row,
                    pixel_column   => pixel_column,
                    x_position     => conv_std_logic_vector(276, 10),
-                   y_position     => conv_std_logic_vector(250, 10),
+                   y_position     => conv_std_logic_vector(220, 10),
                    red_out        => red3,
                    green_out      => green3,
                    blue_out       => blue3);
@@ -224,14 +224,14 @@ begin
                    SCALE         => 2)
 						 
 			port map (clock          => CLOCK_50,
-                   characters     => "000011" &  -- C = 3
-                                     "001000" &  -- H = 8
-                                     "010101" &  -- U = 21
-                                     "000100",   -- D = 4
+                   characters     => "001111" &  -- O = 16
+                                     "001001" &  -- I = 9
+                                     "001110" &  -- N = 14
+                                     "001011",   -- K = 11
 						 pixel_row      => pixel_row,
                    pixel_column   => pixel_column,
                    x_position     => conv_std_logic_vector(288, 10),
-                   y_position     => conv_std_logic_vector(220, 10),
+                   y_position     => conv_std_logic_vector(250, 10),
                    red_out        => red4,
                    green_out      => green4,
                    blue_out       => blue4);
