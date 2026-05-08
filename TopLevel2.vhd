@@ -70,7 +70,7 @@ architecture game_behaviour2 of TopLevel2 is
    end component Orbiting_Ball;
 
    component VGA_Sync is
-      port (clock, enable_pulse                    : in  std_logic;
+      port (clock					                     : in  std_logic;
             red, green, blue                       : in  std_logic_vector(3 downto 0);
             video_on                               : out std_logic;
             horizontal_sync_out, vertical_sync_out : out std_logic;
@@ -134,8 +134,7 @@ begin
 
    -- VGA
    VGA : VGA_Sync
-      port map (clock               => CLOCK_50,
-                enable_pulse        => enable_pulse,
+      port map (clock               => clk_25,
                 red                 => red,
                 green               => green,
                 blue                => blue,
@@ -173,7 +172,7 @@ begin
 
    -- Mouse controller
    Mouse_Controller : Mouse
-      port map (clock_25mhz         => CLOCK_50,
+      port map (clock_25mhz         => clk_25,
                 reset               => not RESET_N,
                 mouse_data          => PS2_DAT,
                 mouse_clk           => PS2_CLK,
