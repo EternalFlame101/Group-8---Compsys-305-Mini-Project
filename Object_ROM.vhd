@@ -6,15 +6,17 @@ use ieee.std_logic_unsigned.all;
 library altera_mf;
 use altera_mf.all;
 
-entity Perspective_ROM is
-	port (clock						  : in  std_logic;
-			track_row              : in  std_logic_vector (9 downto 0);
-		   perspective_output     : out std_logic_vector (9 downto 0));
-end entity Perspective_ROM;
+entity Object_ROM is
+	port (clock				  : in  std_logic;
+			track_row        : in  std_logic_vector (9 downto 0);
+		   obj_y_output     : out std_logic_vector (9 downto 0);
+			obj_h_output     : out std_logic_vector (9 downto 0);
+			obj_w_output     : out std_logic_vector (9 downto 0));
+end entity Object_ROM;
 
-architecture perspective_rom_behaviour of Perspective_ROM is
+architecture object_rom_behaviour of Object_ROM is
 	signal rom_address : std_logic_vector(7 downto 0);
-	signal rom_data    : std_logic_vector(9 downto 0);
+	signal rom_data    : std_logic_vector(29 downto 0);
 
 	component altsyncram
 		generic (address_aclr_a			  : string;
@@ -34,14 +36,14 @@ architecture perspective_rom_behaviour of Perspective_ROM is
 				
 		port (clock0	 : in  std_logic;
 				address_a : in  std_logic_vector (7 downto 0);
-				q_a		 : out std_logic_vector (9 downto 0));
+				q_a		 : out std_logic_vector (29 downto 0));
 	end component;
 begin
 	Altsyncram_Component : altsyncram 
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "perspective2.mif",
+						 init_file              => "object_data.mif",
 						 intended_device_family => "cyclone V",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",
@@ -50,7 +52,7 @@ begin
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
 						 widthad_a              => 8,
-						 width_a                => 10,
+						 width_a                => 30,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
@@ -60,5 +62,7 @@ begin
 	-- getting the perspective scaler
 	rom_address <= track_row(7 downto 0);
 						 
-	perspective_output <= rom_data;
-end perspective_rom_behaviour;
+	obj_y_output <= rom_data(29 downto 20);
+	obj_h_output <= rom_data(19 downto 10);
+	obj_w_output <= rom_data(9 downto 0);
+end architecture object_rom_behaviour;

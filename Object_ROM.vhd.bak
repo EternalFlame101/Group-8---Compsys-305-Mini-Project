@@ -6,13 +6,13 @@ use ieee.std_logic_unsigned.all;
 library altera_mf;
 use altera_mf.all;
 
-entity Perspective_ROM is
+entity Object_ROM is
 	port (clock						  : in  std_logic;
 			track_row              : in  std_logic_vector (9 downto 0);
 		   perspective_output     : out std_logic_vector (9 downto 0));
-end entity Perspective_ROM;
+end entity Object_ROM;
 
-architecture perspective_rom_behaviour of Perspective_ROM is
+architecture object_rom_behaviour of Object_ROM is
 	signal rom_address : std_logic_vector(7 downto 0);
 	signal rom_data    : std_logic_vector(9 downto 0);
 
@@ -61,4 +61,4 @@ begin
 	rom_address <= track_row(7 downto 0);
 						 
 	perspective_output <= rom_data;
-end perspective_rom_behaviour;
+end architecture object_rom_behaviour;
