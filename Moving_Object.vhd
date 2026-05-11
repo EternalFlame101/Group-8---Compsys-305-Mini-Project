@@ -63,7 +63,7 @@ architecture rtl of Moving_Object is
 	signal inverted_local				: std_logic_vector(9 downto 0);
 	signal actual_side_shift 			: std_logic_vector(9 downto 0);
 	signal actual_side_shift_clamped : std_logic_vector(9 downto 0);
-	signal side_product  				: std_logic_vector(19 downto 0);
+	signal side_product  				: std_logic_vector(17 downto 0);
 	signal side_taper						: std_logic_vector(7 downto 0);
 	
 	signal top_height		 : std_logic_vector(9 downto 0);
@@ -145,11 +145,11 @@ begin
 	side_local_row <= pixel_row - (obj_y - obj_height);
 	
 	inverted_local <= obj_height - side_local_row;
-	side_product     <= ("00" & side_taper) * inverted_local;
+	side_product     <= side_taper * inverted_local;
 	actual_side_shift <= side_product(17 downto 8); 
 	
 	-- Hard clamp as safety net
-	actual_side_shift_clamped <= (top_max_extension) when (actual_side_shift >= ("00" & top_max_extension)) else
+	actual_side_shift_clamped <= (top_max_extension) when (actual_side_shift >= (top_max_extension)) else
 										  (others => '0') 		when inverted_local = "0000000000" else
 										  actual_side_shift;
 	
@@ -180,10 +180,10 @@ begin
 																	else (others => '0');
 
 	top_product    <= top_taper * top_inv_local;
-	top_edge_shift <= "00" & top_product(17 downto 10);
+	top_edge_shift <= top_product(17 downto 8);
 	
 	top_max_product   <= top_taper * top_height;
-	top_max_extension <= "00" & top_max_product(17 downto 10);
+	top_max_extension <= top_max_product(17 downto 8);
 		
 	top_left  <= (obj_x - obj_width - top_edge_shift)  	when LANE = 2 else
 					 (obj_x - obj_width)              			when LANE = 1 else
@@ -204,16 +204,17 @@ begin
 	top_blue		<= "0001" when (top_on = '1') else "0000";
 	
 	-- priority output for layering the top side and front together
-	red_out 		<= top_red when (top_on = '1') else
-						obj_red when (obj_on = '1') else
+	-- prior : front > top > side
+	red_out 		<= obj_red when (obj_on = '1') else
+						top_red when (top_on = '1') else
 						side_red;
 						
-	green_out 	<= top_green when (top_on = '1') else
-						obj_green when (obj_on = '1') else
+	green_out 	<= obj_green when (obj_on = '1') else
+						top_green when (top_on = '1') else
 						side_green;
 						
-	blue_out 	<= top_blue when (top_on = '1') else
-						obj_blue when (obj_on = '1') else
+	blue_out 	<= obj_blue when (obj_on = '1') else
+						top_blue when (top_on = '1') else
 						side_blue;
 						
 end architecture rtl;

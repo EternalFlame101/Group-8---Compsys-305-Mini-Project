@@ -16,7 +16,7 @@ MAX_OBJ_W     = 80       # half-width at camera
 MIN_OBJ_W     = 2        # half-width at horizon
 MAX_OBJ_H     = 120      # height at camera
 MIN_OBJ_H     = 2        # height at horizon
-OBJ_DEPTH_STEPS = 60     # how 'long' the object is
+OBJ_DEPTH_STEPS = 30     # how 'long' the object is
 
 # ── Generate spread values (same curve as your track) ───────────
 spread_values = []
@@ -39,6 +39,17 @@ for depth in range(1, DEPTH_MAX + 1):
     obj_w_values.append(obj_w)
     obj_h_values.append(obj_h)
 
+# ── Generate lane X positions from spread ───────────────────────
+
+obj_y_values = []
+
+for i, spread in enumerate(spread_values):
+    # Object Y bottom position — scales with depth index
+    z     = (i + 1) / DEPTH_MAX
+    obj_y = int(HORIZON_Y + (SCREEN_H - HORIZON_Y) * (z ** POWER))
+    obj_y = min(obj_y, SCREEN_H - 1)
+    obj_y_values.append(obj_y)
+
 # Generate side and top values
 top_height_values  = []
 top_taper_values     = []
@@ -53,19 +64,20 @@ for i in range(DEPTH_MAX):
     # The back face is OBJ_DEPTH_STEPS further away
     back_index = max(i - OBJ_DEPTH_STEPS, 0)
     spread_back = spread_values[back_index]
+    obj_y_back = obj_y_values[back_index]
+    obj_y_front = obj_y_values[i]
     
     # Top extension = difference in spread between front and back
-    # divided by 2 because spread is half-width each side
-    top_ext_pixels = (spread - spread_back) * 5
+    top_ext_pixels = spread - spread_back
     
-    top_h = max(obj_h // 4, 1)
+    top_h = max(obj_y_front - obj_y_back, 1)
     
     # Top taper rate = top_ext_pixels / top_h * 256
     if top_h > 0:
         top_taper = int((top_ext_pixels / top_h) * 256)
     else:
         top_taper = 0
-    top_taper = min(top_taper, 255)
+    top_taper = min(top_taper, 300)
     
     # Side taper uses full object depth not just top height
     # Side tapers over obj_h rows spanning top_ext_pixels
@@ -73,22 +85,11 @@ for i in range(DEPTH_MAX):
         side_taper = int((top_ext_pixels / obj_h) * 256)
     else:
         side_taper = 0
-    side_taper = min(side_taper, 255)
+    side_taper = min(side_taper, 300)
     
     top_height_values.append(top_h)
     top_taper_values.append(top_taper)
     side_taper_values.append(side_taper)
-
-# ── Generate lane X positions from spread ───────────────────────
-
-obj_y_values = []
-
-for i, spread in enumerate(spread_values):
-    # Object Y bottom position — scales with depth index
-    z     = (i + 1) / DEPTH_MAX
-    obj_y = int(HORIZON_Y + (SCREEN_H - HORIZON_Y) * (z ** POWER))
-    obj_y = min(obj_y, SCREEN_H - 1)
-    obj_y_values.append(obj_y)
 
 # ── Write perspective (track spread) MIF ────────────────────────
 with open('perspective2.mif', 'w') as f:
