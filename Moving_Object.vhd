@@ -20,7 +20,10 @@ architecture rtl of Moving_Object is
 				track_row        : in  std_logic_vector (9 downto 0);
 				obj_y_output     : out std_logic_vector (9 downto 0);
 				obj_h_output     : out std_logic_vector (9 downto 0);
-				obj_w_output     : out std_logic_vector (9 downto 0));
+				obj_w_output     : out std_logic_vector (9 downto 0);
+				top_h_output     : out std_logic_vector (9 downto 0);
+				top_taper     	  : out std_logic_vector (7 downto 0);
+				side_taper       : out std_logic_vector (7 downto 0));
 	end component Object_ROM;
 	
 	component Perspective_ROM is
@@ -40,37 +43,40 @@ architecture rtl of Moving_Object is
 	-- object attributes
 	signal obj_distance  : std_logic_vector(9 downto 0) 
 								:= (others => '1');
-	
-	signal side_width		: std_logic_vector(9 downto 0);
-	signal side_scaler	: std_logic_vector(9 downto 0);
 	signal side_red,
 			 side_green,
 			 side_blue		: std_logic_vector(3 downto 0);
 	
-	signal top_height		: std_logic_vector(9 downto 0);
-	signal top_left		: std_logic_vector(9 downto 0);
-	signal top_right		: std_logic_vector(9 downto 0);
 	signal top_red,
 			 top_green,
 			 top_blue		: std_logic_vector(3 downto 0);
 	
-	signal obj_height 	: std_logic_vector(9 downto 0);
-	signal obj_width		: std_logic_vector(9 downto 0);
+	
 	signal obj_red,
 			 obj_green,
 			 obj_blue		: std_logic_vector(3 downto 0);
-
+			 
+	signal obj_height 	: std_logic_vector(9 downto 0);
+	signal obj_width		: std_logic_vector(9 downto 0);
+	
 	signal side_local_row				: std_logic_vector(9 downto 0);
 	signal inverted_local				: std_logic_vector(9 downto 0);
-	signal side_shift    				: std_logic_vector(9 downto 0);
 	signal actual_side_shift 			: std_logic_vector(9 downto 0);
 	signal actual_side_shift_clamped : std_logic_vector(9 downto 0);
 	signal side_product  				: std_logic_vector(19 downto 0);
-	signal side_product2 				: std_logic_vector(19 downto 0);
+	signal side_taper						: std_logic_vector(7 downto 0);
 	
-	signal top_local_row : std_logic_vector(9 downto 0);
-	signal top_shift     : std_logic_vector(9 downto 0);
-	signal top_product   : std_logic_vector(19 downto 0);
+	signal top_height		 : std_logic_vector(9 downto 0);
+	signal top_left		 : std_logic_vector(9 downto 0);
+	signal top_right		 : std_logic_vector(9 downto 0);
+	signal top_taper      : std_logic_vector(7 downto 0);
+	signal top_local_row  : std_logic_vector(9 downto 0);
+	signal top_inv_local  : std_logic_vector(9 downto 0);
+	signal top_product    : std_logic_vector(17 downto 0);
+	signal top_edge_shift : std_logic_vector(9 downto 0);
+	
+	signal top_max_extension : std_logic_vector(9 downto 0);
+	signal top_max_product   : std_logic_vector(17 downto 0);
 	
 	signal obj_x			: std_logic_vector(9 downto 0);
 	signal obj_y			: std_logic_vector(9 downto 0);
@@ -89,7 +95,10 @@ begin
 					 track_row 		=> obj_distance,
 					 obj_y_output 	=> obj_y,
 					 obj_h_output 	=> obj_height,
-					 obj_w_output 	=> obj_width);
+					 obj_w_output 	=> obj_width,
+					 top_h_output	=> top_height,
+					 top_taper		=>	top_taper,
+					 side_taper		=> side_taper);
 
 	Track_information : Perspective_ROM
 		port map (clock					=> clock,
@@ -133,20 +142,15 @@ begin
 	obj_blue		<= "0001" when (obj_on = '1') else "0000";
 						
 	-- object drawing side based on the front and top
-	side_width <= ("0" & obj_width(9 downto 1)) when (unsigned(obj_distance) >= 140) else
-					  ("0"  & obj_width(9 downto 2) & "0") when (unsigned(obj_distance) >= 100) else
-					  ("00" & obj_width(9 downto 2));
 	side_local_row <= pixel_row - (obj_y - obj_height);
 	
-	side_product <= shift * (side_local_row + side_local_row(9 downto 0));
-	
 	inverted_local <= obj_height - side_local_row;
-	side_product2  <= shift * inverted_local;
-	actual_side_shift <= side_product2(14 downto 5);
+	side_product     <= ("00" & side_taper) * inverted_local;
+	actual_side_shift <= side_product(17 downto 8); 
 	
 	-- Hard clamp as safety net
-	actual_side_shift_clamped <= (side_width) 	when (actual_side_shift >= side_width) else
-										  (others => '0') when inverted_local = "0000000000" else
+	actual_side_shift_clamped <= (top_max_extension) when (actual_side_shift >= ("00" & top_max_extension)) else
+										  (others => '0') 		when inverted_local = "0000000000" else
 										  actual_side_shift;
 	
 	left_side_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 
@@ -167,21 +171,27 @@ begin
 	side_blue	<= "0001" when (side_on = '1') else "0000";
 
 	-- object drawing top
-	top_local_row <= (obj_y - obj_height) - pixel_row;
-	
-	top_product <= shift * (top_local_row + (top_local_row(9 downto 0)));
+	-- top_local_row = distance from top of top face downward
+	top_local_row <= (pixel_row - (obj_y - obj_height - top_height)) 	when (pixel_row >= (obj_y - obj_height - top_height))
+																							else (others => '0');
 
-	top_shift <= top_product(15 downto 6);
-	
-	top_height <= "0000" & obj_height(9 downto 4);
-	
-	top_left  <= (obj_x - obj_width - top_shift)  when LANE = 2 else
-					 (obj_x - obj_width)              when LANE = 1 else
-					 (obj_x - obj_width + top_shift);
+	-- inverted so shift is max at top, zero at bottom of top face
+	top_inv_local <= (top_height - top_local_row) 	when (top_height >= top_local_row)
+																	else (others => '0');
 
-	top_right <= (obj_x + obj_width - top_shift)  when LANE = 2 else
-					 (obj_x + obj_width)              when LANE = 1 else
-					 (obj_x + obj_width + top_shift);
+	top_product    <= top_taper * top_inv_local;
+	top_edge_shift <= "00" & top_product(17 downto 10);
+	
+	top_max_product   <= top_taper * top_height;
+	top_max_extension <= "00" & top_max_product(17 downto 10);
+		
+	top_left  <= (obj_x - obj_width - top_edge_shift)  	when LANE = 2 else
+					 (obj_x - obj_width)              			when LANE = 1 else
+					 (obj_x - obj_width + top_edge_shift);
+
+	top_right <= (obj_x + obj_width - top_edge_shift)  	when LANE = 2 else
+					 (obj_x + obj_width)              			when LANE = 1 else
+					 (obj_x + obj_width + top_edge_shift);
 
 
 	top_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 

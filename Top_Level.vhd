@@ -143,7 +143,7 @@ begin
 	
 	-- sprites
 	Moving_obj: Moving_Object
-		generic map (LANE 		=> 1)
+		generic map (LANE 		=> 2)
 		port map(enable 			=> NOT KEY(0),
 					clock 			=> CLOCK_50, 
 					v_sync			=> vertical_sync, 		  	
