@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image
 import argparse
 
-def image_to_mif(image_path, output_path=None, output_folder='mif', include_alpha=False):
+def image_to_mif(image_path, output_path=None, output_folder='img_to_mif/mif', include_alpha=False):
     image_path = Path(image_path)
     if output_path is None:
         output_path = Path(output_folder) / f"{image_path.stem}.mif"
@@ -33,7 +33,7 @@ def image_to_mif(image_path, output_path=None, output_folder='mif', include_alph
             f.write("Width = 16;\n")  # 16 bits per pixel (4 bits per channel: RRRRGGGGBBBBAAAA)
         else:
             f.write("Width = 12;\n")  # 12 bits per pixel (4 bits per channel: RRRRGGGGBBBB)
-        f.write("Address_radix = oct;\n")
+        f.write("Address_radix = uns;\n")
         f.write("Data_radix = bin;\n")
         f.write("Content\n")
         f.write("  Begin\n")
@@ -64,11 +64,11 @@ def image_to_mif(image_path, output_path=None, output_folder='mif', include_alph
                             a4 = (a >> 4) & 0xF
                             rgba16 = (r4 << 12) | (g4 << 8) | (b4 << 4) | a4
                             binary = format(rgba16, '016b')
-                            f.write("{:03o}  : {} ; % R:{} G:{} B:{} A:{} %\n".format(address, binary, r, g, b, a))
+                            f.write("{}  : {} ; % R:{} G:{} B:{} A:{} %\n".format(address, binary, r, g, b, a))
                         else:
                             rgb12 = (r4 << 8) | (g4 << 4) | b4
                             binary = format(rgb12, '012b')
-                            f.write("{:03o}  : {} ; % R:{} G:{} B:{} %\n".format(address, binary, r, g, b))
+                            f.write("{}  : {} ; % R:{} G:{} B:{} %\n".format(address, binary, r, g, b))
                         address += 1
 
         f.write("End;\n")

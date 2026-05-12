@@ -14,8 +14,8 @@ entity Character_ROM is
 end entity Character_ROM;
 
 architecture character_rom_behaviour of Character_ROM is
-	signal rom_data	 : std_logic_vector (7 downto 0);
-	signal rom_address : std_logic_vector (8 downto 0);
+	signal rom_data	 : std_logic_vector (15 downto 0);
+	signal rom_address : std_logic_vector (7 downto 0);
 
 	component altsyncram
 		generic (address_aclr_a			  : string;
@@ -34,24 +34,24 @@ architecture character_rom_behaviour of Character_ROM is
 					width_byteena_a		  : natural);
 				
 		port (clock0	 : in  std_logic;
-				address_a : in  std_logic_vector (8 downto 0);
-				q_a		 : out std_logic_vector (7 downto 0));
+				address_a : in  std_logic_vector (7 downto 0);
+				q_a		 : out std_logic_vector (15 downto 0));
 	end component;
 begin
 	Altsyncram_Component : altsyncram 
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "tcgrom.mif",
+						 init_file              => "16x16test.mif",
 						 intended_device_family => "cyclone iii",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",
-						 numwords_a             => 512,
+						 numwords_a             => 256,
 						 operation_mode         => "rom",
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
-						 widthad_a              => 9,
-						 width_a                => 8,
+						 widthad_a              => 8,
+						 width_a                => 16,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
