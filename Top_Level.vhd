@@ -74,7 +74,8 @@ architecture game_behaviour of Top_Level is
 	
 	component Object_Manager is
 		port (sprite_1_red,   sprite_1_green,   sprite_1_blue 		: in  std_logic_vector(3 downto 0);
-				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0));
+				sprite_2_red,   sprite_2_green,   sprite_2_blue 		: in  std_logic_vector(3 downto 0);
+				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0)); 
 	end component Object_Manager;
 
 
@@ -90,6 +91,10 @@ architecture game_behaviour of Top_Level is
 	signal sprite_1_red, 
 			 sprite_1_green,
 			 sprite_1_blue 					  : std_logic_vector(3 downto 0);
+			 
+	signal sprite_2_red, 
+			 sprite_2_green,
+			 sprite_2_blue 					  : std_logic_vector(3 downto 0);
 	
 	signal layer_0_red,	
 	       layer_0_green, 
@@ -142,7 +147,7 @@ begin
 					 blue_out			=> layer_0_blue);
 	
 	-- sprites
-	Moving_obj: Moving_Object
+	Moving_obj1: Moving_Object
 		generic map (LANE 		=> 2)
 		port map(enable 			=> NOT KEY(0),
 					clock 			=> CLOCK_50, 
@@ -153,11 +158,26 @@ begin
 					red_out 			=> sprite_1_red,
 					green_out 		=> sprite_1_green, 
 					blue_out 		=> sprite_1_blue);
+					
+		Moving_obj2: Moving_Object
+		generic map (LANE 		=> 0)
+		port map(enable 			=> NOT KEY(1),
+					clock 			=> CLOCK_50, 
+					v_sync			=> vertical_sync, 		  	
+					pixel_column 	=> pixel_column, 
+					pixel_row		=> pixel_row,	  	
+					speed				=> conv_std_logic_vector(2, 4),
+					red_out 			=> sprite_2_red,
+					green_out 		=> sprite_2_green, 
+					blue_out 		=> sprite_2_blue);
 	
 	Sprites : Object_Manager
 		port map(sprite_1_red 	=> sprite_1_red,
 					sprite_1_green =>	sprite_1_green,
 					sprite_1_blue 	=>	sprite_1_blue,
+					sprite_2_red 	=> sprite_2_red,
+					sprite_2_green =>	sprite_2_green,
+					sprite_2_blue 	=>	sprite_2_blue,
 					red_out			=> layer_1_red,
 					green_out		=>	layer_1_green,
 					blue_out			=> layer_1_blue);

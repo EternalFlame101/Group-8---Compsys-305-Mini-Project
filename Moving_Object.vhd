@@ -18,12 +18,14 @@ architecture rtl of Moving_Object is
 	component Object_ROM is
 		port (clock				  : in  std_logic;
 				track_row        : in  std_logic_vector (9 downto 0);
+				obj_sd_output	  : out std_logic_vector (9 downto 0);
 				obj_y_output     : out std_logic_vector (9 downto 0);
 				obj_h_output     : out std_logic_vector (9 downto 0);
 				obj_w_output     : out std_logic_vector (9 downto 0);
+				obj_wb_output	  : out std_logic_vector (9 downto 0);
 				top_h_output     : out std_logic_vector (9 downto 0);
-				top_taper     	  : out std_logic_vector (7 downto 0);
-				side_taper       : out std_logic_vector (7 downto 0));
+				top_taper     	  : out std_logic_vector (9 downto 0);
+				side_taper       : out std_logic_vector (9 downto 0));
 	end component Object_ROM;
 	
 	component Perspective_ROM is
@@ -63,20 +65,35 @@ architecture rtl of Moving_Object is
 	signal inverted_local				: std_logic_vector(9 downto 0);
 	signal actual_side_shift 			: std_logic_vector(9 downto 0);
 	signal actual_side_shift_clamped : std_logic_vector(9 downto 0);
-	signal side_product  				: std_logic_vector(17 downto 0);
-	signal side_taper						: std_logic_vector(7 downto 0);
+	signal side_product  				: std_logic_vector(19 downto 0);
+	signal side_taper						: std_logic_vector(9 downto 0);
 	
 	signal top_height		 : std_logic_vector(9 downto 0);
 	signal top_left		 : std_logic_vector(9 downto 0);
 	signal top_right		 : std_logic_vector(9 downto 0);
-	signal top_taper      : std_logic_vector(7 downto 0);
+	signal top_taper      : std_logic_vector(9 downto 0);
 	signal top_local_row  : std_logic_vector(9 downto 0);
 	signal top_inv_local  : std_logic_vector(9 downto 0);
-	signal top_product    : std_logic_vector(17 downto 0);
+	signal top_product    : std_logic_vector(19 downto 0);
 	signal top_edge_shift : std_logic_vector(9 downto 0);
 	
 	signal top_max_extension : std_logic_vector(9 downto 0);
-	signal top_max_product   : std_logic_vector(17 downto 0);
+	signal top_max_product   : std_logic_vector(19 downto 0);
+	
+	-- tapering to less than front width
+	signal obj_w_back     : std_logic_vector(9 downto 0);
+	signal back_product   : std_logic_vector(19 downto 0);
+	signal back_w_at_row  : std_logic_vector(9 downto 0);
+	signal front_w_at_row : std_logic_vector(9 downto 0);
+	signal w_diff         : std_logic_vector(9 downto 0);
+	signal w_diff_product : std_logic_vector(19 downto 0);
+	
+	-- taper to less than front height
+	signal obj_h_back     : std_logic_vector(9 downto 0);
+	signal h_diff         : std_logic_vector(9 downto 0);
+	signal side_col_offset: std_logic_vector(9 downto 0);
+	signal side_top_boundary : std_logic_vector(9 downto 0);
+	signal h_diff_product : std_logic_vector(19 downto 0);
 	
 	signal obj_x			: std_logic_vector(9 downto 0);
 	signal obj_y			: std_logic_vector(9 downto 0);
@@ -93,9 +110,11 @@ begin
 	Object_internal_control : Object_ROM
 		port map (clock 			=> clock,
 					 track_row 		=> obj_distance,
+					 obj_sd_output	=> obj_h_back,
 					 obj_y_output 	=> obj_y,
 					 obj_h_output 	=> obj_height,
 					 obj_w_output 	=> obj_width,
+					 obj_wb_output => obj_w_back,
 					 top_h_output	=> top_height,
 					 top_taper		=>	top_taper,
 					 side_taper		=> side_taper);
@@ -140,9 +159,28 @@ begin
 	obj_red		<=	"0001" when (obj_on = '1') else "0000";
 	obj_green	<= "0111" when (obj_on = '1') else "0000";
 	obj_blue		<= "0001" when (obj_on = '1') else "0000";
-						
+	
+	-- object back calculation
+	w_diff <= (obj_width - obj_w_back)	when (obj_width >= obj_w_back)
+													else (others => '0');
+													
+	w_diff_product <= w_diff * top_local_row;
+	back_w_at_row  <= obj_width - w_diff_product(17 downto 8);
+	
+	-- side tapering less than front
+	h_diff <= (obj_height - obj_h_back) 	when (obj_height >= obj_h_back)
+														else (others => '0');
+														
+	side_col_offset <= ((obj_x - obj_width) - pixel_column) 	when (LANE = 2 and pixel_column <= obj_x - obj_width)
+																				else (pixel_column - (obj_x + obj_width))
+																				when (LANE = 0)
+																				else (others => '0');
+	h_diff_product    <= h_diff * side_col_offset;
+	side_top_boundary <= h_diff_product(17 downto 8);
+	
 	-- object drawing side based on the front and top
-	side_local_row <= pixel_row - (obj_y - obj_height);
+	side_local_row <= (pixel_row - (obj_y - obj_height)) 	when (pixel_row >= (obj_y - obj_height))
+																			else (others => '0');
 	
 	inverted_local <= obj_height - side_local_row;
 	side_product     <= side_taper * inverted_local;
@@ -153,13 +191,13 @@ begin
 										  (others => '0') 		when inverted_local = "0000000000" else
 										  actual_side_shift;
 	
-	left_side_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 
-								 and (pixel_row <= obj_y) 
+	left_side_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height)
+								 and (pixel_row <= obj_y - side_top_boundary) 
 								 and (pixel_column >= obj_x - obj_width - actual_side_shift_clamped) 
 								 and (pixel_column <= obj_x - obj_width)) else '0';
 								 
 	right_side_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 
-								  and (pixel_row <= obj_y) 
+								  and (pixel_row <= obj_y - side_top_boundary) 
 								  and (pixel_column <= obj_x + obj_width + actual_side_shift_clamped) 
 								  and (pixel_column >= obj_x + obj_width)) else '0';
 	
@@ -185,13 +223,13 @@ begin
 	top_max_product   <= top_taper * top_height;
 	top_max_extension <= top_max_product(17 downto 8);
 		
-	top_left  <= (obj_x - obj_width - top_edge_shift)  	when LANE = 2 else
-					 (obj_x - obj_width)              			when LANE = 1 else
-					 (obj_x - obj_width + top_edge_shift);
+	top_left  <= (obj_x - back_w_at_row  - top_edge_shift)  			when LANE = 2 else
+					 (obj_x - back_w_at_row )              				when LANE = 1 else
+					 (obj_x - back_w_at_row  + (top_edge_shift(8 downto 0) & '0'));
 
-	top_right <= (obj_x + obj_width - top_edge_shift)  	when LANE = 2 else
-					 (obj_x + obj_width)              			when LANE = 1 else
-					 (obj_x + obj_width + top_edge_shift);
+	top_right <= (obj_x + back_w_at_row  - (top_edge_shift(8 downto 0) & '0'))  	when LANE = 2 else
+					 (obj_x + back_w_at_row )              				when LANE = 1 else
+					 (obj_x + back_w_at_row  + top_edge_shift);
 
 
 	top_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 

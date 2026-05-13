@@ -9,17 +9,19 @@ use altera_mf.all;
 entity Object_ROM is
 	port (clock				  : in  std_logic;
 			track_row        : in  std_logic_vector (9 downto 0);
+			obj_sd_output	  : out std_logic_vector (9 downto 0);
 		   obj_y_output     : out std_logic_vector (9 downto 0);
 			obj_h_output     : out std_logic_vector (9 downto 0);
 			obj_w_output     : out std_logic_vector (9 downto 0);
+			obj_wb_output	  : out std_logic_vector (9 downto 0);
 			top_h_output     : out std_logic_vector (9 downto 0);
-			top_taper     	  : out std_logic_vector (7 downto 0);
-			side_taper       : out std_logic_vector (7 downto 0));
+			top_taper     	  : out std_logic_vector (9 downto 0);
+			side_taper       : out std_logic_vector (9 downto 0));
 end entity Object_ROM;
 
 architecture object_rom_behaviour of Object_ROM is
 	signal rom_address : std_logic_vector(7 downto 0);
-	signal rom_data    : std_logic_vector(55 downto 0);
+	signal rom_data    : std_logic_vector(79 downto 0);
 
 	component altsyncram
 		generic (address_aclr_a			  : string;
@@ -39,7 +41,7 @@ architecture object_rom_behaviour of Object_ROM is
 				
 		port (clock0	 : in  std_logic;
 				address_a : in  std_logic_vector (7 downto 0);
-				q_a		 : out std_logic_vector (55 downto 0));
+				q_a		 : out std_logic_vector (79 downto 0));
 	end component;
 begin
 	Altsyncram_Component : altsyncram 
@@ -55,7 +57,7 @@ begin
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
 						 widthad_a              => 8,
-						 width_a                => 55,
+						 width_a                => 80,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
@@ -64,11 +66,13 @@ begin
 
 	-- getting the perspective scaler
 	rom_address <= track_row(7 downto 0);
-						 
-	obj_y_output <= rom_data(55 downto 46);
-	obj_h_output <= rom_data(45 downto 36);
-	obj_w_output <= rom_data(35 downto 26);
-	top_h_output <= rom_data(25 downto 16);
-	top_taper 	 <= rom_data(15 downto 8);
-	side_taper	 <= rom_data(7 downto 0);
+	
+	obj_sd_output<= rom_data(79 downto 70);
+	obj_y_output <= rom_data(69 downto 60);
+	obj_h_output <= rom_data(59 downto 50);
+	obj_w_output <= rom_data(49 downto 40);
+	obj_wb_output<= rom_data(39 downto 30);
+	top_h_output <= rom_data(29 downto 20);
+	top_taper 	 <= rom_data(19 downto 10);
+	side_taper	 <= rom_data(9 downto 0);
 end architecture object_rom_behaviour;
