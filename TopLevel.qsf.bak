@@ -470,12 +470,11 @@ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -entity D
 set_global_assignment -name VHDL_FILE Word_Display.vhd
 set_global_assignment -name VHDL_FILE VGA_Sync.vhd
 set_global_assignment -name VHDL_FILE Top_Level.vhd
-set_global_assignment -name VHDL_FILE SPI_Master.vhd
-set_global_assignment -name VHDL_FILE SD_Init.vhd
+set_global_assignment -name VHDL_FILE SD_SPI_Controller.vhd
 set_global_assignment -name VHDL_FILE ROM_Display.vhd
 set_global_assignment -name VHDL_FILE Orbiting_Ball.vhd
 set_global_assignment -name VHDL_FILE Mouse.vhd
-set_global_assignment -name VHDL_FILE Hex_To_Seven_Segment.vhd
+set_global_assignment -name VHDL_FILE Hello_World_Test.vhd
 set_global_assignment -name VHDL_FILE Graphics_Manager.vhd
 set_global_assignment -name VHDL_FILE Clock_Divider.vhd
 set_global_assignment -name VHDL_FILE Character_ROM.vhd
