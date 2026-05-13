@@ -7,6 +7,7 @@ entity Background_Colour is
 	port (clock, vertical_sync         				  					 		  : in  std_logic;
          dip_switch_0, dip_switch_1, dip_switch_2, dip_switch_3 		  : in  std_logic;
          push_button_0, push_button_1, push_button_2, push_button_3 	  : in  std_logic;
+			led_red_0																	  : out std_logic;
 			red_out, green_out, blue_out                           		  : out std_logic_vector(3 downto 0);
          seven_segment_display_digit_0, seven_segment_display_digit_1,
 			seven_segment_display_digit_2, seven_segment_display_digit_3,
@@ -58,6 +59,7 @@ begin
 	green_out <= green_register;
    blue_out  <= blue_register;
 	hex_digit <= channel_register;
+	led_red_0 <= not push_button_3;
 
    HEX0 : BCD_To_Seven_Segment port map (bcd_digit     => "000" & dip_switch_0,
 													  seven_seg_out => seven_segment_display_digit_0);

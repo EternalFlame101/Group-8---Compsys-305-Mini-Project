@@ -11,6 +11,7 @@ entity Top_Level is
 			VGA_HS, VGA_VS               : out   std_logic;
          VGA_R, VGA_G, VGA_B          : out   std_logic_vector(3 downto 0);
          HEX0, HEX1, HEX2, HEX3, HEX5 : out   std_logic_vector(6 downto 0);
+			LEDR                         : out   std_logic_vector(9 downto 0);
 			PS2_DAT                      : inout std_logic;
          PS2_CLK                      : inout std_logic);
 end entity Top_Level;
@@ -81,6 +82,7 @@ architecture game_behaviour of Top_Level is
       port (clock, vertical_sync                                          : in  std_logic;
             dip_switch_0, dip_switch_1, dip_switch_2, dip_switch_3        : in  std_logic;
             push_button_0, push_button_1, push_button_2, push_button_3    : in  std_logic;
+				led_red_0																	  : out std_logic;
             red_out, green_out, blue_out                                  : out std_logic_vector(3 downto 0);
             seven_segment_display_digit_0, seven_segment_display_digit_1,
             seven_segment_display_digit_2, seven_segment_display_digit_3,
@@ -184,6 +186,7 @@ begin
                 push_button_1                  => KEY(1),
                 push_button_2                  => KEY(2),
                 push_button_3                  => KEY(3),
+					 led_red_0                      => LEDR(0),
                 red_out                        => red5,
                 green_out                      => green5,
                 blue_out                       => blue5,
