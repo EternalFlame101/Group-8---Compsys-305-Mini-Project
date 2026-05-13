@@ -58,7 +58,7 @@ begin
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
 						 widthad_a              => 12,
-						 width_a                => 12,
+						 width_a                => ADDR_BITS,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
@@ -67,8 +67,8 @@ begin
 
 	rom_address <= address;
 	
-	red <= rom_data(11 downto 8);
+	red 	<= rom_data(11 downto 8);
 	green <= rom_data(7 downto 4);
-	blue <= rom_data(3 downto 0);
+	blue 	<= rom_data(3 downto 0);
 	
 end architecture rom_behaviour;

@@ -50,36 +50,41 @@ architecture beh of Sprites_Display is
 
 begin
 
-    col_u <= resize(unsigned(pixel_column), 11);
-    row_u <= resize(unsigned(pixel_row),    11);
-    sx_u  <= resize(unsigned(sprite_x),     11);
-    sy_u  <= resize(unsigned(sprite_y),     11);
+	col_u <= resize(unsigned(pixel_column), 11);
+	row_u <= resize(unsigned(pixel_row),    11);
+	sx_u  <= resize(unsigned(sprite_x),     11);
+	sy_u  <= resize(unsigned(sprite_y),     11);
 
-    sprite_on <= '1' when
-                     (col_u >= sx_u) and
-                     (col_u <  sx_u + to_unsigned(SPRITE_WIDTH,  11)) and
-                     (row_u >= sy_u) and
-                     (row_u <  sy_u + to_unsigned(SPRITE_HEIGHT, 11))
-                 else '0';
+	sprite_on <= '1' when
+						(col_u >= sx_u) and
+						(col_u <  sx_u + to_unsigned(SPRITE_WIDTH,  11)) and
+						(row_u >= sy_u) and
+						(row_u <  sy_u + to_unsigned(SPRITE_HEIGHT, 11))
+				  else '0';
 
-    process (clock)
-    begin
-        if rising_edge(clock) then
-            sprite_on_reg <= sprite_on;
-        end if;
-    end process;
+	process (clock)
+	begin
+		if rising_edge(clock) then
+			sprite_on_reg <= sprite_on;
+		end if;
+	end process;
 
-    -- Compute ROM address from local pixel offset (combinatorial)
-    process (col_u, row_u, sx_u, sy_u)
-        variable local_x  : integer;
-        variable local_y  : integer;
-        variable addr_int : integer;
-    begin
-        local_x  := to_integer(col_u) - to_integer(sx_u);
-        local_y  := to_integer(row_u) - to_integer(sy_u);
-        addr_int := local_y * SPRITE_WIDTH + local_x;
-        sprite_address <= std_logic_vector(to_unsigned(addr_int, ADDR_BITS));
-    end process;
+	-- Compute ROM address from local pixel offset (combinatorial)
+	process (col_u, row_u, sx_u, sy_u, sprite_on)
+		variable local_x  : integer;
+		variable local_y  : integer;
+		variable addr_int : integer;
+	begin
+		if sprite_on = '1' then
+		  local_x  := to_integer(col_u) - to_integer(sx_u);
+		  local_y  := to_integer(row_u) - to_integer(sy_u);
+		  addr_int := local_y * SPRITE_WIDTH + local_x;
+		else
+			addr_int := 0;
+		end if;
+		
+		sprite_address <= std_logic_vector(to_unsigned(addr_int, ADDR_BITS));
+	end process;
 
     -- ROM instance (no semicolon between generic map and port map)
     Sprite_Instance : Sprites_ROM
@@ -97,8 +102,8 @@ begin
         );
 
     -- Gate outputs using REGISTERED sprite_on so it aligns with ROM data
-    red_out   <= rom_red   when sprite_on = '1' else (others => '0');
-    green_out <= rom_green when sprite_on = '1' else (others => '0');
-    blue_out  <= rom_blue  when sprite_on = '1' else (others => '0');
+    red_out   <= rom_red   when sprite_on_reg = '1' else (others => '0');
+    green_out <= rom_green when sprite_on_reg = '1' else (others => '0');
+    blue_out  <= rom_blue  when sprite_on_reg = '1' else (others => '0');
 
 end architecture beh;
