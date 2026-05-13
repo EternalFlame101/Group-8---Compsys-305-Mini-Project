@@ -4,12 +4,12 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity Mouse is
-   port (clock, reset              : in    std_logic;
+   port (clock_25mhz, reset              : in    std_logic;
          left_button, right_button : out   std_logic;
          mouse_cursor_row          : out   std_logic_vector(9 downto 0);
          mouse_cursor_column       : out   std_logic_vector(9 downto 0);
          mouse_data                : inout std_logic;
-         mouse_clock               : inout std_logic);
+         mouse_clk               : inout std_logic);
 end entity Mouse;
 
 architecture mouse_behavior of Mouse is
@@ -41,16 +41,16 @@ begin
 
    -- Tri-state control logic for mouse data and clock lines
    mouse_data  <= 'Z' when mouse_data_direction  = '0' else mouse_data_buffer;
-   mouse_clock <= 'Z' when mouse_clock_direction = '0' else mouse_clock_buffer;
+   mouse_clk <= 'Z' when mouse_clock_direction = '0' else mouse_clock_buffer;
 
    -- State machine to send init command and start receive process
-   process (reset, clock)
+   process (reset, clock_25mhz)
    begin
       if reset = '1' then
          mouse_state        <= inhibit_transmission;
          inhibit_wait_count <= conv_std_logic_vector(0, 12);
          send_data          <= '0';
-      elsif rising_edge(clock) then
+      elsif clock_25mhz'event and clock_25mhz = '1' then
          case mouse_state is
             -- Mouse powers up and sends self test codes aa and 00 before board is downloaded.
             -- Pull clock line low to inhibit any transmissions from mouse.
@@ -124,9 +124,9 @@ begin
    -- Filter for mouse clock
    Clock_Filter : process
    begin
-      wait until clock'event and clock = '1';
+      wait until clock_25mhz'event and clock_25mhz = '1';
       filter(7 downto 1) <= filter(6 downto 0);
-      filter(0)          <= mouse_clock;
+      filter(0)          <= mouse_clk;
       if filter = "11111111" then
          mouse_clock_filter <= '1';
       elsif filter = "00000000" then

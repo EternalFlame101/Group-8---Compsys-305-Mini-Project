@@ -1,21 +1,28 @@
 library IEEE;
-use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
-use ieee.std_logic_unsigned.all;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
 library altera_mf;
 use altera_mf.all;
 
-entity Character_ROM is
-	port (clock						  : in  std_logic;
-			font_column, font_row  : in  std_logic_vector (2 downto 0);
-		   character_address	     : in  std_logic_vector (5 downto 0);
-		   rom_multiplexer_output : out std_logic);
-end entity Character_ROM;
+entity Sprites_ROM is
+    generic (
+        DEPTH     : positive := 4096;
+        ADDR_BITS : positive := 12;     -- log2(DEPTH)
+        MIF_FILE  : string   := "skull.mif"
+    );
+    port (
+        clock   : in  std_logic;
+        address : in  std_logic_vector(11 downto 0);
+        red     : out std_logic_vector(3 downto 0);
+        green   : out std_logic_vector(3 downto 0);
+        blue    : out std_logic_vector(3 downto 0)
+    );
+end entity Sprites_ROM;
 
-architecture character_rom_behaviour of Character_ROM is
-	signal rom_data	 : std_logic_vector (7 downto 0);
-	signal rom_address : std_logic_vector (8 downto 0);
+architecture rom_behaviour of Sprites_ROM is
+	signal rom_data	 : std_logic_vector (11 downto 0);
+	signal rom_address : std_logic_vector (11 downto 0);
 
 	component altsyncram
 		generic (address_aclr_a			  : string;
@@ -34,30 +41,34 @@ architecture character_rom_behaviour of Character_ROM is
 					width_byteena_a		  : natural);
 				
 		port (clock0	 : in  std_logic;
-				address_a : in  std_logic_vector (8 downto 0);
-				q_a		 : out std_logic_vector (7 downto 0));
+				address_a : in  std_logic_vector (11 downto 0);
+				q_a		 : out std_logic_vector (11 downto 0));
 	end component;
 begin
 	Altsyncram_Component : altsyncram 
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "16x16test.mif",
-						 intended_device_family => "cyclone iii",
+						 init_file              => MIF_FILE,
+						 intended_device_family => "cyclone v",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",
-						 numwords_a             => 512,
+						 numwords_a             => DEPTH,
 						 operation_mode         => "rom",
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
-						 widthad_a              => 9,
-						 width_a                => 8,
+						 widthad_a              => 12,
+						 width_a                => 12,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
 						 address_a => rom_address,
 						 q_a       => rom_data);
 
-	rom_address 			  <= character_address & font_row;
-	rom_multiplexer_output <= rom_data (conv_integer(not font_column(2 downto 0)));
-end character_rom_behaviour;
+	rom_address <= address;
+	
+	red <= rom_data(11 downto 8);
+	green <= rom_data(7 downto 4);
+	blue <= rom_data(3 downto 0);
+	
+end architecture rom_behaviour;

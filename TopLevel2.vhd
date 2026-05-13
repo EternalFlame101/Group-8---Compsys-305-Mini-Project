@@ -88,6 +88,20 @@ architecture game_behaviour2 of TopLevel2 is
             red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
    end component Word_Display;
 
+	component Sprites_Display is
+		generic (
+        SPRITE_WIDTH  : positive := 64;
+        SPRITE_HEIGHT : positive := 64;
+        ADDR_BITS     : positive := 12
+		 );
+		 port (
+			  clock                        : in  std_logic;
+			  pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+			  sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
+			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0)
+		 );
+	end component Sprites_Display;
+	
    component Background_Colour is
       port (clock, vertical_sync                                          : in  std_logic;
             dip_switch_0, dip_switch_1, dip_switch_2, dip_switch_3        : in  std_logic;
@@ -122,7 +136,7 @@ begin
 	-- PLL clock
 	Clock_25 : pll 
 		port map (refclk   => CLOCK_50,
-					 rst      => RESET_N,
+					 rst      => NOT RESET_N,
 					 outclk_0 => clk_25,
 					 locked	 => locked);
 					 
@@ -134,7 +148,7 @@ begin
 
    -- VGA
    VGA : VGA_Sync
-      port map (clock               => clk_25,
+      port map (clock               => CLOCK_50,
                 red                 => red,
                 green               => green,
                 blue                => blue,
@@ -158,17 +172,6 @@ begin
                 ball_x_out     => ball_x_out,
                 ball_y_out     => ball_y_out);
 
-   -- Orbiting ball sprite
-   Sprite : Ball
-      generic map (SIZE_CONST => 20)
-		
-			port map (pixel_column => pixel_column,
-						 pixel_row    => pixel_row,
-						 ball_x       => ball_x_out,
-						 ball_y       => ball_y_out,
-						 red          => red1,
-						 green        => green1,
-						 blue         => blue1);
 
    -- Mouse controller
    Mouse_Controller : Mouse
@@ -239,6 +242,7 @@ begin
                    green_out      => green3,
                    blue_out       => blue3);
 
+
    -- CHUD large text
    CHUD : Word_Display
       generic map (STRING_LENGTH => 4,
@@ -256,6 +260,23 @@ begin
                    red_out        => red4,
                    green_out      => green4,
                    blue_out       => blue4);
+						 
+	Skull : Sprites_Display
+		generic map (
+        SPRITE_WIDTH  => 64,
+        SPRITE_HEIGHT => 64,
+        ADDR_BITS     => 12
+		 )
+		 port map (
+			  clock => CLOCK_50,
+			  pixel_row => pixel_row,
+			  pixel_column => pixel_column,
+			  sprite_x => conv_std_logic_vector(200, 10), 
+			  sprite_y => conv_std_logic_vector(200, 10),      
+			  red_out => red1,
+			  green_out => green1,
+			  blue_out => blue1
+		 );
 
    -- Graphics layer compositor
    Graphics : Graphics_Manager
