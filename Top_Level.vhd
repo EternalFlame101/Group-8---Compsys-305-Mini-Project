@@ -109,6 +109,14 @@ architecture game_behaviour of Top_Level is
       port (hex_value      : in  std_logic_vector(3 downto 0);
             seven_segments : out std_logic_vector(6 downto 0));
    end component Hex_To_Seven_Segment;
+	
+	component Audio_Test_Generator is
+      generic (CLOCK_FREQUENCY      : positive := 50_000_000;
+               SAMPLE_RATE          : positive := 44_100);
+      port (clock    : in  std_logic;
+            reset    : in  std_logic;
+            dac_data : out std_logic_vector(7 downto 0));
+   end component Audio_Test_Generator;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -140,6 +148,8 @@ architecture game_behaviour of Top_Level is
 	
 	signal read_done_signal   				  : std_logic;
    signal read_byte_signal   				  : std_logic_vector(7 downto 0);
+	
+	signal audio_dac_data : std_logic_vector(7 downto 0);
 
 begin
 
@@ -309,6 +319,11 @@ begin
                 last_response_byte => last_response_byte_sig,
                 read_byte          => read_byte_signal);
 					 
+	Audio_Generator : Audio_Test_Generator
+      port map (clock    => CLOCK_50,
+                reset    => not RESET_N,
+                dac_data => audio_dac_data);
+					 
    -- ---------------------------------------------------------------------------
    -- LED assignments
    -- ---------------------------------------------------------------------------
@@ -323,7 +338,18 @@ begin
 	GPIO_0(1)           <= sd_chip_select;    -- CS (HIGH = deasserted, LOW = active)
 	GPIO_0(2) 			  <= sd_command;        -- MOSI
 	GPIO_0(3) 			  <= sd_data_in;        -- MISO
-	GPIO_0(35 downto 4) <= (others => '0');
+	
+	-- DAC0800 data lines (B1 = MSB = audio_dac_data(7), B8 = LSB = audio_dac_data(0))
+   GPIO_0(11) <= audio_dac_data(7);   -- B1 (MSB)
+   GPIO_0(10) <= audio_dac_data(6);   -- B2
+   GPIO_0(9)  <= audio_dac_data(5);   -- B3
+   GPIO_0(8)  <= audio_dac_data(4);   -- B4
+   GPIO_0(7)  <= audio_dac_data(3);   -- B5
+   GPIO_0(6)  <= audio_dac_data(2);   -- B6
+   GPIO_0(5)  <= audio_dac_data(1);   -- B7
+   GPIO_0(4)  <= audio_dac_data(0);   -- B8 (LSB)
+	
+	GPIO_0(35 downto 12) <= (others => '0');
 
 	-- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low    : Hex_To_Seven_Segment
