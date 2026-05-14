@@ -17,13 +17,8 @@ end entity Top_Level;
 
 architecture game_behaviour of Top_Level is
    -- components
-   component Ball is
-      generic (SIZE_CONST : positive := 8);
-      port (pixel_column, pixel_row : in  std_logic_vector(9 downto 0);
-            ball_x, ball_y          : in  std_logic_vector(9 downto 0);
-            red, green, blue        : out std_logic_vector(3 downto 0));
-   end component Ball;
-
+	
+	-- clock components
    component Clock_Divider is
       generic (input_clock_frequency  : positive := 50_000_000;
                output_clock_frequency : positive := 25_000_000);
@@ -32,32 +27,7 @@ architecture game_behaviour of Top_Level is
 					enable_pulse : out std_logic);
    end component Clock_Divider;
 
-   component Graphics_Manager is
-      port (text_large_red,   text_large_green,   text_large_blue : in  std_logic_vector(3 downto 0);
-            text_small_red,   text_small_green,   text_small_blue : in  std_logic_vector(3 downto 0);
-            background_red,   background_green,   background_blue : in  std_logic_vector(3 downto 0);
-            sprite_red,       sprite_green,       sprite_blue     : in  std_logic_vector(3 downto 0);
-            mouse_red,        mouse_green,        mouse_blue      : in  std_logic_vector(3 downto 0);
-            red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0));
-   end component Graphics_Manager;
-
-	component Mouse is
-		port (clock, reset              : in    std_logic;
-				left_button, right_button : out   std_logic;
-				mouse_cursor_row          : out   std_logic_vector(9 downto 0);
-				mouse_cursor_column       : out   std_logic_vector(9 downto 0);
-				mouse_data                : inout std_logic;
-				mouse_clock               : inout std_logic);
-	end component Mouse;
-
-   component Orbiting_Ball is
-      port (clock, vertical_sync    : in  std_logic;
-            pixel_row, pixel_column : in  std_logic_vector(9 downto 0);
-            radius                  : in  std_logic_vector(6 downto 0);
-            left_click            	: in  std_logic;
-            ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
-   end component Orbiting_Ball;
-
+	-- vga components
    component VGA_Sync is
       port (clock, enable_pulse                    : in  std_logic;
             red, green, blue                       : in  std_logic_vector(3 downto 0);
@@ -66,51 +36,171 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out           : out std_logic_vector(3 downto 0);
             pixel_row, pixel_column                : out std_logic_vector(9 downto 0));
    end component VGA_Sync;
+	
+	-- final graphics manager
+	component Graphics_Manager is
+		port (sprites_red,   	sprites_green,   		sprites_blue 	: in std_logic_vector(3 downto 0);
+				background_red,	background_green,	 	background_blue: in std_logic_vector(3 downto 0);
+				red_out, 			green_out,				blue_out 		: out std_logic_vector(3 downto 0));
+	end component Graphics_Manager;
+	
+	-- Background components
+	component Background_Generator is
+		port (clock, v_sync 					  : in std_logic;
+				pixel_row, pixel_column 	  : in std_logic_vector(9 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Background_Generator;
+	
+	component Track_Generator is
+		port (clock, v_sync 					  : in std_logic;
+				pixel_row, pixel_column 	  : in std_logic_vector(9 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Track_Generator;
+	
+	component Background_Manager is
+		port (background_red,   background_green,   background_blue : in  std_logic_vector(3 downto 0);
+				track_red,   		track_green,   	  track_blue 		: in  std_logic_vector(3 downto 0);
+				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0));
+	end component Background_Manager;
+	
+	-- sprites
+	component Moving_Object is
+		generic (REAL_HEIGHT : positive := 60;
+					REAL_WIDTH : positive := 80;
+					LANE : integer range 0 to 2 := 1);
+		port (enable, clock, v_sync 		  	: in std_logic;
+				pixel_column, pixel_row		  	: in  std_logic_vector(9 downto 0);
+				speed								  	: in std_logic_vector(3 downto 0);
+				red_out, green_out, blue_out 	: out std_logic_vector(3 downto 0));
+	end component Moving_Object;
+	
+	component Object_Manager is
+		port (sprite_1_red,   sprite_1_green,   sprite_1_blue 		: in  std_logic_vector(3 downto 0);
+				sprite_2_red,   sprite_2_green,   sprite_2_blue 		: in  std_logic_vector(3 downto 0);
+				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0)); 
+	end component Object_Manager;
 
-   component Word_Display is
-      generic (STRING_LENGTH : positive := 16;
-               SCALE         : positive := 1);
-      port (clock          					: in  std_logic;
-            x_position, y_position        : in  std_logic_vector(9 downto 0);
-            pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-            characters                    : in  std_logic_vector((STRING_LENGTH * 6 - 1) downto 0);
-            red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
-   end component Word_Display;
-
-   component Background_Colour is
-      port (clock, vertical_sync                                          : in  std_logic;
-            dip_switch_0, dip_switch_1, dip_switch_2, dip_switch_3        : in  std_logic;
-            push_button_0, push_button_1, push_button_2, push_button_3    : in  std_logic;
-            red_out, green_out, blue_out                                  : out std_logic_vector(3 downto 0);
-            seven_segment_display_digit_0, seven_segment_display_digit_1,
-            seven_segment_display_digit_2, seven_segment_display_digit_3,
-            seven_segment_display_digit_5                                 : out std_logic_vector(6 downto 0));
-   end component Background_Colour;
 
    -- signals
    signal enable_pulse                   : std_logic;
    signal vertical_sync, horizontal_sync : std_logic;
    signal video_on                       : std_logic;
-   signal left_click, right_click        : std_logic;
-   signal mouse_column, mouse_row        : std_logic_vector(9 downto 0);
 
-   signal red, green, blue               : std_logic_vector(3 downto 0);
-   signal red1, green1, blue1            : std_logic_vector(3 downto 0);
-   signal red2, green2, blue2            : std_logic_vector(3 downto 0);
-   signal red3, green3, blue3            : std_logic_vector(3 downto 0);
-   signal red4, green4, blue4            : std_logic_vector(3 downto 0);
-   signal red5, green5, blue5            : std_logic_vector(3 downto 0);
+	-- colour
+   signal bg_red, bg_green, bg_blue      : std_logic_vector(3 downto 0);
+	signal t_red, t_green, t_blue      	  : std_logic_vector(3 downto 0);
+	
+	signal sprite_1_red, 
+			 sprite_1_green,
+			 sprite_1_blue 					  : std_logic_vector(3 downto 0);
+			 
+	signal sprite_2_red, 
+			 sprite_2_green,
+			 sprite_2_blue 					  : std_logic_vector(3 downto 0);
+	
+	signal layer_0_red,	
+	       layer_0_green, 
+			 layer_0_blue					  	  : std_logic_vector(3 downto 0);
+			 
+			 
+	signal layer_1_red,	
+	       layer_1_green, 
+			 layer_1_blue					  	  : std_logic_vector(3 downto 0);
+	
+	signal red, green, blue   				  : std_logic_vector(3 downto 0);
    signal red_out, green_out, blue_out   : std_logic_vector(3 downto 0);
+	
    signal pixel_row, pixel_column        : std_logic_vector(9 downto 0);
-   signal ball_x_out, ball_y_out         : std_logic_vector(9 downto 0);
 
 begin
    -- Clock Divider
    Divider : Clock_Divider
       port map (input_clock  => CLOCK_50,
                 enable_pulse => enable_pulse);
-
-   -- VGA
+	
+	-- Background
+	Bckgnd : Background_Generator
+		port map (clock 			=> CLOCK_50,
+					 v_sync 			=> vertical_sync,
+					 pixel_row 		=> pixel_row,
+					 pixel_column 	=> pixel_column,
+				    red_out 		=> bg_red,
+					 green_out 		=> bg_green,
+					 blue_out 		=> bg_blue);
+	
+	Track : Track_Generator
+		port map (clock 			=> CLOCK_50,
+					 v_sync 			=> vertical_sync,
+					 pixel_row 		=> pixel_row,
+					 pixel_column 	=> pixel_column,
+					 red_out 		=> t_red,
+					 green_out 		=> t_green,
+					 blue_out 		=> t_blue);
+			 
+	Bckgnd_Manager : Background_Manager
+		port map (background_red 	=> bg_red,
+					 background_green	=> bg_green,
+					 background_blue	=> bg_blue,
+					 track_red			=> t_red,
+				 	 track_green		=> t_green,
+					 track_blue			=> t_blue,
+					 red_out				=> layer_0_red,
+					 green_out			=> layer_0_green,
+					 blue_out			=> layer_0_blue);
+	
+	-- sprites
+	Moving_obj1: Moving_Object
+		generic map (REAL_HEIGHT 	=> 60,
+						 REAL_WIDTH  	=> 80,
+						 LANE 		 	=> 1)
+		port map(enable 			=> NOT KEY(0),
+					clock 			=> CLOCK_50, 
+					v_sync			=> vertical_sync, 		  	
+					pixel_column 	=> pixel_column, 
+					pixel_row		=> pixel_row,	  	
+					speed				=> conv_std_logic_vector(2, 4),
+					red_out 			=> sprite_1_red,
+					green_out 		=> sprite_1_green, 
+					blue_out 		=> sprite_1_blue);
+					
+		Moving_obj2: Moving_Object
+		generic map (REAL_HEIGHT 	=> 120,
+						 REAL_WIDTH 	=> 80,	
+						 LANE 			=> 0)
+		port map(enable 			=> NOT KEY(1),
+					clock 			=> CLOCK_50, 
+					v_sync			=> vertical_sync, 		  	
+					pixel_column 	=> pixel_column, 
+					pixel_row		=> pixel_row,	  	
+					speed				=> conv_std_logic_vector(2, 4),
+					red_out 			=> sprite_2_red,
+					green_out 		=> sprite_2_green, 
+					blue_out 		=> sprite_2_blue);
+	
+	Sprites : Object_Manager
+		port map(sprite_1_red 	=> sprite_1_red,
+					sprite_1_green =>	sprite_1_green,
+					sprite_1_blue 	=>	sprite_1_blue,
+					sprite_2_red 	=> sprite_2_red,
+					sprite_2_green =>	sprite_2_green,
+					sprite_2_blue 	=>	sprite_2_blue,
+					red_out			=> layer_1_red,
+					green_out		=>	layer_1_green,
+					blue_out			=> layer_1_blue);
+	
+	-- Final Manager
+	Graphic_layering : Graphics_Manager
+		port map(sprites_red 		=> layer_1_red,
+					sprites_green		=> layer_1_green,
+					sprites_blue		=> layer_1_blue,
+					background_red		=> layer_0_red,
+					background_green	=> layer_0_green,
+					background_blue	=> layer_0_blue,
+					red_out				=> red,
+					green_out			=> green,
+					blue_out				=> blue);
+	
+	-- VGA
    VGA : VGA_Sync
       port map (clock               => CLOCK_50,
                 enable_pulse        => enable_pulse,
@@ -126,136 +216,6 @@ begin
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column);
 
-   -- Orbiting ball position
-   Orbiting : Orbiting_Ball
-      port map (clock          => CLOCK_50,
-                vertical_sync  => vertical_sync,
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
-                radius         => conv_std_logic_vector(100, 7),
-                left_click     => left_click,
-                ball_x_out     => ball_x_out,
-                ball_y_out     => ball_y_out);
-
-   -- Orbiting ball sprite
-   Sprite : Ball
-      generic map (SIZE_CONST => 20)
-		
-			port map (pixel_column => pixel_column,
-						 pixel_row    => pixel_row,
-						 ball_x       => ball_x_out,
-						 ball_y       => ball_y_out,
-						 red          => red1,
-						 green        => green1,
-						 blue         => blue1);
-
-   -- Mouse controller
-   Mouse_Controller : Mouse
-      port map (clock         		=> CLOCK_50,
-                reset               => not RESET_N,
-                mouse_data          => PS2_DAT,
-                mouse_clock         => PS2_CLK,
-                left_button         => left_click,
-                right_button        => right_click,
-                mouse_cursor_row    => mouse_row,
-                mouse_cursor_column => mouse_column);
-
-   -- Mouse cursor sprite
-   Mouse_Sprite : Ball
-      generic map (SIZE_CONST => 8)
-		
-			port map (pixel_column => pixel_column,
-                   pixel_row    => pixel_row,
-                   ball_x       => mouse_column,
-                   ball_y       => mouse_row,
-                   red          => red2,
-                   green        => green2,
-                   blue         => blue2);
-
-   -- Background colour controller
-   Background : Background_Colour
-      port map (clock                          => CLOCK_50,
-                vertical_sync                  => vertical_sync,
-                dip_switch_0                   => SW(0),
-                dip_switch_1                   => SW(1),
-                dip_switch_2                   => SW(2),
-                dip_switch_3                   => SW(3),
-                push_button_0                  => KEY(0),
-                push_button_1                  => KEY(1),
-                push_button_2                  => KEY(2),
-                push_button_3                  => KEY(3),
-                red_out                        => red5,
-                green_out                      => green5,
-                blue_out                       => blue5,
-                seven_segment_display_digit_0  => HEX0,
-                seven_segment_display_digit_1  => HEX1,
-                seven_segment_display_digit_2  => HEX2,
-                seven_segment_display_digit_3  => HEX3,
-                seven_segment_display_digit_5  => HEX5);
-
-   -- Hello World small text
-   Hello_World : Word_Display
-      generic map (STRING_LENGTH => 11,
-                   SCALE         => 1)
-						 
-			port map (clock          => CLOCK_50,
-						 characters     => "001000" &  -- H = 8
-                                     "000101" &  -- E = 5
-                                     "001100" &  -- L = 12
-												 "001100" &  -- L = 12
-												 "001111" &  -- O = 15
-                                     "100000" &  -- space = 32
-                                     "010111" &  -- W = 23
-                                     "001111" &  -- O = 15
-                                     "010010" &  -- R = 18
-                                     "001100" &  -- L = 12
-                                     "000100",   -- D = 4
-						 pixel_row      => pixel_row,
-                   pixel_column   => pixel_column,
-                   x_position     => conv_std_logic_vector(276, 10),
-                   y_position     => conv_std_logic_vector(220, 10),
-                   red_out        => red3,
-                   green_out      => green3,
-                   blue_out       => blue3);
-
-   -- CHUD large text
-   CHUD : Word_Display
-      generic map (STRING_LENGTH => 4,
-                   SCALE         => 2)
-						 
-			port map (clock          => CLOCK_50,
-                   characters     => "001111" &  -- O = 16
-                                     "001001" &  -- I = 9
-                                     "001110" &  -- N = 14
-                                     "001011",   -- K = 11
-						 pixel_row      => pixel_row,
-                   pixel_column   => pixel_column,
-                   x_position     => conv_std_logic_vector(288, 10),
-                   y_position     => conv_std_logic_vector(250, 10),
-                   red_out        => red4,
-                   green_out      => green4,
-                   blue_out       => blue4);
-
-   -- Graphics layer compositor
-   Graphics : Graphics_Manager
-      port map (text_large_red   => red4,
-                text_large_green => green4,
-                text_large_blue  => blue4,
-                text_small_red   => red3,
-                text_small_green => green3,
-                text_small_blue  => blue3,
-                background_red   => red5,
-                background_green => green5,
-                background_blue  => blue5,
-                sprite_red       => red1,
-                sprite_green     => green1,
-                sprite_blue      => blue1,
-                mouse_red        => red2,
-                mouse_green      => green2,
-                mouse_blue       => blue2,
-                red_out          => red,
-                green_out        => green,
-                blue_out         => blue);
 
    -- VGA output
    VGA_R  <= red_out;
