@@ -4,8 +4,10 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 entity Moving_Object is
-	generic (REAL_HEIGHT : positive := 8;
-				REAL_WIDTH : positive := 8;
+	-- maximum height is 120
+	-- maximum width is 80
+	generic (REAL_HEIGHT : positive := 60;
+				REAL_WIDTH : positive := 80;
 				LANE : integer range 0 to 2 := 1);
 	port (enable, clock, v_sync 		  	: in std_logic;
 			pixel_column, pixel_row		  	: in  std_logic_vector(9 downto 0);
@@ -42,6 +44,22 @@ architecture rtl of Moving_Object is
 	signal top_on			: std_logic;
 	signal v_sync_prev 	: std_logic; 
 	
+	-- object scale
+	signal obj_height_raw 	: std_logic_vector(9 downto 0);
+	signal obj_width_raw  	: std_logic_vector(9 downto 0);
+	signal obj_height     	: std_logic_vector(9 downto 0);
+	signal obj_width      	: std_logic_vector(9 downto 0);
+	signal scale_h_product 	: std_logic_vector(19 downto 0);
+	signal scale_w_product 	: std_logic_vector(19 downto 0);
+	
+	signal obj_w_back_raw  	: std_logic_vector(9 downto 0);
+	signal obj_h_back_raw  	: std_logic_vector(9 downto 0);
+	signal scale_wb_product : std_logic_vector(19 downto 0);
+	signal scale_hb_product : std_logic_vector(19 downto 0);
+	
+	signal top_height_raw    : std_logic_vector(9 downto 0);
+	signal scale_th_product  : std_logic_vector(19 downto 0);
+
 	-- object attributes
 	signal obj_distance  : std_logic_vector(9 downto 0) 
 								:= (others => '1');
@@ -57,10 +75,8 @@ architecture rtl of Moving_Object is
 	signal obj_red,
 			 obj_green,
 			 obj_blue		: std_logic_vector(3 downto 0);
-			 
-	signal obj_height 	: std_logic_vector(9 downto 0);
-	signal obj_width		: std_logic_vector(9 downto 0);
 	
+	-- side signals
 	signal side_local_row				: std_logic_vector(9 downto 0);
 	signal inverted_local				: std_logic_vector(9 downto 0);
 	signal actual_side_shift 			: std_logic_vector(9 downto 0);
@@ -68,6 +84,7 @@ architecture rtl of Moving_Object is
 	signal side_product  				: std_logic_vector(19 downto 0);
 	signal side_taper						: std_logic_vector(9 downto 0);
 	
+	-- top signals
 	signal top_height		 : std_logic_vector(9 downto 0);
 	signal top_left		 : std_logic_vector(9 downto 0);
 	signal top_right		 : std_logic_vector(9 downto 0);
@@ -89,11 +106,11 @@ architecture rtl of Moving_Object is
 	signal w_diff_product : std_logic_vector(19 downto 0);
 	
 	-- taper to less than front height
-	signal obj_h_back     : std_logic_vector(9 downto 0);
-	signal h_diff         : std_logic_vector(9 downto 0);
-	signal side_col_offset: std_logic_vector(9 downto 0);
-	signal side_top_boundary : std_logic_vector(9 downto 0);
-	signal h_diff_product : std_logic_vector(19 downto 0);
+	signal obj_h_back     	: std_logic_vector(9 downto 0);
+	signal h_diff         	: std_logic_vector(9 downto 0);
+	signal side_col_offset	: std_logic_vector(9 downto 0);
+	signal side_top_boundary: std_logic_vector(9 downto 0);
+	signal h_diff_product 	: std_logic_vector(19 downto 0);
 	
 	signal obj_x			: std_logic_vector(9 downto 0);
 	signal obj_y			: std_logic_vector(9 downto 0);
@@ -110,12 +127,12 @@ begin
 	Object_internal_control : Object_ROM
 		port map (clock 			=> clock,
 					 track_row 		=> obj_distance,
-					 obj_sd_output	=> obj_h_back,
+					 obj_sd_output	=> obj_h_back_raw,
 					 obj_y_output 	=> obj_y,
-					 obj_h_output 	=> obj_height,
-					 obj_w_output 	=> obj_width,
-					 obj_wb_output => obj_w_back,
-					 top_h_output	=> top_height,
+					 obj_h_output 	=> obj_height_raw,
+					 obj_w_output 	=> obj_width_raw,
+					 obj_wb_output => obj_w_back_raw,
+					 top_h_output	=> top_height_raw,
 					 top_taper		=>	top_taper,
 					 side_taper		=> side_taper);
 
@@ -124,7 +141,7 @@ begin
 					 track_row 				=> obj_distance,
 					 perspective_output 	=> spread);
 					 
-	-- given track finding x position
+	-- given track perspective finding x position
 	product <= conv_std_logic_vector(11, 4) * spread;
 	shift <= product(13 downto 4);
 	
@@ -132,6 +149,22 @@ begin
 				(conv_std_logic_vector(320, 10)) 							when (LANE = 1) else
 				(conv_std_logic_vector(320, 10) - shift(9 downto 0));
 
+	-- object scaling size with generic
+	scale_h_product <= obj_height_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+	scale_w_product <= obj_width_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
+	
+	-- divide by max values (120 and 80 approximately) come from python files max sizes
+	obj_height <= scale_h_product(16 downto 7);
+	obj_width  <= scale_w_product(15 downto 6);
+	
+	scale_wb_product <= obj_w_back_raw * conv_std_logic_vector(REAL_WIDTH,  10);
+	scale_hb_product <= obj_h_back_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+	obj_w_back <= scale_wb_product(15 downto 6);
+	obj_h_back <= scale_hb_product(16 downto 7);
+	
+	scale_th_product <= top_height_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+	top_height       <= scale_th_product(16 downto 7);
+				
 	-- movement of the object is dictated by itself internally
 	-- affected by game state though, e.g. external speed input
 	Moving : process(clock)
@@ -176,7 +209,7 @@ begin
 																				when (LANE = 0)
 																				else (others => '0');
 	h_diff_product    <= h_diff * side_col_offset;
-	side_top_boundary <= h_diff_product(17 downto 8);
+	side_top_boundary <= h_diff_product(18 downto 9);
 	
 	-- object drawing side based on the front and top
 	side_local_row <= (pixel_row - (obj_y - obj_height)) 	when (pixel_row >= (obj_y - obj_height))
@@ -186,11 +219,12 @@ begin
 	side_product     <= side_taper * inverted_local;
 	actual_side_shift <= side_product(17 downto 8); 
 	
-	-- Hard clamp as safety net
-	actual_side_shift_clamped <= (top_max_extension) when (actual_side_shift >= (top_max_extension)) else
+	-- clamping where the side will stop drawing based on the tops extensive
+	actual_side_shift_clamped <= (top_max_extension) 	when (actual_side_shift >= (top_max_extension)) else
 										  (others => '0') 		when inverted_local = "0000000000" else
 										  actual_side_shift;
 	
+	-- left and right sides different looks based on lane
 	left_side_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height)
 								 and (pixel_row <= obj_y - side_top_boundary) 
 								 and (pixel_column >= obj_x - obj_width - actual_side_shift_clamped) 
@@ -201,6 +235,7 @@ begin
 								  and (pixel_column <= obj_x + obj_width + actual_side_shift_clamped) 
 								  and (pixel_column >= obj_x + obj_width)) else '0';
 	
+	-- actually draws the side
 	side_on <= 	left_side_on 	when (LANE = 2) else 
 					right_side_on 	when (LANE = 0) else '0';
 	
@@ -222,16 +257,19 @@ begin
 	
 	top_max_product   <= top_taper * top_height;
 	top_max_extension <= top_max_product(17 downto 8);
-		
+	
+	
+	-- left and right side of the top will taper differently depending on lane and perspective
 	top_left  <= (obj_x - back_w_at_row  - top_edge_shift)  			when LANE = 2 else
 					 (obj_x - back_w_at_row )              				when LANE = 1 else
 					 (obj_x - back_w_at_row  + (top_edge_shift(8 downto 0) & '0'));
 
 	top_right <= (obj_x + back_w_at_row  - (top_edge_shift(8 downto 0) & '0'))  	when LANE = 2 else
-					 (obj_x + back_w_at_row )              				when LANE = 1 else
+					 (obj_x + back_w_at_row )              									when LANE = 1 else
 					 (obj_x + back_w_at_row  + top_edge_shift);
 
 
+	-- actually drawing the top
 	top_on <= '1' when ((pixel_row >= obj_y - obj_height - top_height) 
 						 and (pixel_row <= obj_y - obj_height) 
 						 and (pixel_column >= top_left) 

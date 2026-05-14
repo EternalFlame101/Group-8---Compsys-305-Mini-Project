@@ -65,7 +65,9 @@ architecture game_behaviour of Top_Level is
 	
 	-- sprites
 	component Moving_Object is
-		generic (LANE : integer range 0 to 2 := 1);
+		generic (REAL_HEIGHT : positive := 60;
+					REAL_WIDTH : positive := 80;
+					LANE : integer range 0 to 2 := 1);
 		port (enable, clock, v_sync 		  	: in std_logic;
 				pixel_column, pixel_row		  	: in  std_logic_vector(9 downto 0);
 				speed								  	: in std_logic_vector(3 downto 0);
@@ -148,7 +150,9 @@ begin
 	
 	-- sprites
 	Moving_obj1: Moving_Object
-		generic map (LANE 		=> 2)
+		generic map (REAL_HEIGHT 	=> 60,
+						 REAL_WIDTH  	=> 80,
+						 LANE 		 	=> 2)
 		port map(enable 			=> NOT KEY(0),
 					clock 			=> CLOCK_50, 
 					v_sync			=> vertical_sync, 		  	
@@ -160,7 +164,9 @@ begin
 					blue_out 		=> sprite_1_blue);
 					
 		Moving_obj2: Moving_Object
-		generic map (LANE 		=> 0)
+		generic map (REAL_HEIGHT 	=> 120,
+						 REAL_WIDTH 	=> 80,	
+						 LANE 			=> 0)
 		port map(enable 			=> NOT KEY(1),
 					clock 			=> CLOCK_50, 
 					v_sync			=> vertical_sync, 		  	
