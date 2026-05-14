@@ -260,13 +260,13 @@ begin
 	
 	
 	-- left and right side of the top will taper differently depending on lane and perspective
-	top_left  <= (obj_x - back_w_at_row  - top_edge_shift)  			when LANE = 2 else
-					 (obj_x - back_w_at_row )              				when LANE = 1 else
-					 (obj_x - back_w_at_row  + (top_edge_shift(8 downto 0) & '0'));
+	top_left  <= (obj_x - back_w_at_row - top_edge_shift)  							when LANE = 2 else
+					 (obj_x - back_w_at_row + (top_edge_shift(9 downto 0)))  when LANE = 1 else
+					 (obj_x - back_w_at_row + (top_edge_shift(8 downto 0) & '0'));
 
-	top_right <= (obj_x + back_w_at_row  - (top_edge_shift(8 downto 0) & '0'))  	when LANE = 2 else
-					 (obj_x + back_w_at_row )              									when LANE = 1 else
-					 (obj_x + back_w_at_row  + top_edge_shift);
+	top_right <= (obj_x + back_w_at_row - (top_edge_shift(8 downto 0) & '0'))  when LANE = 2 else
+					 (obj_x + back_w_at_row - (top_edge_shift(9 downto 0)))  when LANE = 1 else
+					 (obj_x + back_w_at_row + top_edge_shift);
 
 
 	-- actually drawing the top

@@ -152,7 +152,7 @@ begin
 	Moving_obj1: Moving_Object
 		generic map (REAL_HEIGHT 	=> 60,
 						 REAL_WIDTH  	=> 80,
-						 LANE 		 	=> 2)
+						 LANE 		 	=> 1)
 		port map(enable 			=> NOT KEY(0),
 					clock 			=> CLOCK_50, 
 					v_sync			=> vertical_sync, 		  	
