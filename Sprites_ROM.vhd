@@ -9,7 +9,7 @@ entity Sprites_ROM is
     generic (
         DEPTH     : positive := 4096;
         ADDR_BITS : positive := 12;     -- log2(DEPTH)
-        MIF_FILE  : string   := "skull.mif"
+        MIF_FILE  : string   := "knee.mif"
     );
     port (
         clock   : in  std_logic;

@@ -92,7 +92,8 @@ architecture game_behaviour2 of TopLevel2 is
 		generic (
         SPRITE_WIDTH  : positive := 64;
         SPRITE_HEIGHT : positive := 64;
-        ADDR_BITS     : positive := 12
+        ADDR_BITS     : positive := 12;
+		  SCALE 			 : positive := 1
 		 );
 		 port (
 			  clock                        : in  std_logic;
@@ -265,17 +266,18 @@ begin
 		generic map (
         SPRITE_WIDTH  => 64,
         SPRITE_HEIGHT => 64,
-        ADDR_BITS     => 12
+        ADDR_BITS     => 12,
+		  SCALE 			 => 8
 		 )
 		 port map (
-			  clock => CLOCK_50,
-			  pixel_row => pixel_row,
+			  clock 			=> CLOCK_50,
+			  pixel_row 	=> pixel_row,
 			  pixel_column => pixel_column,
-			  sprite_x => conv_std_logic_vector(200, 10), 
-			  sprite_y => conv_std_logic_vector(200, 10),      
-			  red_out => red1,
-			  green_out => green1,
-			  blue_out => blue1
+			  sprite_x 		=> conv_std_logic_vector(100, 10), 
+			  sprite_y 		=> conv_std_logic_vector(100, 10),      
+			  red_out 		=> red1,
+			  green_out 	=> green1,
+			  blue_out 		=> blue1
 		 );
 
    -- Graphics layer compositor

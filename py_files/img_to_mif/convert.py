@@ -5,7 +5,7 @@ from PIL import Image
 import argparse
 
 
-def image_to_mif(image_path, output_path=None, output_folder='mif_output', target_width=64, target_height=64):
+def image_to_mif(image_path, output_path=None, output_folder='mif', target_width=64, target_height=64):
     image_path = Path(image_path)
     if output_path is None:
         output_path = Path(output_folder) / f"{image_path.stem}.mif"

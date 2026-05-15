@@ -6,7 +6,8 @@ entity Sprites_Display is
     generic (
         SPRITE_WIDTH  : positive := 64;
         SPRITE_HEIGHT : positive := 64;
-        ADDR_BITS     : positive := 12
+        ADDR_BITS     : positive := 12;
+		  SCALE 			 : positive := 4
     );
     port (
         clock                        : in  std_logic;
@@ -32,21 +33,23 @@ architecture beh of Sprites_Display is
             blue    : out std_logic_vector(3 downto 0)
         );
     end component Sprites_ROM;
+	 
+	constant SPRITE_SIZE 	: integer := SPRITE_WIDTH * SCALE;
 
-    -- Avoid overflow on boundary addition
-    signal col_u : unsigned(10 downto 0);
-    signal row_u : unsigned(10 downto 0);
-    signal sx_u  : unsigned(10 downto 0);
-    signal sy_u  : unsigned(10 downto 0);
+	-- Avoid overflow on boundary addition
+	signal col_u : unsigned(10 downto 0);
+	signal row_u : unsigned(10 downto 0);
+	signal sx_u  : unsigned(10 downto 0);
+	signal sy_u  : unsigned(10 downto 0);
 
-    signal sprite_on     : std_logic;
-    signal sprite_on_reg : std_logic;  -- registered one cycle to match ROM latency
+	signal sprite_on     : std_logic;
+	signal sprite_on_reg : std_logic;  -- registered one cycle to match ROM latency
 
-    signal sprite_address : std_logic_vector(ADDR_BITS - 1 downto 0);
+	signal sprite_address : std_logic_vector(ADDR_BITS - 1 downto 0);
 
-    signal rom_red   : std_logic_vector(3 downto 0);
-    signal rom_green : std_logic_vector(3 downto 0);
-    signal rom_blue  : std_logic_vector(3 downto 0);
+	signal rom_red   : std_logic_vector(3 downto 0);
+	signal rom_green : std_logic_vector(3 downto 0);
+	signal rom_blue  : std_logic_vector(3 downto 0);
 
 begin
 
@@ -57,9 +60,9 @@ begin
 
 	sprite_on <= '1' when
 						(col_u >= sx_u) and
-						(col_u <  sx_u + to_unsigned(SPRITE_WIDTH,  11)) and
+						(col_u <  sx_u + to_unsigned(SPRITE_SIZE,  11)) and
 						(row_u >= sy_u) and
-						(row_u <  sy_u + to_unsigned(SPRITE_HEIGHT, 11))
+						(row_u <  sy_u + to_unsigned(SPRITE_SIZE, 11))
 				  else '0';
 
 	process (clock)
@@ -76,13 +79,12 @@ begin
 		variable addr_int : integer;
 	begin
 		if sprite_on = '1' then
-		  local_x  := to_integer(col_u) - to_integer(sx_u);
-		  local_y  := to_integer(row_u) - to_integer(sy_u);
+		  local_x  := (to_integer(col_u) - to_integer(sx_u)) / SCALE;
+		  local_y  := (to_integer(row_u) - to_integer(sy_u)) / SCALE;
 		  addr_int := local_y * SPRITE_WIDTH + local_x;
 		else
 			addr_int := 0;
 		end if;
-		
 		sprite_address <= std_logic_vector(to_unsigned(addr_int, ADDR_BITS));
 	end process;
 
@@ -91,7 +93,7 @@ begin
         generic map (
             DEPTH     => 4096,
             ADDR_BITS => 12,
-            MIF_FILE  => "skull.mif"
+            MIF_FILE  => "knee.mif"
         )
         port map (
             clock   => clock,
