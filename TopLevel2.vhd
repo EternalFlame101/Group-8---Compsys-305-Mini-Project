@@ -267,7 +267,7 @@ begin
         SPRITE_WIDTH  => 64,
         SPRITE_HEIGHT => 64,
         ADDR_BITS     => 12,
-		  SCALE 			 => 8
+		  SCALE 			 => 1
 		 )
 		 port map (
 			  clock 			=> CLOCK_50,

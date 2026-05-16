@@ -7,7 +7,7 @@ entity Sprites_Display is
         SPRITE_WIDTH  : positive := 64;
         SPRITE_HEIGHT : positive := 64;
         ADDR_BITS     : positive := 12;
-		  SCALE 			 : positive := 4
+		  SCALE 			 : positive := 1
     );
     port (
         clock                        : in  std_logic;
@@ -23,7 +23,7 @@ architecture beh of Sprites_Display is
         generic (
             DEPTH     : positive := 4096;
             ADDR_BITS : positive := 12;
-            MIF_FILE  : string   := "skull.mif"
+            MIF_FILE  : string   := "mif/neutral.mif"
         );
         port (
             clock   : in  std_logic;
@@ -93,7 +93,7 @@ begin
         generic map (
             DEPTH     => 4096,
             ADDR_BITS => 12,
-            MIF_FILE  => "knee.mif"
+            MIF_FILE  => "mif/neutral.mif"
         )
         port map (
             clock   => clock,
