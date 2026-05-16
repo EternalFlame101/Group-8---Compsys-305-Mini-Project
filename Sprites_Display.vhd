@@ -4,10 +4,10 @@ use IEEE.numeric_std.all;
 
 entity Sprites_Display is
     generic (
-        SPRITE_WIDTH  : positive := 64;
-        SPRITE_HEIGHT : positive := 64;
+        SPRITE_WIDTH  : positive := 32;
+        SPRITE_HEIGHT : positive := 32;
         ADDR_BITS     : positive := 12;
-		  SCALE 			 : positive := 1
+		  SCALE 			 : positive := 4
     );
     port (
         clock                        : in  std_logic;
@@ -21,7 +21,7 @@ architecture beh of Sprites_Display is
 
     component Sprites_ROM is
         generic (
-            DEPTH     : positive := 4096;
+            DEPTH     : positive := 1024;
             ADDR_BITS : positive := 12;
             MIF_FILE  : string   := "mif/neutral.mif"
         );
@@ -91,7 +91,7 @@ begin
     -- ROM instance (no semicolon between generic map and port map)
     Sprite_Instance : Sprites_ROM
         generic map (
-            DEPTH     => 4096,
+            DEPTH     => 1024,
             ADDR_BITS => 12,
             MIF_FILE  => "mif/neutral.mif"
         )

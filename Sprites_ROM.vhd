@@ -7,7 +7,7 @@ use altera_mf.all;
 
 entity Sprites_ROM is
     generic (
-        DEPTH     : positive := 4096;
+        DEPTH     : positive := 1024;
         ADDR_BITS : positive := 12;     -- log2(DEPTH)
         MIF_FILE  : string   := "knee.mif"
     );
@@ -57,8 +57,8 @@ begin
 						 operation_mode         => "rom",
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
-						 widthad_a              => 12,
-						 width_a                => ADDR_BITS,
+						 widthad_a              => 10,
+						 width_a                => 12,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,

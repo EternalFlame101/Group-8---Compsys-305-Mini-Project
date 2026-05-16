@@ -90,8 +90,8 @@ architecture game_behaviour2 of TopLevel2 is
 
 	component Sprites_Display is
 		generic (
-        SPRITE_WIDTH  : positive := 64;
-        SPRITE_HEIGHT : positive := 64;
+        SPRITE_WIDTH  : positive := 32;
+        SPRITE_HEIGHT : positive := 32;
         ADDR_BITS     : positive := 12;
 		  SCALE 			 : positive := 1
 		 );
@@ -264,10 +264,10 @@ begin
 						 
 	Skull : Sprites_Display
 		generic map (
-        SPRITE_WIDTH  => 64,
-        SPRITE_HEIGHT => 64,
+        SPRITE_WIDTH  => 32,
+        SPRITE_HEIGHT => 32,
         ADDR_BITS     => 12,
-		  SCALE 			 => 1
+		  SCALE 			 => 4
 		 )
 		 port map (
 			  clock 			=> CLOCK_50,
