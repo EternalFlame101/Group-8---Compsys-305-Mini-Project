@@ -5,12 +5,12 @@ use IEEE.std_logic_1164.all;
 entity lfsr_8bit is
 	generic(
 		SEED : std_logic_vector(7 downto 0) := "10110001" -- default
-	);
+	)
 	port(
 		clock 	:	in std_logic;
 		reset		:	in std_logic;
 		enable 	:	in std_logic;
-		output	: 	out std_logic
+		output	: 	out std_logic;
 	);
 end entity;
 
@@ -20,14 +20,13 @@ architecture beh of lfsr_8bit is
 begin 
 
 	process(Clock)
-		variable fb : std_logic;
+		variable vb : std_logic;
 	begin 
 		if rising_edge(Clock) then 
 			if reset = '1' then
-				reg <= SEED;
+				reg = SEED;
 			elsif enable = '1' then 
-				fb := reg(0);
-				reg(7) <= fb; 
+				reg(7) <= vb; 
 				reg(6) <= reg(7);
 				reg(5) <= reg(6) xor fb; 
 				reg(4) <= reg(5) xor fb;

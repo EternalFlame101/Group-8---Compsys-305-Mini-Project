@@ -32,6 +32,7 @@ entity Moving_Object is
             REAL_WIDTH  : positive            := 80;
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
+			reset, obj_reset, arrived 	  : in  std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -172,6 +173,10 @@ architecture moving_object_behaviour of Moving_Object is
    signal lane_offset_product : std_logic_vector(13 downto 0);
    signal lane_offset         : std_logic_vector(9 downto 0);
 
+	
+	-- Lane detection
+	signal arrived : std_logic;
+	signal obj_reset : std_logic;
 begin
 
    -- ---------------------------------------------------------------------------
@@ -231,11 +236,16 @@ begin
    Moving : process(clock)
    begin
       if rising_edge(clock) then
+			arrived <= '0';
          vertical_sync_prev <= vertical_sync;
-         if ((vertical_sync = '0') and (vertical_sync_prev = '1')) then
+			
+			if obj_reset = '1' then
+				object_distance <= (others => '1');
+			
+         elsif ((vertical_sync = '0') and (vertical_sync_prev = '1')) then
             if (enable = '1') then
                if (object_distance = "0000000000") then
-                  null;
+                  arrived <= '1';
                else
                   object_distance <= object_distance + ("000000" & speed);
                end if;

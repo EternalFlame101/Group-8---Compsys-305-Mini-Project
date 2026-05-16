@@ -109,6 +109,7 @@ architecture game_behaviour of Top_Level is
                REAL_WIDTH  : positive            := 80;
                LANE        : integer range 0 to 2 := 1);
       port (enable, clock, vertical_sync   : in  std_logic;
+				reset, obj_reset, arrived 		 : in  std_logic;
             pixel_column, pixel_row        : in  std_logic_vector(9 downto 0);
             speed                          : in  std_logic_vector(3 downto 0);
             red_out, green_out, blue_out   : out std_logic_vector(3 downto 0));
@@ -195,6 +196,13 @@ architecture game_behaviour of Top_Level is
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
+	
+	component Spawn_Control is
+		port(clock			:		in std_logic;
+			  reset 		 	: 		in std_logic;
+			  enable 		:		in std_logic;
+			  lane_control : 		out std_logic_vector(2 downto 0));
+	end component Spawn_Control;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -215,6 +223,7 @@ architecture game_behaviour of Top_Level is
    signal racing_red, racing_green, racing_blue 														: std_logic_vector(3 downto 0);
    signal background_layer_red, background_layer_green, background_layer_blue 				: std_logic_vector(3 downto 0);
    signal track_layer_red,      track_layer_green,      track_layer_blue      				: std_logic_vector(3 downto 0);
+	signal sprite_0_red,         sprite_0_green,         sprite_0_blue         				: std_logic_vector(3 downto 0);
    signal sprite_1_red,         sprite_1_green,         sprite_1_blue         				: std_logic_vector(3 downto 0);
    signal sprite_2_red,         sprite_2_green,         sprite_2_blue         				: std_logic_vector(3 downto 0);
    signal background_composite_red, background_composite_green, background_composite_blue : std_logic_vector(3 downto 0);
@@ -260,6 +269,15 @@ architecture game_behaviour of Top_Level is
    signal read_byte_signal : std_logic_vector(7 downto 0);
 
    signal audio_dac_data : std_logic_vector(7 downto 0);
+	
+	
+	-- Spawn control signals 
+	signal spawn : std_logic_vector(2 downto 0);
+	
+	-- Moving object signals
+	 signal active_0, active_1, active_2     : std_logic := '0';
+    signal obj_reset_0, obj_reset_1, obj_reset_2 : std_logic := '0';
+    signal arrived_0, arrived_1, arrived_2  : std_logic;
 
 begin
 
@@ -421,14 +439,31 @@ begin
                 red_out          => background_composite_red,
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
+					 
+	Moving_Object_Lane_Two : Moving_Object
+      generic map (REAL_HEIGHT => 60,
+                   REAL_WIDTH  => 80,
+                   LANE        => 2)
+      port map (enable        => spawn(2),
+                clock         => video_clock,
+                vertical_sync => vertical_sync,
+                pixel_column  => pixel_column,
+                pixel_row     => pixel_row,
+                speed         => conv_std_logic_vector(2, 4),
+                red_out       => sprite_2_red,
+                green_out     => sprite_2_green,
+                blue_out      => sprite_2_blue);
 
    Moving_Object_Lane_One : Moving_Object
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 1)
-      port map (enable        => not KEY(2),
+      port map (enable        => spawn(1),
                 clock         => video_clock,
                 vertical_sync => vertical_sync,
+					 reset 			=> not RESET_N,
+					 obj_reset		=> obj_reset_0,
+					 arrived			=> arrived_0
                 pixel_column  => pixel_column,
                 pixel_row     => pixel_row,
                 speed         => conv_std_logic_vector(2, 4),
@@ -440,18 +475,21 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 80,
                    LANE        => 0)
-      port map (enable        => not KEY(3),
+      port map (enable        => spawn(0),
                 clock         => video_clock,
                 vertical_sync => vertical_sync,
                 pixel_column  => pixel_column,
                 pixel_row     => pixel_row,
                 speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_2_red,
-                green_out     => sprite_2_green,
-                blue_out      => sprite_2_blue);
+                red_out       => sprite_0_red,
+                green_out     => sprite_0_green,
+                blue_out      => sprite_0_blue);
 
    Sprite_Compositor : Object_Manager
-      port map (sprite_1_red   => sprite_1_red,
+      port map (sprite_0_red	 => sprite_0_red,
+					 sprite_0_green => sprite_0_green,
+					 sprite_0_blue  => sprite_0_blue,
+					 sprite_1_red   => sprite_1_red,
                 sprite_1_green => sprite_1_green,
                 sprite_1_blue  => sprite_1_blue,
                 sprite_2_red   => sprite_2_red,
@@ -578,6 +616,12 @@ begin
                 green_out                => green_final,
                 blue_out                 => blue_final);
 
+		
+	Spawn_Ctrl : Spawn_Control
+		port map(clock 			=> video_clock,
+					reset 			=> not(RESET_N),
+					enable 			=> '1',
+					lane_control 	=> spawn);
    -- ---------------------------------------------------------------------------
    -- LED assignments
    --   LEDR(3:0) = SD init state indicator
