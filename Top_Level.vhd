@@ -195,6 +195,24 @@ architecture game_behaviour of Top_Level is
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
+	
+	component Player is
+      generic (SCREEN_WIDTH  : positive := 640;
+               SCREEN_HEIGHT : positive := 480;
+               SPRITE_SIZE   : positive := 32;
+               SPRITE_SCALE  : positive := 3);
+      port (clock                                 : in  std_logic;
+            pixel_row, pixel_column               : in  std_logic_vector(9 downto 0);
+            player_red, player_green, player_blue : out std_logic_vector(3 downto 0);
+            player_lane                           : out std_logic_vector(1 downto 0);
+            player_state                          : out std_logic);
+   end component Player;
+
+   component Player_And_Objects_Manager is
+      port (player_red,  player_green,  player_blue  : in  std_logic_vector(3 downto 0);
+            objects_red, objects_green, objects_blue : in  std_logic_vector(3 downto 0);
+            red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
+   end component Player_And_Objects_Manager;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -260,6 +278,12 @@ architecture game_behaviour of Top_Level is
    signal read_byte_signal : std_logic_vector(7 downto 0);
 
    signal audio_dac_data : std_logic_vector(7 downto 0);
+	
+	-- Player signals
+   signal player_red, player_green, player_blue                            : std_logic_vector(3 downto 0);
+   signal player_lane                                                      : std_logic_vector(1 downto 0);
+   signal player_state                                                     : std_logic;
+   signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 
 begin
 
@@ -471,9 +495,9 @@ begin
                 background_red   => background_composite_red,
                 background_green => background_composite_green,
                 background_blue  => background_composite_blue,
-                sprite_red       => sprite_composite_red,
-                sprite_green     => sprite_composite_green,
-                sprite_blue      => sprite_composite_blue,
+                sprite_red       => combined_sprite_red,
+                sprite_green     => combined_sprite_green,
+                sprite_blue      => combined_sprite_blue,
                 mouse_red        => "0000",
                 mouse_green      => "0000",
                 mouse_blue       => "0000",
@@ -577,6 +601,31 @@ begin
                 red_out                  => red_final,
                 green_out                => green_final,
                 blue_out                 => blue_final);
+					 
+	Player_Sprite_Renderer : Player
+      generic map (SCREEN_WIDTH  => 640,
+                   SCREEN_HEIGHT => 480,
+                   SPRITE_SIZE   => 32,
+                   SPRITE_SCALE  => 4)
+      port map (clock        => video_clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                player_red   => player_red,
+                player_green => player_green,
+                player_blue  => player_blue,
+                player_lane  => player_lane,
+                player_state => player_state);
+
+   Player_Object_Compositor : Player_And_Objects_Manager
+      port map (player_red    => player_red,
+                player_green  => player_green,
+                player_blue   => player_blue,
+                objects_red   => sprite_composite_red,
+                objects_green => sprite_composite_green,
+                objects_blue  => sprite_composite_blue,
+                red_out       => combined_sprite_red,
+                green_out     => combined_sprite_green,
+                blue_out      => combined_sprite_blue);
 
    -- ---------------------------------------------------------------------------
    -- LED assignments
