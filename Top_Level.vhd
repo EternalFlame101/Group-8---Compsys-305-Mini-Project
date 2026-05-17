@@ -178,7 +178,7 @@ architecture game_behaviour of Top_Level is
                SPRITE_HEIGHT : positive := 32;
                ADDR_BITS     : positive := 12;
                SCALE         : positive := 4;
-               MIF_FILE      : string   := "knee.mif");
+               MIF_FILE      : string   := "mif/jasper.mif");
       port (clock                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
@@ -546,7 +546,7 @@ begin
                    SPRITE_HEIGHT => 32,
                    ADDR_BITS     => 12,
                    SCALE         => 4,
-                   MIF_FILE      => "knee.mif")
+                   MIF_FILE      => "mif/jasper.mif")
       port map (clock        => video_clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
