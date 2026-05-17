@@ -84,6 +84,49 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out           : out std_logic_vector(3 downto 0);
             pixel_row, pixel_column                : out std_logic_vector(9 downto 0));
    end component VGA_Sync;
+	
+	-- final graphics manager
+	component Graphics_Manager is
+		port (sprites_red,   	sprites_green,   		sprites_blue 	: in std_logic_vector(3 downto 0);
+				background_red,	background_green,	 	background_blue: in std_logic_vector(3 downto 0);
+				red_out, 			green_out,				blue_out 		: out std_logic_vector(3 downto 0));
+	end component Graphics_Manager;
+	
+	-- Background components
+	component Background_Generator is
+		port (clock, v_sync 					  : in std_logic;
+				pixel_row, pixel_column 	  : in std_logic_vector(9 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Background_Generator;
+	
+	component Track_Generator is
+		port (clock, v_sync 					  : in std_logic;
+				pixel_row, pixel_column 	  : in std_logic_vector(9 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Track_Generator;
+	
+	component Background_Manager is
+		port (background_red,   background_green,   background_blue : in  std_logic_vector(3 downto 0);
+				track_red,   		track_green,   	  track_blue 		: in  std_logic_vector(3 downto 0);
+				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0));
+	end component Background_Manager;
+	
+	-- sprites
+	component Moving_Object is
+		generic (REAL_HEIGHT : positive := 60;
+					REAL_WIDTH : positive := 80;
+					LANE : integer range 0 to 2 := 1);
+		port (enable, clock, v_sync 		  	: in std_logic;
+				pixel_column, pixel_row		  	: in  std_logic_vector(9 downto 0);
+				speed								  	: in std_logic_vector(3 downto 0);
+				red_out, green_out, blue_out 	: out std_logic_vector(3 downto 0));
+	end component Moving_Object;
+	
+	component Object_Manager is
+		port (sprite_1_red,   sprite_1_green,   sprite_1_blue 		: in  std_logic_vector(3 downto 0);
+				sprite_2_red,   sprite_2_green,   sprite_2_blue 		: in  std_logic_vector(3 downto 0);
+				red_out,          green_out,          blue_out        : out std_logic_vector(3 downto 0)); 
+	end component Object_Manager;
 
    component Word_Display is
       generic (STRING_LENGTH : positive := 16;
@@ -144,8 +187,6 @@ architecture game_behaviour of Top_Level is
    signal pll_locked                     : std_logic;
    signal vertical_sync, horizontal_sync : std_logic;
    signal video_on                       : std_logic;
-   signal left_click, right_click        : std_logic;
-   signal mouse_column, mouse_row        : std_logic_vector(9 downto 0);
 
    -- Game graphics layer signals (existing demo content)
    signal red_game, green_game, blue_game : std_logic_vector(3 downto 0);
@@ -209,6 +250,116 @@ begin
    -- ---------------------------------------------------------------------------
    -- VGA sync (true 25 MHz pixel clock)
    -- ---------------------------------------------------------------------------
+	-- colour
+   signal bg_red, bg_green, bg_blue      : std_logic_vector(3 downto 0);
+	signal t_red, t_green, t_blue      	  : std_logic_vector(3 downto 0);
+	
+	signal sprite_1_red, 
+			 sprite_1_green,
+			 sprite_1_blue 					  : std_logic_vector(3 downto 0);
+			 
+	signal sprite_2_red, 
+			 sprite_2_green,
+			 sprite_2_blue 					  : std_logic_vector(3 downto 0);
+	
+	signal layer_0_red,	
+	       layer_0_green, 
+			 layer_0_blue					  	  : std_logic_vector(3 downto 0);
+			 
+			 
+	signal layer_1_red,	
+	       layer_1_green, 
+			 layer_1_blue					  	  : std_logic_vector(3 downto 0);
+	
+	signal red, green, blue   				  : std_logic_vector(3 downto 0);
+   signal red_out, green_out, blue_out   : std_logic_vector(3 downto 0);
+	
+   signal pixel_row, pixel_column        : std_logic_vector(9 downto 0);
+
+begin
+	-- Background
+	Bckgnd : Background_Generator
+		port map (clock 			=> CLOCK_50,
+					 v_sync 			=> vertical_sync,
+					 pixel_row 		=> pixel_row,
+					 pixel_column 	=> pixel_column,
+				    red_out 		=> bg_red,
+					 green_out 		=> bg_green,
+					 blue_out 		=> bg_blue);
+	
+	Track : Track_Generator
+		port map (clock 			=> CLOCK_50,
+					 v_sync 			=> vertical_sync,
+					 pixel_row 		=> pixel_row,
+					 pixel_column 	=> pixel_column,
+					 red_out 		=> t_red,
+					 green_out 		=> t_green,
+					 blue_out 		=> t_blue);
+			 
+	Bckgnd_Manager : Background_Manager
+		port map (background_red 	=> bg_red,
+					 background_green	=> bg_green,
+					 background_blue	=> bg_blue,
+					 track_red			=> t_red,
+				 	 track_green		=> t_green,
+					 track_blue			=> t_blue,
+					 red_out				=> layer_0_red,
+					 green_out			=> layer_0_green,
+					 blue_out			=> layer_0_blue);
+	
+	-- sprites
+	Moving_obj1: Moving_Object
+		generic map (REAL_HEIGHT 	=> 60,
+						 REAL_WIDTH  	=> 80,
+						 LANE 		 	=> 1)
+		port map(enable 			=> NOT KEY(0),
+					clock 			=> CLOCK_50, 
+					v_sync			=> vertical_sync, 		  	
+					pixel_column 	=> pixel_column, 
+					pixel_row		=> pixel_row,	  	
+					speed				=> conv_std_logic_vector(2, 4),
+					red_out 			=> sprite_1_red,
+					green_out 		=> sprite_1_green, 
+					blue_out 		=> sprite_1_blue);
+					
+		Moving_obj2: Moving_Object
+		generic map (REAL_HEIGHT 	=> 120,
+						 REAL_WIDTH 	=> 80,	
+						 LANE 			=> 0)
+		port map(enable 			=> NOT KEY(1),
+					clock 			=> CLOCK_50, 
+					v_sync			=> vertical_sync, 		  	
+					pixel_column 	=> pixel_column, 
+					pixel_row		=> pixel_row,	  	
+					speed				=> conv_std_logic_vector(2, 4),
+					red_out 			=> sprite_2_red,
+					green_out 		=> sprite_2_green, 
+					blue_out 		=> sprite_2_blue);
+	
+	Sprites : Object_Manager
+		port map(sprite_1_red 	=> sprite_1_red,
+					sprite_1_green =>	sprite_1_green,
+					sprite_1_blue 	=>	sprite_1_blue,
+					sprite_2_red 	=> sprite_2_red,
+					sprite_2_green =>	sprite_2_green,
+					sprite_2_blue 	=>	sprite_2_blue,
+					red_out			=> layer_1_red,
+					green_out		=>	layer_1_green,
+					blue_out			=> layer_1_blue);
+	
+	-- Final Manager
+	Graphic_layering : Graphics_Manager
+		port map(sprites_red 		=> layer_1_red,
+					sprites_green		=> layer_1_green,
+					sprites_blue		=> layer_1_blue,
+					background_red		=> layer_0_red,
+					background_green	=> layer_0_green,
+					background_blue	=> layer_0_blue,
+					red_out				=> red,
+					green_out			=> green,
+					blue_out				=> blue);
+	
+	-- VGA
    VGA : VGA_Sync
       port map (pixel_clock         => video_clock,
                 red                 => red_final,
