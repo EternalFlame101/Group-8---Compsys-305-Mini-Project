@@ -1,0 +1,555 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_unsigned.all;
+
+-- ------------------------------------------------------------------------------
+-- Start_Screen
+--   Self-contained start screen for Pusheen's Ploy.
+--
+--   State machine:
+--     title_screen -> mode_select : on mouse left click rising edge OR any KEY rising edge
+--     mode_select  -> game_running: on mouse left click rising edge while a button is hovered
+--     game_running -> (stays)     : selected_mode is latched, start_screen_active goes low
+--
+--   While in title_screen or mode_select, start_screen_active = '1' so Top_Level can
+--   overlay the start screen on top of the game pipeline.
+--
+--   Hover effect: each game mode button has a small (SCALE 2) and large (SCALE 3)
+--   Word_Display, centred on the same point. The hover signal muxes between them.
+-- ------------------------------------------------------------------------------
+
+entity Start_Screen is
+   port (video_clock                  : in  std_logic;
+         reset                        : in  std_logic;
+         pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+         mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
+         mouse_left_click             : in  std_logic;
+         any_key_pressed              : in  std_logic;
+         start_screen_active          : out std_logic;
+         selected_mode                : out std_logic_vector(1 downto 0);
+         red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+end entity Start_Screen;
+
+architecture start_screen_behaviour of Start_Screen is
+
+   component Word_Display is
+      generic (STRING_LENGTH : positive := 16;
+               SCALE         : positive := 1);
+      port (clock                        : in  std_logic;
+            x_position, y_position       : in  std_logic_vector(9 downto 0);
+            pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+            characters                   : in  std_logic_vector((STRING_LENGTH * 6 - 1) downto 0);
+            red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+   end component Word_Display;
+
+   -- ---------------------------------------------------------------------------
+   -- State machine
+   -- ---------------------------------------------------------------------------
+   type screen_state_type is (title_screen, mode_select, game_running);
+   signal screen_state : screen_state_type;
+
+   -- ---------------------------------------------------------------------------
+   -- Input synchronisers and rising-edge detection.
+   -- mouse_left_click crosses from the Mouse controller (CLOCK_50) into video_clock,
+   -- and any_key_pressed comes from raw pushbuttons. Both are 2-FF synchronised
+   -- before edge detection to avoid metastability on the state transitions.
+   -- ---------------------------------------------------------------------------
+   signal mouse_left_click_sync_1, mouse_left_click_sync_2 : std_logic;
+   signal any_key_pressed_sync_1,  any_key_pressed_sync_2  : std_logic;
+   signal mouse_left_click_previous                        : std_logic;
+   signal any_key_pressed_previous                         : std_logic;
+   signal mouse_left_click_edge                            : std_logic;
+   signal any_key_pressed_edge                             : std_logic;
+
+   -- ---------------------------------------------------------------------------
+   -- Hover signals
+   -- ---------------------------------------------------------------------------
+   signal training_hovered      : std_logic;
+   signal single_player_hovered : std_logic;
+   signal two_player_hovered    : std_logic;
+
+   -- ---------------------------------------------------------------------------
+   -- Per-text-element pixel outputs
+   -- ---------------------------------------------------------------------------
+   signal title_red,    title_green,    title_blue    : std_logic_vector(3 downto 0);
+   signal subtitle_red, subtitle_green, subtitle_blue : std_logic_vector(3 downto 0);
+   signal header_red,   header_green,   header_blue   : std_logic_vector(3 downto 0);
+
+   signal training_small_red,      training_small_green,      training_small_blue      : std_logic_vector(3 downto 0);
+   signal training_large_red,      training_large_green,      training_large_blue      : std_logic_vector(3 downto 0);
+   signal single_player_small_red, single_player_small_green, single_player_small_blue : std_logic_vector(3 downto 0);
+   signal single_player_large_red, single_player_large_green, single_player_large_blue : std_logic_vector(3 downto 0);
+   signal two_player_small_red,    two_player_small_green,    two_player_small_blue    : std_logic_vector(3 downto 0);
+   signal two_player_large_red,    two_player_large_green,    two_player_large_blue    : std_logic_vector(3 downto 0);
+
+   -- Composited per-button signals after the hover mux
+   signal training_red,      training_green,      training_blue      : std_logic_vector(3 downto 0);
+   signal single_player_red, single_player_green, single_player_blue : std_logic_vector(3 downto 0);
+   signal two_player_red,    two_player_green,    two_player_blue    : std_logic_vector(3 downto 0);
+
+   -- ---------------------------------------------------------------------------
+   -- Layout constants
+   -- All horizontally centred on x = 320 (screen width 640).
+   -- Each character is 8 pixels wide/tall before SCALE is applied.
+   -- ---------------------------------------------------------------------------
+
+   -- Title: "PUSHEEN'S PLOY" - 14 chars at SCALE 3 (24 px per char)
+   --   width = 14 * 24 = 336 px, x = (640 - 336) / 2 = 152
+   constant TITLE_X : integer := 152;
+   constant TITLE_Y : integer := 120;
+
+   -- Subtitle: 54 chars at SCALE 1 (8 px per char)
+   --   width = 54 * 8 = 432 px, x = (640 - 432) / 2 = 104
+   constant SUBTITLE_X : integer := 104;
+   constant SUBTITLE_Y : integer := 300;
+
+   -- Header: "SELECT YOUR GAME MODE" - 21 chars at SCALE 2 (16 px per char)
+   --   width = 21 * 16 = 336 px, x = (640 - 336) / 2 = 152
+   constant HEADER_X : integer := 152;
+   constant HEADER_Y : integer := 100;
+
+   -- Buttons: small (SCALE 2) is resting, large (SCALE 3) is hovered.
+   -- Small and large are centred on the same point so they grow outward symmetrically.
+   -- Hit box uses the small bounding box.
+   --
+   -- TRAINING: 8 chars, button center y = 200
+   --   small: 8 * 16 = 128 wide, 16 tall, top-left (256, 192)
+   --   large: 8 * 24 = 192 wide, 24 tall, top-left (224, 188)
+   constant TRAINING_SMALL_X    : integer := 256;
+   constant TRAINING_SMALL_Y    : integer := 192;
+   constant TRAINING_LARGE_X    : integer := 224;
+   constant TRAINING_LARGE_Y    : integer := 188;
+   constant TRAINING_HIT_X_MAX  : integer := 384;  -- 256 + 128
+   constant TRAINING_HIT_Y_MAX  : integer := 208;  -- 192 + 16
+
+   -- SINGLE PLAYER: 13 chars, button center y = 280
+   --   small: 13 * 16 = 208 wide, 16 tall, top-left (216, 272)
+   --   large: 13 * 24 = 312 wide, 24 tall, top-left (164, 268)
+   constant SINGLE_PLAYER_SMALL_X   : integer := 216;
+   constant SINGLE_PLAYER_SMALL_Y   : integer := 272;
+   constant SINGLE_PLAYER_LARGE_X   : integer := 164;
+   constant SINGLE_PLAYER_LARGE_Y   : integer := 268;
+   constant SINGLE_PLAYER_HIT_X_MAX : integer := 424;  -- 216 + 208
+   constant SINGLE_PLAYER_HIT_Y_MAX : integer := 288;  -- 272 + 16
+
+   -- TWO PLAYER: 10 chars, button center y = 360
+   --   small: 10 * 16 = 160 wide, 16 tall, top-left (240, 352)
+   --   large: 10 * 24 = 240 wide, 24 tall, top-left (200, 348)
+   constant TWO_PLAYER_SMALL_X   : integer := 240;
+   constant TWO_PLAYER_SMALL_Y   : integer := 352;
+   constant TWO_PLAYER_LARGE_X   : integer := 200;
+   constant TWO_PLAYER_LARGE_Y   : integer := 348;
+   constant TWO_PLAYER_HIT_X_MAX : integer := 400;  -- 240 + 160
+   constant TWO_PLAYER_HIT_Y_MAX : integer := 368;  -- 352 + 16
+
+begin
+
+   -- ---------------------------------------------------------------------------
+   -- Synchronise inputs into video_clock domain and detect rising edges
+   -- ---------------------------------------------------------------------------
+   Synchronise_Inputs : process(video_clock, reset)
+   begin
+      if reset = '1' then
+         mouse_left_click_sync_1   <= '0';
+         mouse_left_click_sync_2   <= '0';
+         mouse_left_click_previous <= '0';
+         any_key_pressed_sync_1    <= '0';
+         any_key_pressed_sync_2    <= '0';
+         any_key_pressed_previous  <= '0';
+      elsif rising_edge(video_clock) then
+         mouse_left_click_sync_1   <= mouse_left_click;
+         mouse_left_click_sync_2   <= mouse_left_click_sync_1;
+         mouse_left_click_previous <= mouse_left_click_sync_2;
+         any_key_pressed_sync_1    <= any_key_pressed;
+         any_key_pressed_sync_2    <= any_key_pressed_sync_1;
+         any_key_pressed_previous  <= any_key_pressed_sync_2;
+      end if;
+   end process Synchronise_Inputs;
+
+   mouse_left_click_edge <= mouse_left_click_sync_2 and not mouse_left_click_previous;
+   any_key_pressed_edge  <= any_key_pressed_sync_2  and not any_key_pressed_previous;
+
+   -- ---------------------------------------------------------------------------
+   -- Hover detection (mouse cursor inside button hit box)
+   -- ---------------------------------------------------------------------------
+   training_hovered      <= '1' when (mouse_column >= conv_std_logic_vector(TRAINING_SMALL_X,    10) and
+                                      mouse_column <  conv_std_logic_vector(TRAINING_HIT_X_MAX,  10) and
+                                      mouse_row    >= conv_std_logic_vector(TRAINING_SMALL_Y,    10) and
+                                      mouse_row    <  conv_std_logic_vector(TRAINING_HIT_Y_MAX,  10))
+                                else '0';
+
+   single_player_hovered <= '1' when (mouse_column >= conv_std_logic_vector(SINGLE_PLAYER_SMALL_X,   10) and
+                                      mouse_column <  conv_std_logic_vector(SINGLE_PLAYER_HIT_X_MAX, 10) and
+                                      mouse_row    >= conv_std_logic_vector(SINGLE_PLAYER_SMALL_Y,   10) and
+                                      mouse_row    <  conv_std_logic_vector(SINGLE_PLAYER_HIT_Y_MAX, 10))
+                                else '0';
+
+   two_player_hovered    <= '1' when (mouse_column >= conv_std_logic_vector(TWO_PLAYER_SMALL_X,   10) and
+                                      mouse_column <  conv_std_logic_vector(TWO_PLAYER_HIT_X_MAX, 10) and
+                                      mouse_row    >= conv_std_logic_vector(TWO_PLAYER_SMALL_Y,   10) and
+                                      mouse_row    <  conv_std_logic_vector(TWO_PLAYER_HIT_Y_MAX, 10))
+                                else '0';
+
+   -- ---------------------------------------------------------------------------
+   -- State machine
+   -- ---------------------------------------------------------------------------
+   State_Machine : process(video_clock, reset)
+   begin
+      if reset = '1' then
+         screen_state  <= title_screen;
+         selected_mode <= "00";
+      elsif rising_edge(video_clock) then
+         case screen_state is
+            when title_screen =>
+               if (mouse_left_click_edge = '1') or (any_key_pressed_edge = '1') then
+                  screen_state <= mode_select;
+               end if;
+
+            when mode_select =>
+               if mouse_left_click_edge = '1' then
+                  if training_hovered = '1' then
+                     selected_mode <= "01";
+                     screen_state  <= game_running;
+                  elsif single_player_hovered = '1' then
+                     selected_mode <= "10";
+                     screen_state  <= game_running;
+                  elsif two_player_hovered = '1' then
+                     selected_mode <= "11";
+                     screen_state  <= game_running;
+                  end if;
+               end if;
+
+            when game_running =>
+               null;   -- placeholder; latched selected_mode is what downstream game logic reads
+         end case;
+      end if;
+   end process State_Machine;
+
+   start_screen_active <= '0' when screen_state = game_running else '1';
+
+   -- ---------------------------------------------------------------------------
+   -- Title: "PUSHEEN'S PLOY" (SCALE 3)
+   -- ---------------------------------------------------------------------------
+   Title : Word_Display
+      generic map (STRING_LENGTH => 14,
+                   SCALE         => 3)
+      port map (clock          => video_clock,
+                characters     => "010000" &  -- P  = 16
+                                  "010101" &  -- U  = 21
+                                  "010011" &  -- S  = 19
+                                  "001000" &  -- H  =  8
+                                  "000101" &  -- E  =  5
+                                  "000101" &  -- E  =  5
+                                  "001110" &  -- N  = 14
+                                  "100111" &  -- '  = 39
+                                  "010011" &  -- S  = 19
+                                  "100000" &  -- sp = 32
+                                  "010000" &  -- P  = 16
+                                  "001100" &  -- L  = 12
+                                  "001111" &  -- O  = 15
+                                  "011001",   -- Y  = 25
+                x_position     => conv_std_logic_vector(TITLE_X, 10),
+                y_position     => conv_std_logic_vector(TITLE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => title_red,
+                green_out      => title_green,
+                blue_out       => title_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Subtitle: "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (SCALE 1)
+   -- ---------------------------------------------------------------------------
+   Subtitle : Word_Display
+      generic map (STRING_LENGTH => 54,
+                   SCALE         => 1)
+      port map (clock          => video_clock,
+                characters     => "000011" &  -- C
+                                  "001100" &  -- L
+                                  "001001" &  -- I
+                                  "000011" &  -- C
+                                  "001011" &  -- K
+                                  "100000" &  -- sp
+                                  "000001" &  -- A
+                                  "001110" &  -- N
+                                  "011001" &  -- Y
+                                  "010111" &  -- W
+                                  "001000" &  -- H
+                                  "000101" &  -- E
+                                  "010010" &  -- R
+                                  "000101" &  -- E
+                                  "100000" &  -- sp
+                                  "001111" &  -- O
+                                  "001110" &  -- N
+                                  "100000" &  -- sp
+                                  "010100" &  -- T
+                                  "001000" &  -- H
+                                  "000101" &  -- E
+                                  "100000" &  -- sp
+                                  "010011" &  -- S
+                                  "000011" &  -- C
+                                  "010010" &  -- R
+                                  "000101" &  -- E
+                                  "000101" &  -- E
+                                  "001110" &  -- N
+                                  "101111" &  -- /  = 47
+                                  "010000" &  -- P
+                                  "010010" &  -- R
+                                  "000101" &  -- E
+                                  "010011" &  -- S
+                                  "010011" &  -- S
+                                  "100000" &  -- sp
+                                  "000001" &  -- A
+                                  "001110" &  -- N
+                                  "011001" &  -- Y
+                                  "100000" &  -- sp
+                                  "001011" &  -- K
+                                  "000101" &  -- E
+                                  "011001" &  -- Y
+                                  "100000" &  -- sp
+                                  "010100" &  -- T
+                                  "001111" &  -- O
+                                  "100000" &  -- sp
+                                  "000011" &  -- C
+                                  "001111" &  -- O
+                                  "001110" &  -- N
+                                  "010100" &  -- T
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "010101" &  -- U
+                                  "000101",   -- E
+                x_position     => conv_std_logic_vector(SUBTITLE_X, 10),
+                y_position     => conv_std_logic_vector(SUBTITLE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => subtitle_red,
+                green_out      => subtitle_green,
+                blue_out       => subtitle_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Header: "SELECT YOUR GAME MODE" (SCALE 2)
+   -- ---------------------------------------------------------------------------
+   Header : Word_Display
+      generic map (STRING_LENGTH => 21,
+                   SCALE         => 2)
+      port map (clock          => video_clock,
+                characters     => "010011" &  -- S
+                                  "000101" &  -- E
+                                  "001100" &  -- L
+                                  "000101" &  -- E
+                                  "000011" &  -- C
+                                  "010100" &  -- T
+                                  "100000" &  -- sp
+                                  "011001" &  -- Y
+                                  "001111" &  -- O
+                                  "010101" &  -- U
+                                  "010010" &  -- R
+                                  "100000" &  -- sp
+                                  "000111" &  -- G
+                                  "000001" &  -- A
+                                  "001101" &  -- M
+                                  "000101" &  -- E
+                                  "100000" &  -- sp
+                                  "001101" &  -- M
+                                  "001111" &  -- O
+                                  "000100" &  -- D
+                                  "000101",   -- E
+                x_position     => conv_std_logic_vector(HEADER_X, 10),
+                y_position     => conv_std_logic_vector(HEADER_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => header_red,
+                green_out      => header_green,
+                blue_out       => header_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- TRAINING button: small (resting) + large (hovered)
+   -- ---------------------------------------------------------------------------
+   Training_Small : Word_Display
+      generic map (STRING_LENGTH => 8,
+                   SCALE         => 2)
+      port map (clock          => video_clock,
+                characters     => "010100" &  -- T
+                                  "010010" &  -- R
+                                  "000001" &  -- A
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "000111",   -- G
+                x_position     => conv_std_logic_vector(TRAINING_SMALL_X, 10),
+                y_position     => conv_std_logic_vector(TRAINING_SMALL_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => training_small_red,
+                green_out      => training_small_green,
+                blue_out       => training_small_blue);
+
+   Training_Large : Word_Display
+      generic map (STRING_LENGTH => 8,
+                   SCALE         => 3)
+      port map (clock          => video_clock,
+                characters     => "010100" &  -- T
+                                  "010010" &  -- R
+                                  "000001" &  -- A
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "000111",   -- G
+                x_position     => conv_std_logic_vector(TRAINING_LARGE_X, 10),
+                y_position     => conv_std_logic_vector(TRAINING_LARGE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => training_large_red,
+                green_out      => training_large_green,
+                blue_out       => training_large_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- SINGLE PLAYER button: small + large
+   -- ---------------------------------------------------------------------------
+   Single_Player_Small : Word_Display
+      generic map (STRING_LENGTH => 13,
+                   SCALE         => 2)
+      port map (clock          => video_clock,
+                characters     => "010011" &  -- S
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "000111" &  -- G
+                                  "001100" &  -- L
+                                  "000101" &  -- E
+                                  "100000" &  -- sp
+                                  "010000" &  -- P
+                                  "001100" &  -- L
+                                  "000001" &  -- A
+                                  "011001" &  -- Y
+                                  "000101" &  -- E
+                                  "010010",   -- R
+                x_position     => conv_std_logic_vector(SINGLE_PLAYER_SMALL_X, 10),
+                y_position     => conv_std_logic_vector(SINGLE_PLAYER_SMALL_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => single_player_small_red,
+                green_out      => single_player_small_green,
+                blue_out       => single_player_small_blue);
+
+   Single_Player_Large : Word_Display
+      generic map (STRING_LENGTH => 13,
+                   SCALE         => 3)
+      port map (clock          => video_clock,
+                characters     => "010011" &  -- S
+                                  "001001" &  -- I
+                                  "001110" &  -- N
+                                  "000111" &  -- G
+                                  "001100" &  -- L
+                                  "000101" &  -- E
+                                  "100000" &  -- sp
+                                  "010000" &  -- P
+                                  "001100" &  -- L
+                                  "000001" &  -- A
+                                  "011001" &  -- Y
+                                  "000101" &  -- E
+                                  "010010",   -- R
+                x_position     => conv_std_logic_vector(SINGLE_PLAYER_LARGE_X, 10),
+                y_position     => conv_std_logic_vector(SINGLE_PLAYER_LARGE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => single_player_large_red,
+                green_out      => single_player_large_green,
+                blue_out       => single_player_large_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- TWO PLAYER button: small + large
+   -- ---------------------------------------------------------------------------
+   Two_Player_Small : Word_Display
+      generic map (STRING_LENGTH => 10,
+                   SCALE         => 2)
+      port map (clock          => video_clock,
+                characters     => "010100" &  -- T
+                                  "010111" &  -- W
+                                  "001111" &  -- O
+                                  "100000" &  -- sp
+                                  "010000" &  -- P
+                                  "001100" &  -- L
+                                  "000001" &  -- A
+                                  "011001" &  -- Y
+                                  "000101" &  -- E
+                                  "010010",   -- R
+                x_position     => conv_std_logic_vector(TWO_PLAYER_SMALL_X, 10),
+                y_position     => conv_std_logic_vector(TWO_PLAYER_SMALL_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => two_player_small_red,
+                green_out      => two_player_small_green,
+                blue_out       => two_player_small_blue);
+
+   Two_Player_Large : Word_Display
+      generic map (STRING_LENGTH => 10,
+                   SCALE         => 3)
+      port map (clock          => video_clock,
+                characters     => "010100" &  -- T
+                                  "010111" &  -- W
+                                  "001111" &  -- O
+                                  "100000" &  -- sp
+                                  "010000" &  -- P
+                                  "001100" &  -- L
+                                  "000001" &  -- A
+                                  "011001" &  -- Y
+                                  "000101" &  -- E
+                                  "010010",   -- R
+                x_position     => conv_std_logic_vector(TWO_PLAYER_LARGE_X, 10),
+                y_position     => conv_std_logic_vector(TWO_PLAYER_LARGE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => two_player_large_red,
+                green_out      => two_player_large_green,
+                blue_out       => two_player_large_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Hover mux per button: large pixels when hovered, small pixels otherwise.
+   -- (Only one of small or large is drawn for a given button at any time, so
+   -- there are no overlapping pixels to worry about.)
+   -- ---------------------------------------------------------------------------
+   training_red   <= training_large_red   when training_hovered = '1' else training_small_red;
+   training_green <= training_large_green when training_hovered = '1' else training_small_green;
+   training_blue  <= training_large_blue  when training_hovered = '1' else training_small_blue;
+
+   single_player_red   <= single_player_large_red   when single_player_hovered = '1' else single_player_small_red;
+   single_player_green <= single_player_large_green when single_player_hovered = '1' else single_player_small_green;
+   single_player_blue  <= single_player_large_blue  when single_player_hovered = '1' else single_player_small_blue;
+
+   two_player_red   <= two_player_large_red   when two_player_hovered = '1' else two_player_small_red;
+   two_player_green <= two_player_large_green when two_player_hovered = '1' else two_player_small_green;
+   two_player_blue  <= two_player_large_blue  when two_player_hovered = '1' else two_player_small_blue;
+
+   -- ---------------------------------------------------------------------------
+   -- Output compositor: only the layers belonging to the current state are visible.
+   -- Layers within a state are OR'd together (they're laid out so they don't overlap).
+   -- ---------------------------------------------------------------------------
+   Output_Compositor : process(screen_state,
+                               title_red,         title_green,         title_blue,
+                               subtitle_red,      subtitle_green,      subtitle_blue,
+                               header_red,        header_green,        header_blue,
+                               training_red,      training_green,      training_blue,
+                               single_player_red, single_player_green, single_player_blue,
+                               two_player_red,    two_player_green,    two_player_blue)
+   begin
+      case screen_state is
+         when title_screen =>
+            red_out   <= title_red   or subtitle_red;
+            green_out <= title_green or subtitle_green;
+            blue_out  <= title_blue  or subtitle_blue;
+
+         when mode_select =>
+            red_out   <= header_red   or training_red   or single_player_red   or two_player_red;
+            green_out <= header_green or training_green or single_player_green or two_player_green;
+            blue_out  <= header_blue  or training_blue  or single_player_blue  or two_player_blue;
+
+         when game_running =>
+            red_out   <= (others => '0');
+            green_out <= (others => '0');
+            blue_out  <= (others => '0');
+      end case;
+   end process Output_Compositor;
+
+end architecture start_screen_behaviour;
