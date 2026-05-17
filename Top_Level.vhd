@@ -173,10 +173,23 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Start_Screen;
 
+   component Sprites_Display is
+      generic (SPRITE_WIDTH  : positive := 32;
+               SPRITE_HEIGHT : positive := 32;
+               ADDR_BITS     : positive := 12;
+               SCALE         : positive := 4;
+               MIF_FILE      : string   := "knee.mif");
+      port (clock                        : in  std_logic;
+            pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+            sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
+            red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+   end component Sprites_Display;
+
    component Screen_Compositor is
       port (start_screen_active : in  std_logic;
             latched_mode        : in  std_logic_vector(1 downto 0);
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
+            start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
             training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
@@ -192,29 +205,32 @@ architecture game_behaviour of Top_Level is
    signal video_on                       : std_logic;
 
    -- Training-mode graphics layer signals (orbiting ball + text + mouse demo)
-   signal training_red, training_green, training_blue : std_logic_vector(3 downto 0);
-   signal orbit_ball_red,  orbit_ball_green,  orbit_ball_blue  : std_logic_vector(3 downto 0);
+   signal training_red, training_green, training_blue 				: std_logic_vector(3 downto 0);
+   signal orbit_ball_red,  orbit_ball_green,  orbit_ball_blue  	: std_logic_vector(3 downto 0);
    signal mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : std_logic_vector(3 downto 0);
-   signal text_small_red,  text_small_green,  text_small_blue  : std_logic_vector(3 downto 0);
-   signal text_large_red,  text_large_green,  text_large_blue  : std_logic_vector(3 downto 0);
+   signal text_small_red,  text_small_green,  text_small_blue  	: std_logic_vector(3 downto 0);
+   signal text_large_red,  text_large_green,  text_large_blue  	: std_logic_vector(3 downto 0);
 
    -- Racing-mode graphics layer signals (background + track + moving objects)
-   signal racing_red, racing_green, racing_blue : std_logic_vector(3 downto 0);
-   signal background_layer_red, background_layer_green, background_layer_blue : std_logic_vector(3 downto 0);
-   signal track_layer_red,      track_layer_green,      track_layer_blue      : std_logic_vector(3 downto 0);
-   signal sprite_1_red,         sprite_1_green,         sprite_1_blue         : std_logic_vector(3 downto 0);
-   signal sprite_2_red,         sprite_2_green,         sprite_2_blue         : std_logic_vector(3 downto 0);
+   signal racing_red, racing_green, racing_blue 														: std_logic_vector(3 downto 0);
+   signal background_layer_red, background_layer_green, background_layer_blue 				: std_logic_vector(3 downto 0);
+   signal track_layer_red,      track_layer_green,      track_layer_blue      				: std_logic_vector(3 downto 0);
+   signal sprite_1_red,         sprite_1_green,         sprite_1_blue         				: std_logic_vector(3 downto 0);
+   signal sprite_2_red,         sprite_2_green,         sprite_2_blue         				: std_logic_vector(3 downto 0);
    signal background_composite_red, background_composite_green, background_composite_blue : std_logic_vector(3 downto 0);
    signal sprite_composite_red,     sprite_composite_green,     sprite_composite_blue     : std_logic_vector(3 downto 0);
 
    -- Start screen output signals
-   signal start_screen_red    : std_logic_vector(3 downto 0);
-   signal start_screen_green  : std_logic_vector(3 downto 0);
-   signal start_screen_blue   : std_logic_vector(3 downto 0);
-   signal start_screen_active : std_logic;
-   signal selected_mode       : std_logic_vector(1 downto 0);
-   signal latched_mode        : std_logic_vector(1 downto 0);
-   signal any_key_pressed     : std_logic;
+   signal start_screen_red    		: std_logic_vector(3 downto 0);
+   signal start_screen_green  		: std_logic_vector(3 downto 0);
+   signal start_screen_blue   		: std_logic_vector(3 downto 0);
+   signal start_screen_sprite_red   : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_green : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_blue  : std_logic_vector(3 downto 0);
+   signal start_screen_active 		: std_logic;
+   signal selected_mode       		: std_logic_vector(1 downto 0);
+   signal latched_mode        		: std_logic_vector(1 downto 0);
+   signal any_key_pressed     		: std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
    signal red_final, green_final, blue_final : std_logic_vector(3 downto 0);
@@ -501,7 +517,7 @@ begin
                 dac_data => audio_dac_data);
 
    -- ===========================================================================
-   -- START SCREEN + FINAL COMPOSITOR
+   -- START SCREEN + BACKGROUND SPRITE + FINAL COMPOSITOR
    -- ===========================================================================
 
    Start_Screen_Inst : Start_Screen
@@ -520,24 +536,47 @@ begin
                 green_out           => start_screen_green,
                 blue_out            => start_screen_blue);
 
+   -- Knee logo sprite, drawn underneath the start-screen text.
+   -- 32x32 base * SCALE 4 = 128x128 on screen.
+   -- Centred on x=320: sprite_x = 320 - 64 = 256.
+   -- Centred behind the title block (title centre y ~ 132): sprite_y = 132 - 64 = 68.
+   -- So the sprite spans (256..384) x (68..196), sitting behind the title and credits.
+   Start_Screen_Background_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => 32,
+                   SPRITE_HEIGHT => 32,
+                   ADDR_BITS     => 12,
+                   SCALE         => 4,
+                   MIF_FILE      => "knee.mif")
+      port map (clock        => video_clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => conv_std_logic_vector(256, 10),
+                sprite_y     => conv_std_logic_vector(68, 10),
+                red_out      => start_screen_sprite_red,
+                green_out    => start_screen_sprite_green,
+                blue_out     => start_screen_sprite_blue);
+
    Final_Compositor_Inst : Screen_Compositor
-      port map (start_screen_active => start_screen_active,
-                latched_mode        => latched_mode,
-                start_screen_red    => start_screen_red,
-                start_screen_green  => start_screen_green,
-                start_screen_blue   => start_screen_blue,
-                mouse_cursor_red    => mouse_cursor_red,
-                mouse_cursor_green  => mouse_cursor_green,
-                mouse_cursor_blue   => mouse_cursor_blue,
-                training_red        => training_red,
-                training_green      => training_green,
-                training_blue       => training_blue,
-                racing_red          => racing_red,
-                racing_green        => racing_green,
-                racing_blue         => racing_blue,
-                red_out             => red_final,
-                green_out           => green_final,
-                blue_out            => blue_final);
+      port map (start_screen_active      => start_screen_active,
+                latched_mode             => latched_mode,
+                start_screen_red         => start_screen_red,
+                start_screen_green       => start_screen_green,
+                start_screen_blue        => start_screen_blue,
+                start_screen_sprite_red  => start_screen_sprite_red,
+                start_screen_sprite_green => start_screen_sprite_green,
+                start_screen_sprite_blue => start_screen_sprite_blue,
+                mouse_cursor_red         => mouse_cursor_red,
+                mouse_cursor_green       => mouse_cursor_green,
+                mouse_cursor_blue        => mouse_cursor_blue,
+                training_red             => training_red,
+                training_green           => training_green,
+                training_blue            => training_blue,
+                racing_red               => racing_red,
+                racing_green             => racing_green,
+                racing_blue              => racing_blue,
+                red_out                  => red_final,
+                green_out                => green_final,
+                blue_out                 => blue_final);
 
    -- ---------------------------------------------------------------------------
    -- LED assignments
