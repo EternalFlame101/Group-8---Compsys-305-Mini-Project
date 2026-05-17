@@ -3,51 +3,54 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
+-- ------------------------------------------------------------------------------
+-- VGA_Sync
+--   Now driven by a true 25 MHz pixel_clock from the Video_PLL instead of the
+--   old 50 MHz + enable_pulse arrangement. Counters advance every rising edge.
+-- ------------------------------------------------------------------------------
+
 entity VGA_Sync is
-   port (clock                  						: in  std_logic;
-			red, green, blue             				: in  std_logic_vector(3 downto 0);
-			video_on                     				: out std_logic;
-			horizontal_sync_out, vertical_sync_out : out std_logic;
-			red_out, green_out, blue_out 				: out std_logic_vector(3 downto 0);
-			pixel_row, pixel_column      				: out std_logic_vector(9 downto 0));
+   port (pixel_clock                            : in  std_logic;
+         red, green, blue                       : in  std_logic_vector(3 downto 0);
+         video_on                               : out std_logic;
+         horizontal_sync_out, vertical_sync_out : out std_logic;
+         red_out, green_out, blue_out           : out std_logic_vector(3 downto 0);
+         pixel_row, pixel_column                : out std_logic_vector(9 downto 0));
 end entity VGA_Sync;
 
 architecture vga_sync_behaviour of VGA_Sync is
    signal video_on_signal   : std_logic;
    signal horizontal_active : std_logic;
    signal vertical_active   : std_logic;
-	
-	signal horizontal_count  : std_logic_vector(9 downto 0) := (others => '0');
+
+   signal horizontal_count  : std_logic_vector(9 downto 0) := (others => '0');
    signal vertical_count    : std_logic_vector(9 downto 0) := (others => '0');
 begin
    -- Generate Horizontal and Vertical Timing Signals for Video Signal
-
    -- horizontal_count counts pixels (640 + extra time for sync signals)
    --
    -- horizontal_sync  ------------------------------------__________--------
    -- horizontal_count    0                640             659       755    799
-
+   --
    -- vertical_count counts rows of pixels (480 + extra time for sync signals)
    --
    -- vertical_sync  -----------------------------------------------_______------------
    -- vertical_count  0                                      480    493-494          524
-   process(clock)
-	begin
-		if rising_edge(clock) then
-			if horizontal_count = 799 then
-				horizontal_count <= (others => '0');
-				if vertical_count = 524 then
-					vertical_count <= (others => '0');
-				else
-					vertical_count <= vertical_count + 1;
-				end if;
-			else
-				horizontal_count <= horizontal_count + 1;
-			end if;
-		end if;
-	end process;
-
-   -- Everything below is combinational — no clock involved
+   process(pixel_clock)
+   begin
+      if rising_edge(pixel_clock) then
+         if horizontal_count = 799 then
+            horizontal_count <= (others => '0');
+            if vertical_count = 524 then
+               vertical_count <= (others => '0');
+            else
+               vertical_count <= vertical_count + 1;
+            end if;
+         else
+            horizontal_count <= horizontal_count + 1;
+         end if;
+      end if;
+   end process;
 
    -- Sync pulses
    horizontal_sync_out <= '0' when (horizontal_count >= 659 and horizontal_count <= 755) else '1';
@@ -57,7 +60,7 @@ begin
    horizontal_active <= '1' when horizontal_count < 640 else '0';
    vertical_active   <= '1' when vertical_count   < 480 else '0';
    video_on_signal   <= horizontal_active and vertical_active;
-   video_on 		   <= video_on_signal;
+   video_on          <= video_on_signal;
 
    -- Pixel coordinates
    pixel_column <= horizontal_count when horizontal_active = '1' else (others => '0');

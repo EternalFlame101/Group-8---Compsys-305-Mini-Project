@@ -43,7 +43,7 @@ begin
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
 						 init_file              => "tcgrom.mif",
-						 intended_device_family => "cyclone V",
+						 intended_device_family => "Cyclone V",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",
 						 numwords_a             => 512,

@@ -1,2 +1,86 @@
-# Reading C:/ModelsimAltera/modelsim_ase/tcl/vsim/pref.tcl 
-# OpenFile {C:/COMPSYS 305/Mini Project/Group-8---Compsys-305-Mini-Project/char_rom.vhd} 
+# Compile of SD_SPI_Controller.vhd was successful.
+# Compile of Tb_SD_SPI_Controller.vhd was successful.
+# 2 compiles, 0 failed with no errors. 
+vsim -gui work.tb_sd_spi_controller
+# vsim -gui work.tb_sd_spi_controller 
+# Loading std.standard
+# Loading std.textio(body)
+# Loading ieee.std_logic_1164(body)
+# Loading ieee.numeric_std(body)
+# Loading work.tb_sd_spi_controller(testbench)
+# Loading work.sd_spi_controller(behavioural)
+add wave -position insertpoint  \
+sim:/tb_sd_spi_controller/clock \
+sim:/tb_sd_spi_controller/reset \
+sim:/tb_sd_spi_controller/read_request \
+sim:/tb_sd_spi_controller/sector_address \
+sim:/tb_sd_spi_controller/busy \
+sim:/tb_sd_spi_controller/receive_data \
+sim:/tb_sd_spi_controller/receive_valid \
+sim:/tb_sd_spi_controller/chip_select \
+sim:/tb_sd_spi_controller/master_out_slave_in \
+sim:/tb_sd_spi_controller/master_in_slave_out \
+sim:/tb_sd_spi_controller/serial_clock \
+sim:/tb_sd_spi_controller/card_bit_index \
+sim:/tb_sd_spi_controller/card_byte_index \
+sim:/tb_sd_spi_controller/card_receive_byte \
+sim:/tb_sd_spi_controller/card_response \
+sim:/tb_sd_spi_controller/card_response_bits \
+sim:/tb_sd_spi_controller/card_sending \
+sim:/tb_sd_spi_controller/card_state \
+sim:/tb_sd_spi_controller/card_command_count \
+sim:/tb_sd_spi_controller/card_data_count \
+sim:/tb_sd_spi_controller/card_response_count \
+sim:/tb_sd_spi_controller/response_delay \
+sim:/tb_sd_spi_controller/init_done \
+sim:/tb_sd_spi_controller/read_done \
+sim:/tb_sd_spi_controller/byte_receive_count \
+sim:/tb_sd_spi_controller/clock_period
+run
+# ** Fatal: (vsim-3421) Value 6 for byte_index is out of range 0 to 5.
+#    Time: 322670 ns  Iteration: 2  Process: /tb_sd_spi_controller/line__212 File: C:/COMPSYS 305/Mini Project/Group-8---Compsys-305-Mini-Project/Tb_SD_SPI_Controller.vhd
+# Fatal error in Process line__212 at C:/COMPSYS 305/Mini Project/Group-8---Compsys-305-Mini-Project/Tb_SD_SPI_Controller.vhd line 240
+# 
+# HDL call sequence:
+# Stopped at C:/COMPSYS 305/Mini Project/Group-8---Compsys-305-Mini-Project/Tb_SD_SPI_Controller.vhd 240 Process line__212
+# 
+quit -sim
+# Compile of SD_SPI_Controller.vhd was successful.
+# Compile of Tb_SD_SPI_Controller.vhd was successful.
+# 2 compiles, 0 failed with no errors. 
+vsim -gui work.tb_sd_spi_controller
+# vsim -gui work.tb_sd_spi_controller 
+# Loading std.standard
+# Loading std.textio(body)
+# Loading ieee.std_logic_1164(body)
+# Loading ieee.numeric_std(body)
+# Loading work.tb_sd_spi_controller(testbench)
+# Loading work.sd_spi_controller(behavioural)
+add wave -position insertpoint  \
+sim:/tb_sd_spi_controller/clock \
+sim:/tb_sd_spi_controller/reset \
+sim:/tb_sd_spi_controller/read_request \
+sim:/tb_sd_spi_controller/sector_address \
+sim:/tb_sd_spi_controller/busy \
+sim:/tb_sd_spi_controller/receive_data \
+sim:/tb_sd_spi_controller/receive_valid \
+sim:/tb_sd_spi_controller/chip_select \
+sim:/tb_sd_spi_controller/master_out_slave_in \
+sim:/tb_sd_spi_controller/master_in_slave_out \
+sim:/tb_sd_spi_controller/serial_clock \
+sim:/tb_sd_spi_controller/card_bit_index \
+sim:/tb_sd_spi_controller/card_byte_index \
+sim:/tb_sd_spi_controller/card_receive_byte \
+sim:/tb_sd_spi_controller/card_response \
+sim:/tb_sd_spi_controller/card_response_bits \
+sim:/tb_sd_spi_controller/card_sending \
+sim:/tb_sd_spi_controller/card_state \
+sim:/tb_sd_spi_controller/card_command_count \
+sim:/tb_sd_spi_controller/card_data_count \
+sim:/tb_sd_spi_controller/card_response_count \
+sim:/tb_sd_spi_controller/response_delay \
+sim:/tb_sd_spi_controller/init_done \
+sim:/tb_sd_spi_controller/read_done \
+sim:/tb_sd_spi_controller/byte_receive_count \
+sim:/tb_sd_spi_controller/clock_period
+run
