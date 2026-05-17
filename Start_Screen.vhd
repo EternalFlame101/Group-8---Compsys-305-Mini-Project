@@ -15,6 +15,12 @@ use IEEE.std_logic_unsigned.all;
 --   While in title_screen or mode_select, start_screen_active = '1' so Top_Level
 --   can overlay the start screen on top of the game pipeline.
 --
+--   Two mode outputs are exposed:
+--     selected_mode - live, reflects whichever button is currently in flight
+--     latched_mode  - frozen at the instant we entered game_running; safe for
+--                     downstream gameplay modules that must not change mode
+--                     mid-game.
+--
 --   Hover effect: each game mode button has a small (SCALE 2) resting version and
 --   a large (SCALE 3) hovered version. They share an x centre but the large one
 --   sits above the small one (small Y unchanged, large Y shifted up ~18 px). This
@@ -33,6 +39,7 @@ entity Start_Screen is
          any_key_pressed              : in  std_logic;
          start_screen_active          : out std_logic;
          selected_mode                : out std_logic_vector(1 downto 0);
+         latched_mode                 : out std_logic_vector(1 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Start_Screen;
 
@@ -55,7 +62,13 @@ architecture start_screen_behaviour of Start_Screen is
    -- State machine
    -- ---------------------------------------------------------------------------
    type screen_state_type is (title_screen, mode_select, game_running);
-   signal screen_state : screen_state_type;
+   signal screen_state           : screen_state_type;
+   signal screen_state_previous  : screen_state_type;
+
+   -- Internal copy of selected_mode so we can both drive an output port and
+   -- feed the mode-latch process from it.
+   signal selected_mode_internal : std_logic_vector(1 downto 0);
+   signal latched_mode_internal  : std_logic_vector(1 downto 0);
 
    -- ---------------------------------------------------------------------------
    -- Input synchronisers and rising-edge detection
@@ -78,6 +91,8 @@ architecture start_screen_behaviour of Start_Screen is
    -- Per-text-element pixel outputs
    -- ---------------------------------------------------------------------------
    signal title_red,    title_green,    title_blue    : std_logic_vector(3 downto 0);
+   signal credits_one_red, credits_one_green, credits_one_blue : std_logic_vector(3 downto 0);
+   signal credits_two_red, credits_two_green, credits_two_blue : std_logic_vector(3 downto 0);
    signal subtitle_red, subtitle_green, subtitle_blue : std_logic_vector(3 downto 0);
    signal header_red,   header_green,   header_blue   : std_logic_vector(3 downto 0);
 
@@ -103,10 +118,23 @@ architecture start_screen_behaviour of Start_Screen is
    constant TITLE_X : integer := 152;
    constant TITLE_Y : integer := 120;
 
+   -- Credits line 1: "GROUP 8 - JASPER'S KNEE" - 23 chars at SCALE 1 (8 px per char)
+   --   width = 23 * 8 = 184 px, x = (640 - 184) / 2 = 228
+   --   y = TITLE_Y + 50 = 170 (24 px tall title + 26 px breathing room)
+   constant CREDITS_ONE_X : integer := 228;
+   constant CREDITS_ONE_Y : integer := 170;
+
+   -- Credits line 2: "FREDERICK, JASPER & JOHNNY" - 26 chars at SCALE 1
+   --   width = 26 * 8 = 208 px, x = (640 - 208) / 2 = 216
+   --   y = CREDITS_ONE_Y + 15 = 185 (8 px tall line + 7 px gap, tight pair)
+   constant CREDITS_TWO_X : integer := 216;
+   constant CREDITS_TWO_Y : integer := 185;
+
    -- Subtitle: 54 chars at SCALE 1 (8 px per char)
    --   width = 54 * 8 = 432 px, x = (640 - 432) / 2 = 104
+   --   Pushed down to y=320 (was 300) so the credits block breathes properly.
    constant SUBTITLE_X : integer := 104;
-   constant SUBTITLE_Y : integer := 300;
+   constant SUBTITLE_Y : integer := 320;
 
    -- Header: "SELECT YOUR GAME MODE:" - 22 chars at SCALE 2 (16 px per char)
    --   width = 22 * 16 = 352 px, x = (640 - 352) / 2 = 144
@@ -201,8 +229,8 @@ begin
    State_Machine : process(video_clock, reset)
    begin
       if reset = '1' then
-         screen_state  <= title_screen;
-         selected_mode <= "00";
+         screen_state           <= title_screen;
+         selected_mode_internal <= "00";
       elsif rising_edge(video_clock) then
          case screen_state is
             when title_screen =>
@@ -213,14 +241,14 @@ begin
             when mode_select =>
                if mouse_left_click_edge = '1' then
                   if training_hovered = '1' then
-                     selected_mode <= "01";
-                     screen_state  <= game_running;
+                     selected_mode_internal <= "01";
+                     screen_state           <= game_running;
                   elsif single_player_hovered = '1' then
-                     selected_mode <= "10";
-                     screen_state  <= game_running;
+                     selected_mode_internal <= "10";
+                     screen_state           <= game_running;
                   elsif two_player_hovered = '1' then
-                     selected_mode <= "11";
-                     screen_state  <= game_running;
+                     selected_mode_internal <= "11";
+                     screen_state           <= game_running;
                   end if;
                end if;
 
@@ -230,7 +258,27 @@ begin
       end if;
    end process State_Machine;
 
+   -- ---------------------------------------------------------------------------
+   -- Mode latch: captures the selected mode at the moment we transition from
+   -- mode_select into game_running. From then on it cannot change until reset.
+   -- ---------------------------------------------------------------------------
+   Mode_Latch : process(video_clock, reset)
+   begin
+      if reset = '1' then
+         latched_mode_internal <= "00";
+         screen_state_previous <= title_screen;
+      elsif rising_edge(video_clock) then
+         screen_state_previous <= screen_state;
+         -- On the cycle where we just entered game_running for the first time
+         if screen_state = game_running and screen_state_previous /= game_running then
+            latched_mode_internal <= selected_mode_internal;
+         end if;
+      end if;
+   end process Mode_Latch;
+
    start_screen_active <= '0' when screen_state = game_running else '1';
+   selected_mode       <= selected_mode_internal;
+   latched_mode        <= latched_mode_internal;
 
    -- ---------------------------------------------------------------------------
    -- Title: "PUSHEEN'S PLOY" (SCALE 3)
@@ -263,6 +311,95 @@ begin
                 red_out        => title_red,
                 green_out      => title_green,
                 blue_out       => title_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Credits line 1: "GROUP 8 - JASPER'S KNEE" (SCALE 1)
+   -- Muted purple (darker than title) so it sits visually under the title.
+   -- '-' is index 45 = 101101, '8' is index 56 = 111000 (assuming standard
+   -- numeric encoding where '0' starts at 48).
+   -- ---------------------------------------------------------------------------
+   Credits_One : Word_Display
+      generic map (STRING_LENGTH => 23,
+                   SCALE         => 1,
+                   TEXT_RED      => "0110",
+                   TEXT_GREEN    => "0101",
+                   TEXT_BLUE     => "1000")
+      port map (clock          => video_clock,
+                characters     => "000111" &  -- G
+                                  "010010" &  -- R
+                                  "001111" &  -- O
+                                  "010101" &  -- U
+                                  "010000" &  -- P
+                                  "100000" &  -- sp
+                                  "111000" &  -- 8  = 56
+                                  "100000" &  -- sp
+                                  "101101" &  -- -  = 45
+                                  "100000" &  -- sp
+                                  "001010" &  -- J  = 10
+                                  "000001" &  -- A
+                                  "010011" &  -- S
+                                  "010000" &  -- P
+                                  "000101" &  -- E
+                                  "010010" &  -- R
+                                  "100111" &  -- '  = 39
+                                  "010011" &  -- S
+                                  "100000" &  -- sp
+                                  "001011" &  -- K
+                                  "001110" &  -- N
+                                  "000101" &  -- E
+                                  "000101",   -- E
+                x_position     => conv_std_logic_vector(CREDITS_ONE_X, 10),
+                y_position     => conv_std_logic_vector(CREDITS_ONE_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => credits_one_red,
+                green_out      => credits_one_green,
+                blue_out       => credits_one_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Credits line 2: "FREDERICK, JASPER & JOHNNY" (SCALE 1)
+   -- ',' is index 44 = 101100, '&' is index 38 = 100110.
+   -- ---------------------------------------------------------------------------
+   Credits_Two : Word_Display
+      generic map (STRING_LENGTH => 26,
+                   SCALE         => 1,
+                   TEXT_RED      => "0110",
+                   TEXT_GREEN    => "0101",
+                   TEXT_BLUE     => "1000")
+      port map (clock          => video_clock,
+                characters     => "000110" &  -- F  =  6
+                                  "010010" &  -- R
+                                  "000101" &  -- E
+                                  "000100" &  -- D
+                                  "000101" &  -- E
+                                  "010010" &  -- R
+                                  "001001" &  -- I
+                                  "000011" &  -- C
+                                  "001011" &  -- K
+                                  "101100" &  -- ,  = 44
+                                  "100000" &  -- sp
+                                  "001010" &  -- J
+                                  "000001" &  -- A
+                                  "010011" &  -- S
+                                  "010000" &  -- P
+                                  "000101" &  -- E
+                                  "010010" &  -- R
+                                  "100000" &  -- sp
+                                  "100110" &  -- &  = 38
+                                  "100000" &  -- sp
+                                  "001010" &  -- J
+                                  "001111" &  -- O
+                                  "001000" &  -- H
+                                  "001110" &  -- N
+                                  "001110" &  -- N
+                                  "011001",   -- Y
+                x_position     => conv_std_logic_vector(CREDITS_TWO_X, 10),
+                y_position     => conv_std_logic_vector(CREDITS_TWO_Y, 10),
+                pixel_row      => pixel_row,
+                pixel_column   => pixel_column,
+                red_out        => credits_two_red,
+                green_out      => credits_two_green,
+                blue_out       => credits_two_blue);
 
    -- ---------------------------------------------------------------------------
    -- Subtitle: "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (SCALE 1)
@@ -558,6 +695,8 @@ begin
    -- ---------------------------------------------------------------------------
    Output_Compositor : process(screen_state,
                                title_red,         title_green,         title_blue,
+                               credits_one_red,   credits_one_green,   credits_one_blue,
+                               credits_two_red,   credits_two_green,   credits_two_blue,
                                subtitle_red,      subtitle_green,      subtitle_blue,
                                header_red,        header_green,        header_blue,
                                training_red,      training_green,      training_blue,
@@ -566,9 +705,9 @@ begin
    begin
       case screen_state is
          when title_screen =>
-            red_out   <= title_red   or subtitle_red;
-            green_out <= title_green or subtitle_green;
-            blue_out  <= title_blue  or subtitle_blue;
+            red_out   <= title_red   or credits_one_red   or credits_two_red   or subtitle_red;
+            green_out <= title_green or credits_one_green or credits_two_green or subtitle_green;
+            blue_out  <= title_blue  or credits_one_blue  or credits_two_blue  or subtitle_blue;
 
          when mode_select =>
             red_out   <= header_red   or training_red   or single_player_red   or two_player_red;
@@ -582,4 +721,4 @@ begin
       end case;
    end process Output_Compositor;
 
-end architecture start_screen_behaviour;
+end architecture start_screen_behaviour;	
