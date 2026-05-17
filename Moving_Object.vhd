@@ -28,8 +28,8 @@ use IEEE.std_logic_unsigned.all;
 --   the same clock, which should be the VGA pixel clock (video_clock).
 -- ------------------------------------------------------------------------------
 entity Moving_Object is
-   generic (REAL_HEIGHT : positive            := 60;
-            REAL_WIDTH  : positive            := 80;
+   generic (REAL_HEIGHT : positive             := 60;
+            REAL_WIDTH  : positive             := 80;
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
@@ -90,13 +90,13 @@ architecture moving_object_behaviour of Moving_Object is
    signal scale_height_product  : std_logic_vector(19 downto 0);
    signal scale_width_product   : std_logic_vector(19 downto 0);
 
-   signal object_width_back_raw   : std_logic_vector(9 downto 0);
-   signal object_height_back_raw  : std_logic_vector(9 downto 0);
+   signal object_width_back_raw   	: std_logic_vector(9 downto 0);
+   signal object_height_back_raw  	: std_logic_vector(9 downto 0);
    signal scale_width_back_product  : std_logic_vector(19 downto 0);
    signal scale_height_back_product : std_logic_vector(19 downto 0);
 
-   signal top_height_raw        : std_logic_vector(9 downto 0);
-   signal scale_top_height_product : std_logic_vector(19 downto 0);
+   signal top_height_raw        	  	: std_logic_vector(9 downto 0);
+   signal scale_top_height_product 	: std_logic_vector(19 downto 0);
 
    -- ---------------------------------------------------------------------------
    -- Object distance from camera (0 = at camera, larger = further away).
@@ -109,8 +109,8 @@ architecture moving_object_behaviour of Moving_Object is
    -- ---------------------------------------------------------------------------
    -- Per-face colours
    -- ---------------------------------------------------------------------------
-   signal side_red,  side_green,  side_blue  : std_logic_vector(3 downto 0);
-   signal top_red,   top_green,   top_blue   : std_logic_vector(3 downto 0);
+   signal side_red,  side_green,  side_blue  	: std_logic_vector(3 downto 0);
+   signal top_red,   top_green,   top_blue   	: std_logic_vector(3 downto 0);
    signal object_red, object_green, object_blue : std_logic_vector(3 downto 0);
 
    -- ---------------------------------------------------------------------------
