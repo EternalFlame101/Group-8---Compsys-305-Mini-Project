@@ -197,15 +197,19 @@ architecture game_behaviour of Top_Level is
    end component Screen_Compositor;
 	
 	component Player is
-      generic (SCREEN_WIDTH  : positive := 640;
-               SCREEN_HEIGHT : positive := 480;
-               SPRITE_SIZE   : positive := 32;
-               SPRITE_SCALE  : positive := 3);
-      port (clock                                 : in  std_logic;
-            pixel_row, pixel_column               : in  std_logic_vector(9 downto 0);
-            player_red, player_green, player_blue : out std_logic_vector(3 downto 0);
-            player_lane                           : out std_logic_vector(1 downto 0);
-            player_state                          : out std_logic);
+      generic (SCREEN_WIDTH        : positive := 640;
+               SCREEN_HEIGHT       : positive := 480;
+               SPRITE_SIZE         : positive := 32;
+               SPRITE_SCALE        : positive := 4;
+               WALK_FRAME_DURATION : positive := 10;
+               JUMP_TOTAL_FRAMES   : positive := 120;
+               JUMP_PEAK_HEIGHT    : positive := 60);
+      port (clock, reset, vertical_sync             : in  std_logic;
+            pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
+            mouse_left_click                        : in  std_logic;
+            player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
+            player_lane                             : out std_logic_vector(1 downto 0);
+            player_state                            : out std_logic);
    end component Player;
 
    component Player_And_Objects_Manager is
@@ -606,15 +610,18 @@ begin
       generic map (SCREEN_WIDTH  => 640,
                    SCREEN_HEIGHT => 480,
                    SPRITE_SIZE   => 32,
-                   SPRITE_SCALE  => 4)
-      port map (clock        => video_clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
-                player_red   => player_red,
-                player_green => player_green,
-                player_blue  => player_blue,
-                player_lane  => player_lane,
-                player_state => player_state);
+                   SPRITE_SCALE  => 3)   -- change to 3 to use SCALE = 3
+      port map (clock            => video_clock,
+                reset            => not RESET_N,
+                vertical_sync    => vertical_sync,
+                pixel_row        => pixel_row,
+                pixel_column     => pixel_column,
+                mouse_left_click => left_click,
+                player_red       => player_red,
+                player_green     => player_green,
+                player_blue      => player_blue,
+                player_lane      => player_lane,
+                player_state     => player_state);
 
    Player_Object_Compositor : Player_And_Objects_Manager
       port map (player_red    => player_red,
