@@ -92,11 +92,12 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
    end component Background_Generator;
 
-   component Track_Generator is
-      port (clock, vertical_sync          : in  std_logic;
-            pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-            red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
-   end component Track_Generator;
+	component Track_Generator is
+		port (clock, vertical_sync         : in  std_logic;
+				pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+				cat_view_position            : in  std_logic_vector(7 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Track_Generator;
 
    component Background_Manager is
       port (background_red, background_green, background_blue : in  std_logic_vector(3 downto 0);
@@ -104,21 +105,25 @@ architecture game_behaviour of Top_Level is
             red_out,        green_out,        blue_out        : out std_logic_vector(3 downto 0));
    end component Background_Manager;
 
-   component Moving_Object is
-      generic (REAL_HEIGHT : positive            := 60;
-               REAL_WIDTH  : positive            := 80;
-               LANE        : integer range 0 to 2 := 1);
-      port (enable, clock, vertical_sync   : in  std_logic;
-            pixel_column, pixel_row        : in  std_logic_vector(9 downto 0);
-            speed                          : in  std_logic_vector(3 downto 0);
-            red_out, green_out, blue_out   : out std_logic_vector(3 downto 0));
-   end component Moving_Object;
+	component Moving_Object is
+		generic (REAL_HEIGHT : positive             := 60;
+					REAL_WIDTH  : positive             := 80;
+					LANE        : integer range 0 to 2 := 1);
+		port (enable, clock, vertical_sync : in  std_logic;
+				pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
+				speed                        : in  std_logic_vector(3 downto 0);
+				cat_view_position            : in  std_logic_vector(7 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component Moving_Object;
 
-   component Object_Manager is
-      port (sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
-            sprite_2_red, sprite_2_green, sprite_2_blue : in  std_logic_vector(3 downto 0);
-            red_out,      green_out,      blue_out      : out std_logic_vector(3 downto 0));
-   end component Object_Manager;
+	component Object_Manager is
+		generic (SPRITE_1_LANE : integer range 0 to 2 := 1;
+					SPRITE_2_LANE : integer range 0 to 2 := 0);
+		port (sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
+				sprite_2_red, sprite_2_green, sprite_2_blue : in  std_logic_vector(3 downto 0);
+				cat_lane                                    : in  std_logic_vector(1 downto 0);
+				red_out,      green_out,      blue_out      : out std_logic_vector(3 downto 0));
+	end component Object_Manager;
 
    component Word_Display is
       generic (STRING_LENGTH : positive := 16;
@@ -197,20 +202,24 @@ architecture game_behaviour of Top_Level is
    end component Screen_Compositor;
 	
 	component Player is
-      generic (SCREEN_WIDTH        : positive := 640;
-               SCREEN_HEIGHT       : positive := 480;
-               SPRITE_SIZE         : positive := 32;
-               SPRITE_SCALE        : positive := 4;
-               WALK_FRAME_DURATION : positive := 10;
-               JUMP_TOTAL_FRAMES   : positive := 120;
-               JUMP_PEAK_HEIGHT    : positive := 60);
-      port (clock, reset, vertical_sync             : in  std_logic;
-            pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
-            mouse_left_click                        : in  std_logic;
-            player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
-            player_lane                             : out std_logic_vector(1 downto 0);
-            player_state                            : out std_logic);
-   end component Player;
+		generic (SCREEN_WIDTH           : positive := 640;
+					SCREEN_HEIGHT          : positive := 480;
+					SPRITE_SIZE            : positive := 32;
+					SPRITE_SCALE           : positive := 4;
+					WALK_FRAME_DURATION    : positive := 10;
+					JUMP_TOTAL_FRAMES      : positive := 120;
+					JUMP_PEAK_HEIGHT       : positive := 60;
+					LANE_TRANSITION_FRAMES : positive := 64);
+		port (clock, reset, vertical_sync             : in  std_logic;
+				pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
+				mouse_left_click                        : in  std_logic;
+				mouse_right_click                       : in  std_logic;
+				jump_input                              : in  std_logic;
+				player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
+				player_lane                             : out std_logic_vector(1 downto 0);
+				player_state                            : out std_logic;
+				cat_view_position                       : out std_logic_vector(7 downto 0));
+	end component Player;
 
    component Player_And_Objects_Manager is
       port (player_red,  player_green,  player_blue  : in  std_logic_vector(3 downto 0);
@@ -287,6 +296,7 @@ architecture game_behaviour of Top_Level is
    signal player_red, player_green, player_blue                            : std_logic_vector(3 downto 0);
    signal player_lane                                                      : std_logic_vector(1 downto 0);
    signal player_state                                                     : std_logic;
+	signal cat_view_position 																: std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 
 begin
@@ -430,14 +440,15 @@ begin
                 green_out     => background_layer_green,
                 blue_out      => background_layer_blue);
 
-   Track_Layer : Track_Generator
-      port map (clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_row     => pixel_row,
-                pixel_column  => pixel_column,
-                red_out       => track_layer_red,
-                green_out     => track_layer_green,
-                blue_out      => track_layer_blue);
+	Track_Layer : Track_Generator
+		port map (clock             => video_clock,
+					 vertical_sync     => vertical_sync,
+					 pixel_row         => pixel_row,
+					 pixel_column      => pixel_column,
+					 cat_view_position => cat_view_position,
+					 red_out           => track_layer_red,
+					 green_out         => track_layer_green,
+					 blue_out          => track_layer_blue);
 
    Background_Compositor : Background_Manager
       port map (background_red   => background_layer_red,
@@ -450,44 +461,49 @@ begin
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
 
-   Moving_Object_Lane_One : Moving_Object
-      generic map (REAL_HEIGHT => 60,
-                   REAL_WIDTH  => 80,
-                   LANE        => 1)
-      port map (enable        => not KEY(2),
-                clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_column  => pixel_column,
-                pixel_row     => pixel_row,
-                speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_1_red,
-                green_out     => sprite_1_green,
-                blue_out      => sprite_1_blue);
+	Moving_Object_Lane_One : Moving_Object
+		generic map (REAL_HEIGHT => 60,
+						 REAL_WIDTH  => 80,
+						 LANE        => 1)
+		port map (enable            => not KEY(2),
+					 clock             => video_clock,
+					 vertical_sync     => vertical_sync,
+					 pixel_column      => pixel_column,
+					 pixel_row         => pixel_row,
+					 speed             => conv_std_logic_vector(2, 4),
+					 cat_view_position => cat_view_position,
+					 red_out           => sprite_1_red,
+					 green_out         => sprite_1_green,
+					 blue_out          => sprite_1_blue);
 
-   Moving_Object_Lane_Zero : Moving_Object
-      generic map (REAL_HEIGHT => 120,
-                   REAL_WIDTH  => 80,
-                   LANE        => 0)
-      port map (enable        => not KEY(3),
-                clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_column  => pixel_column,
-                pixel_row     => pixel_row,
-                speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_2_red,
-                green_out     => sprite_2_green,
-                blue_out      => sprite_2_blue);
+	Moving_Object_Lane_Zero : Moving_Object
+		generic map (REAL_HEIGHT => 120,
+						 REAL_WIDTH  => 80,
+						 LANE        => 0)
+		port map (enable            => not KEY(3),
+					 clock             => video_clock,
+					 vertical_sync     => vertical_sync,
+					 pixel_column      => pixel_column,
+					 pixel_row         => pixel_row,
+					 speed             => conv_std_logic_vector(2, 4),
+					 cat_view_position => cat_view_position,
+					 red_out           => sprite_2_red,
+					 green_out         => sprite_2_green,
+					 blue_out          => sprite_2_blue);
 
-   Sprite_Compositor : Object_Manager
-      port map (sprite_1_red   => sprite_1_red,
-                sprite_1_green => sprite_1_green,
-                sprite_1_blue  => sprite_1_blue,
-                sprite_2_red   => sprite_2_red,
-                sprite_2_green => sprite_2_green,
-                sprite_2_blue  => sprite_2_blue,
-                red_out        => sprite_composite_red,
-                green_out      => sprite_composite_green,
-                blue_out       => sprite_composite_blue);
+	Sprite_Compositor : Object_Manager
+		generic map (SPRITE_1_LANE => 1,
+						 SPRITE_2_LANE => 0)
+		port map (sprite_1_red   => sprite_1_red,
+					 sprite_1_green => sprite_1_green,
+					 sprite_1_blue  => sprite_1_blue,
+					 sprite_2_red   => sprite_2_red,
+					 sprite_2_green => sprite_2_green,
+					 sprite_2_blue  => sprite_2_blue,
+					 cat_lane       => player_lane,
+					 red_out        => sprite_composite_red,
+					 green_out      => sprite_composite_green,
+					 blue_out       => sprite_composite_blue);
 
    Racing_Graphics : Graphics_Manager
       port map (text_large_red   => "0000",
@@ -607,21 +623,24 @@ begin
                 blue_out                 => blue_final);
 					 
 	Player_Sprite_Renderer : Player
-      generic map (SCREEN_WIDTH  => 640,
-                   SCREEN_HEIGHT => 480,
-                   SPRITE_SIZE   => 32,
-                   SPRITE_SCALE  => 3)   -- change to 3 to use SCALE = 3
-      port map (clock            => video_clock,
-                reset            => not RESET_N,
-                vertical_sync    => vertical_sync,
-                pixel_row        => pixel_row,
-                pixel_column     => pixel_column,
-                mouse_left_click => left_click,
-                player_red       => player_red,
-                player_green     => player_green,
-                player_blue      => player_blue,
-                player_lane      => player_lane,
-                player_state     => player_state);
+		generic map (SCREEN_WIDTH  => 640,
+						 SCREEN_HEIGHT => 480,
+						 SPRITE_SIZE   => 32,
+						 SPRITE_SCALE  => 3)
+		port map (clock             => video_clock,
+					 reset             => not RESET_N,
+					 vertical_sync     => vertical_sync,
+					 pixel_row         => pixel_row,
+					 pixel_column      => pixel_column,
+					 mouse_left_click  => left_click,
+					 mouse_right_click => right_click,
+					 jump_input        => not KEY(1),
+					 player_red        => player_red,
+					 player_green      => player_green,
+					 player_blue       => player_blue,
+					 player_lane       => player_lane,
+					 player_state      => player_state,
+					 cat_view_position => cat_view_position);
 
    Player_Object_Compositor : Player_And_Objects_Manager
       port map (player_red    => player_red,
