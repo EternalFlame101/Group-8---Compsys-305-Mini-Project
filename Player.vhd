@@ -11,12 +11,12 @@ entity Player is
             WALK_FRAME_DURATION    : positive := 5;
             JUMP_TOTAL_FRAMES      : positive := 120;
             JUMP_PEAK_HEIGHT       : positive := 60;
-            LANE_TRANSITION_FRAMES : positive := 64);   -- ~1.07 s at 60 Hz
+            LANE_TRANSITION_FRAMES : positive := 64);
    port (clock, reset, vertical_sync             : in  std_logic;
          pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
-         mouse_left_click                        : in  std_logic;   -- shift LEFT
-         mouse_right_click                       : in  std_logic;   -- shift RIGHT (new)
-         jump_input                              : in  std_logic;   -- jump (new; KEY(1))
+         mouse_left_click                        : in  std_logic;
+         mouse_right_click                       : in  std_logic;
+         jump_input                              : in  std_logic;
          player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
          player_lane                             : out std_logic_vector(1 downto 0);
          player_state                            : out std_logic;
@@ -40,36 +40,35 @@ architecture player_behaviour of Player is
    constant SCALED_SPRITE_SIZE : positive := SPRITE_SIZE * SPRITE_SCALE;
    constant LANE_1_CENTRE_X    : positive := SCREEN_WIDTH / 2;
    constant BASE_SPRITE_Y      : positive := SCREEN_HEIGHT - SCALED_SPRITE_SIZE;
-   constant LANE_RESOLUTION    : integer  := 64;   -- 1/64 lane per step; matches transition frames
+   constant LANE_RESOLUTION    : integer  := 64;
 
-   -- Logical lane (0 = left, 1 = middle, 2 = right). Only flips when transition completes.
+   -- Logical state
    signal current_lane_int : integer range 0 to 2 := 1;
    signal current_state    : std_logic            := '0';
-
-   -- Walking animation (unchanged).
    signal walk_frame_index : std_logic_vector(1 downto 0)             := "00";
    signal walk_vsync_count : integer range 0 to WALK_FRAME_DURATION   := 0;
+   signal jump_frame_count : integer range 0 to JUMP_TOTAL_FRAMES     := 0;
 
-   -- Jump animation (unchanged).
-   signal jump_frame_count        : integer range 0 to JUMP_TOTAL_FRAMES := 0;
-   signal jump_pixel_offset       : integer range 0 to JUMP_TOTAL_FRAMES := 0;
-   signal jump_distance_from_apex : integer range 0 to JUMP_TOTAL_FRAMES := 0;
+   -- Jump-height math (now pipelined)
+   signal jump_distance_from_apex    : integer range 0 to JUMP_TOTAL_FRAMES                       := 0;
+   signal jump_distance_squared_comb : integer range 0 to JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES   := 0;
+   signal jump_distance_squared_reg  : integer range 0 to JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES   := 0;
+   signal jump_pixel_offset          : integer range 0 to JUMP_TOTAL_FRAMES                       := 0;
+   signal sprite_y_position_comb     : std_logic_vector(9 downto 0);
+   signal sprite_y_position_reg      : std_logic_vector(9 downto 0) := (others => '0');
 
-   -- Lane transition state. view_pos_int is the signed fractional viewpoint:
-   --   -64 = looking from lane 0, 0 = lane 1, +64 = lane 2.
+   -- View transition
    signal view_pos_int      : integer range -LANE_RESOLUTION to LANE_RESOLUTION := 0;
    signal view_pos_target   : integer range -LANE_RESOLUTION to LANE_RESOLUTION := 0;
    signal transition_active : std_logic := '0';
    signal transition_step   : integer range -1 to 1 := 0;
 
-   -- Edge-detect registers for vsync and all three inputs.
    signal vsync_previous       : std_logic := '0';
    signal click_previous       : std_logic := '0';
    signal right_click_previous : std_logic := '0';
    signal jump_input_previous  : std_logic := '0';
 
    signal sprite_x_position : std_logic_vector(9 downto 0);
-   signal sprite_y_position : std_logic_vector(9 downto 0);
 
    signal neutral_frame_red, neutral_frame_green, neutral_frame_blue : std_logic_vector(3 downto 0);
    signal left_frame_red,    left_frame_green,    left_frame_blue    : std_logic_vector(3 downto 0);
@@ -78,21 +77,44 @@ architecture player_behaviour of Player is
 begin
 
    -- ---------------------------------------------------------------------------
-   -- Sprite positioning: cat is permanently centred horizontally; the world
-   -- shifts around it via cat_view_position.
+   -- Sprite x is a compile-time constant (cat is permanently centred).
+   -- Sprite y goes through a 2-stage pipeline so the long chain
+   --   jump_frame_count -> parabola math -> Sprites_Display ROM address
+   -- splits into short hops. jump_frame_count only updates once per vsync, so
+   -- the 2 cycles of added latency are invisible.
    -- ---------------------------------------------------------------------------
    sprite_x_position <= conv_std_logic_vector(LANE_1_CENTRE_X - (SCALED_SPRITE_SIZE / 2), 10);
-   sprite_y_position <= conv_std_logic_vector(BASE_SPRITE_Y - jump_pixel_offset, 10);
 
-   jump_distance_from_apex <= abs(JUMP_TOTAL_FRAMES - 2 * jump_frame_count);
+   -- Stage 1 combinational: distance-from-apex and its square
+   jump_distance_from_apex    <= abs(JUMP_TOTAL_FRAMES - 2 * jump_frame_count);
+   jump_distance_squared_comb <= jump_distance_from_apex * jump_distance_from_apex;
 
+   -- Stage 1 register
+   Jump_Pipeline_Stage_1 : process(clock)
+   begin
+      if rising_edge(clock) then
+         jump_distance_squared_reg <= jump_distance_squared_comb;
+      end if;
+   end process Jump_Pipeline_Stage_1;
+
+   -- Stage 2 combinational: parabolic offset and final y-position
    jump_pixel_offset <= 0 when current_state = '0' else
                         JUMP_PEAK_HEIGHT
-                        - (JUMP_PEAK_HEIGHT * jump_distance_from_apex * jump_distance_from_apex)
+                        - (JUMP_PEAK_HEIGHT * jump_distance_squared_reg)
                           / (JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES);
 
+   sprite_y_position_comb <= conv_std_logic_vector(BASE_SPRITE_Y - jump_pixel_offset, 10);
+
+   -- Stage 2 register
+   Sprite_Y_Pipeline : process(clock)
+   begin
+      if rising_edge(clock) then
+         sprite_y_position_reg <= sprite_y_position_comb;
+      end if;
+   end process Sprite_Y_Pipeline;
+
    -- ---------------------------------------------------------------------------
-   -- Per-frame sprite ROMs (unchanged).
+   -- Per-frame sprite ROMs (all read from the registered sprite_y now)
    -- ---------------------------------------------------------------------------
    Neutral_Sprite : Sprites_Display
       generic map (SPRITE_WIDTH  => SPRITE_SIZE,
@@ -104,7 +126,7 @@ begin
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
                 sprite_x     => sprite_x_position,
-                sprite_y     => sprite_y_position,
+                sprite_y     => sprite_y_position_reg,
                 red_out      => neutral_frame_red,
                 green_out    => neutral_frame_green,
                 blue_out     => neutral_frame_blue);
@@ -119,7 +141,7 @@ begin
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
                 sprite_x     => sprite_x_position,
-                sprite_y     => sprite_y_position,
+                sprite_y     => sprite_y_position_reg,
                 red_out      => left_frame_red,
                 green_out    => left_frame_green,
                 blue_out     => left_frame_blue);
@@ -134,14 +156,13 @@ begin
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
                 sprite_x     => sprite_x_position,
-                sprite_y     => sprite_y_position,
+                sprite_y     => sprite_y_position_reg,
                 red_out      => right_frame_red,
                 green_out    => right_frame_green,
                 blue_out     => right_frame_blue);
 
    -- ---------------------------------------------------------------------------
-   -- State machine: walking/jumping plus lane-transition ramp. One vsync edge
-   -- = one step (1/64 of a lane), so a full lane change takes 64 frames.
+   -- State machine (unchanged)
    -- ---------------------------------------------------------------------------
    Animation_Process : process(clock, reset)
    begin
@@ -164,7 +185,6 @@ begin
 
          if (vertical_sync = '1') and (vsync_previous = '0') then
 
-            -- Walking / jumping animation (jump trigger remapped to jump_input).
             if current_state = '0' then
                if walk_vsync_count = WALK_FRAME_DURATION - 1 then
                   walk_vsync_count <= 0;
@@ -186,7 +206,6 @@ begin
                end if;
             end if;
 
-            -- Lane transition: ramp viewpoint then snap logical lane at the end.
             if transition_active = '1' then
                if view_pos_int = view_pos_target then
                   transition_active <= '0';
@@ -201,7 +220,6 @@ begin
                   view_pos_int <= view_pos_int + transition_step;
                end if;
             else
-               -- Right-click: shift one lane to the right (if not already in lane 2).
                if (mouse_right_click = '1') and (right_click_previous = '0') then
                   if current_lane_int = 0 then
                      view_pos_target   <= 0;
@@ -212,7 +230,6 @@ begin
                      transition_step   <= 1;
                      transition_active <= '1';
                   end if;
-               -- Left-click: shift one lane to the left (if not already in lane 0).
                elsif (mouse_left_click = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
                      view_pos_target   <= 0;
@@ -234,7 +251,7 @@ begin
    end process Animation_Process;
 
    -- ---------------------------------------------------------------------------
-   -- Frame mux (unchanged).
+   -- Frame mux (unchanged)
    -- ---------------------------------------------------------------------------
    Frame_Selector : process(current_state, walk_frame_index,
                             neutral_frame_red, neutral_frame_green, neutral_frame_blue,

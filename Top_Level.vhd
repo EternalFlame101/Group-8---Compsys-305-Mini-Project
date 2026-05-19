@@ -466,9 +466,25 @@ begin
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
 
+	Moving_Object_Lane_Zero : Moving_Object
+		generic map (REAL_HEIGHT => 120,
+						 REAL_WIDTH  => 70,
+						 LANE        => 0)
+		port map (enable            => not KEY(3),
+					 clock             => video_clock,
+					 vertical_sync     => vertical_sync,
+					 pixel_column      => pixel_column,
+					 pixel_row         => pixel_row,
+					 speed             => conv_std_logic_vector(2, 4),
+					 cat_view_position => cat_view_position,
+					 row_out				 => sprite_0_row,
+					 red_out           => sprite_0_red,
+					 green_out         => sprite_0_green,
+					 blue_out          => sprite_0_blue);				 
+					 
 	Moving_Object_Lane_One : Moving_Object
 		generic map (REAL_HEIGHT => 60,
-						 REAL_WIDTH  => 80,
+						 REAL_WIDTH  => 70,
 						 LANE        => 1)
 		port map (enable            => not KEY(2),
 					 clock             => video_clock,
@@ -481,28 +497,12 @@ begin
 					 red_out           => sprite_1_red,
 					 green_out         => sprite_1_green,
 					 blue_out          => sprite_1_blue);
-
-	Moving_Object_Lane_Zero : Moving_Object
-		generic map (REAL_HEIGHT => 120,
-						 REAL_WIDTH  => 80,
-						 LANE        => 0)
-		port map (enable            => not KEY(3),
-					 clock             => video_clock,
-					 vertical_sync     => vertical_sync,
-					 pixel_column      => pixel_column,
-					 pixel_row         => pixel_row,
-					 speed             => conv_std_logic_vector(2, 4),
-					 cat_view_position => cat_view_position,
-					 row_out				 => sprite_0_row,
-					 red_out           => sprite_0_red,
-					 green_out         => sprite_0_green,
-					 blue_out          => sprite_0_blue);
 					 
 	Moving_Object_Lane_Two : Moving_Object
-		generic map (REAL_HEIGHT => 80,
-						 REAL_WIDTH  => 80,
+		generic map (REAL_HEIGHT => 120,
+						 REAL_WIDTH  => 70,
 						 LANE        => 2)
-		port map (enable            => not KEY(0),
+		port map (enable            => not KEY(1),
 					 clock             => video_clock,
 					 vertical_sync     => vertical_sync,
 					 pixel_column      => pixel_column,
@@ -569,7 +569,7 @@ begin
    SD_Initialiser : SD_Init
       port map (clock              => CLOCK_50,
                 reset              => not RESET_N,
-                start_init         => not KEY(0),
+                start_init         => left_click,
                 byte_address       => SW(8 downto 0),
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
@@ -661,7 +661,7 @@ begin
 					 pixel_column      => pixel_column,
 					 mouse_left_click  => left_click,
 					 mouse_right_click => right_click,
-					 jump_input        => not KEY(1),
+					 jump_input        => not KEY(0),
 					 player_red        => player_red,
 					 player_green      => player_green,
 					 player_blue       => player_blue,
