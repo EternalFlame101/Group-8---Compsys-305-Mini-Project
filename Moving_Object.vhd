@@ -49,13 +49,13 @@ architecture moving_object_behaviour of Moving_Object is
    signal top_taper_rom              : std_logic_vector(9 downto 0);
    signal side_taper_rom             : std_logic_vector(9 downto 0);
 
-   -- Per-frame combinational signals
-   signal cat_view_int_comb         : integer range -64 to 64;
-   signal relative_pos_signed_comb  : integer range -128 to 128;
-   signal abs_relative_comb         : integer range 0 to 128;
-   signal abs_relative_slv_comb     : std_logic_vector(7 downto 0);
-   signal relative_is_right_comb    : std_logic;
-   signal relative_is_nonzero_comb  : std_logic;
+   -- Stage 1 combinational (from ROMs + cat_view_position)
+   signal cat_view_int_comb        : integer range -64 to 64;
+   signal relative_pos_signed_comb : integer range -128 to 128;
+   signal abs_relative_comb        : integer range 0 to 128;
+   signal abs_relative_slv_comb    : std_logic_vector(7 downto 0);
+   signal relative_is_right_comb   : std_logic;
+   signal relative_is_nonzero_comb : std_logic;
 
    signal scale_height_product_comb      : std_logic_vector(19 downto 0);
    signal scale_width_product_comb       : std_logic_vector(19 downto 0);
@@ -67,36 +67,49 @@ architecture moving_object_behaviour of Moving_Object is
    signal object_width_back_comb         : std_logic_vector(9 downto 0);
    signal object_height_back_comb        : std_logic_vector(9 downto 0);
    signal top_height_comb                : std_logic_vector(9 downto 0);
-   signal width_diff_comb                : std_logic_vector(9 downto 0);
-   signal height_diff_comb               : std_logic_vector(9 downto 0);
 
-   signal lane_offset_product_comb    : std_logic_vector(13 downto 0);
-   signal lane_offset_comb            : std_logic_vector(9 downto 0);
+   signal lane_offset_product_comb : std_logic_vector(13 downto 0);
+   signal lane_offset_comb         : std_logic_vector(9 downto 0);
+
+   -- Stage 1 registers
+   signal abs_relative_slv_s1    : std_logic_vector(7 downto 0);
+   signal relative_is_right_s1   : std_logic;
+   signal relative_is_nonzero_s1 : std_logic;
+   signal object_height_s1       : std_logic_vector(9 downto 0);
+   signal object_width_s1        : std_logic_vector(9 downto 0);
+   signal object_height_back_s1  : std_logic_vector(9 downto 0);
+   signal object_width_back_s1   : std_logic_vector(9 downto 0);
+   signal top_height_s1          : std_logic_vector(9 downto 0);
+   signal lane_offset_s1         : std_logic_vector(9 downto 0);
+   signal top_taper_s1           : std_logic_vector(9 downto 0);
+   signal side_taper_s1          : std_logic_vector(9 downto 0);
+   signal object_y_s1            : std_logic_vector(9 downto 0);
+
+   -- Stage 2 combinational (from Stage 1 registers)
+   signal width_diff_comb             : std_logic_vector(9 downto 0);
+   signal height_diff_comb            : std_logic_vector(9 downto 0);
    signal object_x_shift_product_comb : std_logic_vector(17 downto 0);
    signal object_x_shift_comb         : std_logic_vector(9 downto 0);
    signal object_x_comb               : std_logic_vector(9 downto 0);
+   signal top_combined_taper_comb     : std_logic_vector(17 downto 0);
+   signal side_combined_taper_comb    : std_logic_vector(17 downto 0);
+   signal top_max_product_comb        : std_logic_vector(19 downto 0);
+   signal top_max_extension_comb      : std_logic_vector(9 downto 0);
 
-   signal top_combined_taper_comb  : std_logic_vector(17 downto 0);
-   signal side_combined_taper_comb : std_logic_vector(17 downto 0);
-   signal top_max_product_comb     : std_logic_vector(19 downto 0);
-   signal top_max_extension_comb   : std_logic_vector(9 downto 0);
-
-   -- Registered per-frame signals
-   signal abs_relative_slv_reg     : std_logic_vector(7 downto 0);
-   signal relative_is_right_reg    : std_logic;
-   signal relative_is_nonzero_reg  : std_logic;
-   signal object_height_reg        : std_logic_vector(9 downto 0);
-   signal object_width_reg         : std_logic_vector(9 downto 0);
-   signal object_width_back_reg    : std_logic_vector(9 downto 0);
-   signal object_height_back_reg   : std_logic_vector(9 downto 0);
-   signal top_height_reg           : std_logic_vector(9 downto 0);
-   signal width_diff_reg           : std_logic_vector(9 downto 0);
-   signal height_diff_reg          : std_logic_vector(9 downto 0);
-   signal object_x_reg             : std_logic_vector(9 downto 0);
-   signal object_y_reg             : std_logic_vector(9 downto 0);
-   signal top_combined_taper_reg   : std_logic_vector(17 downto 0);
-   signal side_combined_taper_reg  : std_logic_vector(17 downto 0);
-   signal top_max_extension_reg    : std_logic_vector(9 downto 0);
+   -- Stage 2 registers (used by per-pixel logic)
+   signal abs_relative_slv_reg    : std_logic_vector(7 downto 0);
+   signal relative_is_right_reg   : std_logic;
+   signal relative_is_nonzero_reg : std_logic;
+   signal object_height_reg       : std_logic_vector(9 downto 0);
+   signal object_width_reg        : std_logic_vector(9 downto 0);
+   signal top_height_reg          : std_logic_vector(9 downto 0);
+   signal width_diff_reg          : std_logic_vector(9 downto 0);
+   signal height_diff_reg         : std_logic_vector(9 downto 0);
+   signal object_x_reg            : std_logic_vector(9 downto 0);
+   signal object_y_reg            : std_logic_vector(9 downto 0);
+   signal top_combined_taper_reg  : std_logic_vector(17 downto 0);
+   signal side_combined_taper_reg : std_logic_vector(17 downto 0);
+   signal top_max_extension_reg   : std_logic_vector(9 downto 0);
 
    -- Per-pixel signals
    signal object_distance    : std_logic_vector(9 downto 0) := (others => '1');
@@ -153,7 +166,9 @@ begin
                 track_row          => object_distance,
                 perspective_output => spread_rom);
 
-   -- Per-frame combinational logic
+   -- ========================================================================
+   -- Stage 1 combinational: all "raw x scale" multiplies in parallel
+   -- ========================================================================
    cat_view_int_comb        <= conv_integer(signed(cat_view_position));
    relative_pos_signed_comb <= HOME_POS - cat_view_int_comb;
    abs_relative_comb        <= relative_pos_signed_comb when relative_pos_signed_comb >= 0
@@ -162,59 +177,85 @@ begin
    relative_is_right_comb   <= '1' when relative_pos_signed_comb >  0 else '0';
    relative_is_nonzero_comb <= '1' when relative_pos_signed_comb /= 0 else '0';
 
-   scale_height_product_comb <= object_height_raw_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
-   scale_width_product_comb  <= object_width_raw_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
-   object_height_comb        <= scale_height_product_comb(16 downto 7);
-   object_width_comb         <= scale_width_product_comb(15 downto 6);
-
+   scale_height_product_comb      <= object_height_raw_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
+   scale_width_product_comb       <= object_width_raw_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
    scale_width_back_product_comb  <= object_width_back_raw_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
    scale_height_back_product_comb <= object_height_back_raw_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
-   object_width_back_comb         <= scale_width_back_product_comb(15 downto 6);
-   object_height_back_comb        <= scale_height_back_product_comb(16 downto 7);
+   scale_top_height_product_comb  <= top_height_raw_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
 
-   scale_top_height_product_comb <= top_height_raw_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
-   top_height_comb               <= scale_top_height_product_comb(16 downto 7);
+   object_height_comb      <= scale_height_product_comb(16 downto 7);
+   object_width_comb       <= scale_width_product_comb(15 downto 6);
+   object_width_back_comb  <= scale_width_back_product_comb(15 downto 6);
+   object_height_back_comb <= scale_height_back_product_comb(16 downto 7);
+   top_height_comb         <= scale_top_height_product_comb(16 downto 7);
 
-   width_diff_comb  <= (object_width_comb  - object_width_back_comb)
-                          when object_width_comb  >= object_width_back_comb  else (others => '0');
-   height_diff_comb <= (object_height_comb - object_height_back_comb)
-                          when object_height_comb >= object_height_back_comb else (others => '0');
+   lane_offset_product_comb <= conv_std_logic_vector(11, 4) * spread_rom;
+   lane_offset_comb         <= lane_offset_product_comb(13 downto 4);
 
-   lane_offset_product_comb    <= conv_std_logic_vector(11, 4) * spread_rom;
-   lane_offset_comb            <= lane_offset_product_comb(13 downto 4);
-   object_x_shift_product_comb <= abs_relative_slv_comb * lane_offset_comb;
-   object_x_shift_comb         <= object_x_shift_product_comb(15 downto 6);
-   object_x_comb <= TRACK_CENTRE_X + object_x_shift_comb when relative_is_right_comb = '1' else
-                    TRACK_CENTRE_X - object_x_shift_comb;
-
-   top_combined_taper_comb  <= top_taper_rom * abs_relative_slv_comb;
-   side_combined_taper_comb <= side_taper_rom * abs_relative_slv_comb;
-   top_max_product_comb     <= top_taper_rom * top_height_comb;
-   top_max_extension_comb   <= top_max_product_comb(17 downto 8);
-
-   -- Pipeline register: all per-frame values lock in here each clock cycle
-   Pipeline_Process : process(clock)
+   -- ========================================================================
+   -- Stage 1 register
+   -- ========================================================================
+   Pipeline_Stage_1 : process(clock)
    begin
       if rising_edge(clock) then
-         abs_relative_slv_reg    <= abs_relative_slv_comb;
-         relative_is_right_reg   <= relative_is_right_comb;
-         relative_is_nonzero_reg <= relative_is_nonzero_comb;
-         object_height_reg       <= object_height_comb;
-         object_width_reg        <= object_width_comb;
-         object_width_back_reg   <= object_width_back_comb;
-         object_height_back_reg  <= object_height_back_comb;
-         top_height_reg          <= top_height_comb;
+         abs_relative_slv_s1    <= abs_relative_slv_comb;
+         relative_is_right_s1   <= relative_is_right_comb;
+         relative_is_nonzero_s1 <= relative_is_nonzero_comb;
+         object_height_s1       <= object_height_comb;
+         object_width_s1        <= object_width_comb;
+         object_height_back_s1  <= object_height_back_comb;
+         object_width_back_s1   <= object_width_back_comb;
+         top_height_s1          <= top_height_comb;
+         lane_offset_s1         <= lane_offset_comb;
+         top_taper_s1           <= top_taper_rom;
+         side_taper_s1          <= side_taper_rom;
+         object_y_s1            <= object_y_rom;
+      end if;
+   end process Pipeline_Stage_1;
+
+   -- ========================================================================
+   -- Stage 2 combinational: all "second-tier" multiplies in parallel
+   -- ========================================================================
+   width_diff_comb  <= (object_width_s1  - object_width_back_s1)
+                          when object_width_s1  >= object_width_back_s1  else (others => '0');
+   height_diff_comb <= (object_height_s1 - object_height_back_s1)
+                          when object_height_s1 >= object_height_back_s1 else (others => '0');
+
+   object_x_shift_product_comb <= abs_relative_slv_s1 * lane_offset_s1;
+   object_x_shift_comb         <= object_x_shift_product_comb(15 downto 6);
+   object_x_comb <= TRACK_CENTRE_X + object_x_shift_comb when relative_is_right_s1 = '1' else
+                    TRACK_CENTRE_X - object_x_shift_comb;
+
+   top_combined_taper_comb  <= top_taper_s1 * abs_relative_slv_s1;
+   side_combined_taper_comb <= side_taper_s1 * abs_relative_slv_s1;
+   top_max_product_comb     <= top_taper_s1 * top_height_s1;
+   top_max_extension_comb   <= top_max_product_comb(17 downto 8);
+
+   -- ========================================================================
+   -- Stage 2 register
+   -- ========================================================================
+   Pipeline_Stage_2 : process(clock)
+   begin
+      if rising_edge(clock) then
+         abs_relative_slv_reg    <= abs_relative_slv_s1;
+         relative_is_right_reg   <= relative_is_right_s1;
+         relative_is_nonzero_reg <= relative_is_nonzero_s1;
+         object_height_reg       <= object_height_s1;
+         object_width_reg        <= object_width_s1;
+         top_height_reg          <= top_height_s1;
          width_diff_reg          <= width_diff_comb;
          height_diff_reg         <= height_diff_comb;
          object_x_reg            <= object_x_comb;
-         object_y_reg            <= object_y_rom;
+         object_y_reg            <= object_y_s1;
          top_combined_taper_reg  <= top_combined_taper_comb;
          side_combined_taper_reg <= side_combined_taper_comb;
          top_max_extension_reg   <= top_max_extension_comb;
       end if;
-   end process Pipeline_Process;
+   end process Pipeline_Stage_2;
 
-   -- Distance update
+   -- ========================================================================
+   -- Per-frame distance update
+   -- ========================================================================
    Moving : process(clock)
    begin
       if rising_edge(clock) then
@@ -230,6 +271,10 @@ begin
          end if;
       end if;
    end process Moving;
+
+   -- ========================================================================
+   -- Per-pixel rendering (combinational, reads only Stage 2 registered values)
+   -- ========================================================================
 
    -- Front face
    object_front_on <= '1' when ((pixel_row    >= object_y_reg - object_height_reg) and
@@ -271,7 +316,7 @@ begin
    height_diff_product <= height_diff_reg * side_column_offset;
    side_top_boundary   <= height_diff_product(18 downto 9);
 
-   -- Top face (one per-pixel mul via combined taper)
+   -- Top face
    top_skew_product <= top_combined_taper_reg * top_inverted_local;
    top_skew_low     <= top_skew_product(23 downto 14);
    top_skew_high    <= top_skew_low(8 downto 0) & '0';
@@ -291,7 +336,7 @@ begin
    top_green <= "1111" when (object_top_on = '1') else "0000";
    top_blue  <= "0001" when (object_top_on = '1') else "0000";
 
-   -- Side face (one per-pixel mul via combined taper; parallel mul for clamp threshold)
+   -- Side face
    side_shift_product          <= side_combined_taper_reg * inverted_local;
    side_shift_unclamped_scaled <= side_shift_product(23 downto 14);
 

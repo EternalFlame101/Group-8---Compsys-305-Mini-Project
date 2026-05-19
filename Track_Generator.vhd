@@ -24,21 +24,28 @@ architecture track_generator_behaviour of Track_Generator is
    signal depth      : std_logic_vector(9 downto 0);
    signal spread_rom : std_logic_vector(9 downto 0);
 
-   -- Per-row combinational signals
-   signal cat_view_int_comb      : integer range -64 to 64;
-   signal cat_view_abs_comb      : integer range 0 to 64;
-   signal cat_view_abs_slv_comb  : std_logic_vector(7 downto 0);
-   signal view_is_right_comb     : std_logic;
-
+   -- Stage 1 combinational
+   signal cat_view_int_comb        : integer range -64 to 64;
+   signal cat_view_abs_comb        : integer range 0 to 64;
+   signal cat_view_abs_slv_comb    : std_logic_vector(7 downto 0);
+   signal view_is_right_comb       : std_logic;
    signal lane_offset_product_comb : std_logic_vector(13 downto 0);
    signal lane_offset_comb         : std_logic_vector(9 downto 0);
-   signal view_shift_product_comb  : std_logic_vector(17 downto 0);
-   signal view_shift_pixels_comb   : std_logic_vector(9 downto 0);
-   signal effective_centre_comb    : std_logic_vector(9 downto 0);
-   signal track_left_edge_comb     : std_logic_vector(9 downto 0);
-   signal track_right_edge_comb    : std_logic_vector(9 downto 0);
 
-   -- Registered outputs
+   -- Stage 1 registers
+   signal cat_view_abs_slv_s1 : std_logic_vector(7 downto 0);
+   signal view_is_right_s1    : std_logic;
+   signal lane_offset_s1      : std_logic_vector(9 downto 0);
+   signal spread_s1           : std_logic_vector(9 downto 0);
+
+   -- Stage 2 combinational
+   signal view_shift_product_comb : std_logic_vector(17 downto 0);
+   signal view_shift_pixels_comb  : std_logic_vector(9 downto 0);
+   signal effective_centre_comb   : std_logic_vector(9 downto 0);
+   signal track_left_edge_comb    : std_logic_vector(9 downto 0);
+   signal track_right_edge_comb   : std_logic_vector(9 downto 0);
+
+   -- Stage 2 registers
    signal track_left_edge_reg  : std_logic_vector(9 downto 0);
    signal track_right_edge_reg : std_logic_vector(9 downto 0);
 
@@ -53,7 +60,7 @@ begin
 
    depth <= (pixel_row - HORIZON_ROW) when (pixel_row >= HORIZON_ROW) else (others => '0');
 
-   -- Per-row combinational (whole chain settles before the register captures it)
+   -- Stage 1 combinational
    cat_view_int_comb     <= conv_integer(signed(cat_view_position));
    cat_view_abs_comb     <= cat_view_int_comb when cat_view_int_comb >= 0 else -cat_view_int_comb;
    cat_view_abs_slv_comb <= conv_std_logic_vector(cat_view_abs_comb, 8);
@@ -62,26 +69,38 @@ begin
    lane_offset_product_comb <= conv_std_logic_vector(11, 4) * spread_rom;
    lane_offset_comb         <= lane_offset_product_comb(13 downto 4);
 
-   view_shift_product_comb <= cat_view_abs_slv_comb * lane_offset_comb;
+   -- Stage 1 register
+   Pipeline_Stage_1 : process(clock)
+   begin
+      if rising_edge(clock) then
+         cat_view_abs_slv_s1 <= cat_view_abs_slv_comb;
+         view_is_right_s1    <= view_is_right_comb;
+         lane_offset_s1      <= lane_offset_comb;
+         spread_s1           <= spread_rom;
+      end if;
+   end process Pipeline_Stage_1;
+
+   -- Stage 2 combinational
+   view_shift_product_comb <= cat_view_abs_slv_s1 * lane_offset_s1;
    view_shift_pixels_comb  <= view_shift_product_comb(15 downto 6);
 
-   effective_centre_comb <= TRACK_CENTRE_X - view_shift_pixels_comb when view_is_right_comb = '1' else
+   effective_centre_comb <= TRACK_CENTRE_X - view_shift_pixels_comb when view_is_right_s1 = '1' else
                             TRACK_CENTRE_X + view_shift_pixels_comb;
 
-   track_left_edge_comb  <= effective_centre_comb - spread_rom
-                               when effective_centre_comb >= spread_rom else (others => '0');
-   track_right_edge_comb <= effective_centre_comb + spread_rom;
+   track_left_edge_comb  <= effective_centre_comb - spread_s1
+                               when effective_centre_comb >= spread_s1 else (others => '0');
+   track_right_edge_comb <= effective_centre_comb + spread_s1;
 
-   -- Pipeline register: edge coords lock in once per row
-   Pipeline_Process : process(clock)
+   -- Stage 2 register
+   Pipeline_Stage_2 : process(clock)
    begin
       if rising_edge(clock) then
          track_left_edge_reg  <= track_left_edge_comb;
          track_right_edge_reg <= track_right_edge_comb;
       end if;
-   end process Pipeline_Process;
+   end process Pipeline_Stage_2;
 
-   -- Per-pixel: comparisons only
+   -- Per-pixel
    track_on <= '1' when (pixel_row    >= HORIZON_ROW           and
                          pixel_column >= track_left_edge_reg   and
                          pixel_column <= track_right_edge_reg)
