@@ -11,6 +11,7 @@ entity Moving_Object is
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
+			row_out							  : out std_logic_vector(9 downto 0); -- WORK IN PROGRESS
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
 
@@ -321,14 +322,20 @@ begin
    top_skew_low     <= top_skew_product(23 downto 14);
    top_skew_high    <= top_skew_low(8 downto 0) & '0';
 
-   top_left  <= (object_x_reg - back_w_at_row + top_skew_high) when (relative_is_right_reg = '0') else
-                (object_x_reg - back_w_at_row - top_skew_low);
-   top_right <= (object_x_reg + back_w_at_row + top_skew_low)  when (relative_is_right_reg = '0') else
-                (object_x_reg + back_w_at_row - top_skew_high);
+	-- WORK IN PROGRESS JASPER
+   top_left  <= (object_x_reg - back_w_at_row + top_skew_high) when (relative_is_right_reg = '0' and LANE /= 1) else
+					 (object_x_reg - back_w_at_row - top_skew_low)  when (relative_is_right_reg = '1' and LANE /= 1) else
+					 (object_x_reg - back_w_at_row + top_skew_low)  when (relative_is_right_reg = '0' and LANE = 1)  else
+					 (object_x_reg - back_w_at_row - top_skew_low);
+					 
+   top_right <= (object_x_reg + back_w_at_row + top_skew_low)  when (relative_is_right_reg = '0' and LANE /= 1) else
+					 (object_x_reg + back_w_at_row - top_skew_high) when (relative_is_right_reg = '1' and LANE /= 1) else
+					 (object_x_reg + back_w_at_row + top_skew_low)  when (relative_is_right_reg = '0' and LANE = 1)  else
+					 (object_x_reg + back_w_at_row - top_skew_low);
 
    object_top_on <= '1' when ((pixel_row    >= object_y_reg - object_height_reg - top_height_reg) and
                               (pixel_row    <= object_y_reg - object_height_reg)                  and
-                              (pixel_column >= top_left)                                           and
+                              (pixel_column >= top_left)                                          and
                               (pixel_column <= top_right))
                     else '0';
 
@@ -379,5 +386,6 @@ begin
    blue_out  <= object_blue  when (object_front_on = '1') else
                 top_blue     when (object_top_on   = '1') else
                 side_blue;
+	row_out <= object_distance;
 
 end architecture moving_object_behaviour;
