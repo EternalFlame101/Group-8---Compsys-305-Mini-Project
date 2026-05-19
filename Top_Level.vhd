@@ -113,13 +113,16 @@ architecture game_behaviour of Top_Level is
 				pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
 				speed                        : in  std_logic_vector(3 downto 0);
 				cat_view_position            : in  std_logic_vector(7 downto 0);
+				row_out							  : out std_logic_vector(9 downto 0);
 				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 	end component Moving_Object;
 
 	component Object_Manager is
-		generic (SPRITE_1_LANE : integer range 0 to 2 := 1;
-					SPRITE_2_LANE : integer range 0 to 2 := 0);
-		port (sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
+		generic (SPRITE_0_LANE : integer range 0 to 2 := 1;
+					SPRITE_1_LANE : integer range 0 to 2 := 0;
+					SPRITE_2_LANE : integer range 0 to 2 := 2);
+		port (sprite_0_red, sprite_0_green, sprite_0_blue : in  std_logic_vector(3 downto 0);
+				sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
 				sprite_2_red, sprite_2_green, sprite_2_blue : in  std_logic_vector(3 downto 0);
 				cat_lane                                    : in  std_logic_vector(1 downto 0);
 				red_out,      green_out,      blue_out      : out std_logic_vector(3 downto 0));
@@ -246,8 +249,10 @@ architecture game_behaviour of Top_Level is
    signal racing_red, racing_green, racing_blue 														: std_logic_vector(3 downto 0);
    signal background_layer_red, background_layer_green, background_layer_blue 				: std_logic_vector(3 downto 0);
    signal track_layer_red,      track_layer_green,      track_layer_blue      				: std_logic_vector(3 downto 0);
+	signal sprite_0_row, 		  sprite_1_row,			  sprite_2_row								: std_logic_vector(9 downto 0);
+   signal sprite_0_red,         sprite_0_green,         sprite_0_blue         				: std_logic_vector(3 downto 0);
    signal sprite_1_red,         sprite_1_green,         sprite_1_blue         				: std_logic_vector(3 downto 0);
-   signal sprite_2_red,         sprite_2_green,         sprite_2_blue         				: std_logic_vector(3 downto 0);
+	signal sprite_2_red,         sprite_2_green,         sprite_2_blue         				: std_logic_vector(3 downto 0);
    signal background_composite_red, background_composite_green, background_composite_blue : std_logic_vector(3 downto 0);
    signal sprite_composite_red,     sprite_composite_green,     sprite_composite_blue     : std_logic_vector(3 downto 0);
 
@@ -472,6 +477,7 @@ begin
 					 pixel_row         => pixel_row,
 					 speed             => conv_std_logic_vector(2, 4),
 					 cat_view_position => cat_view_position,
+					 row_out				 => sprite_1_row,
 					 red_out           => sprite_1_red,
 					 green_out         => sprite_1_green,
 					 blue_out          => sprite_1_blue);
@@ -487,14 +493,35 @@ begin
 					 pixel_row         => pixel_row,
 					 speed             => conv_std_logic_vector(2, 4),
 					 cat_view_position => cat_view_position,
+					 row_out				 => sprite_0_row,
+					 red_out           => sprite_0_red,
+					 green_out         => sprite_0_green,
+					 blue_out          => sprite_0_blue);
+					 
+	Moving_Object_Lane_Two : Moving_Object
+		generic map (REAL_HEIGHT => 80,
+						 REAL_WIDTH  => 80,
+						 LANE        => 2)
+		port map (enable            => not KEY(0),
+					 clock             => video_clock,
+					 vertical_sync     => vertical_sync,
+					 pixel_column      => pixel_column,
+					 pixel_row         => pixel_row,
+					 speed             => conv_std_logic_vector(2, 4),
+					 cat_view_position => cat_view_position,
+					 row_out				 => sprite_2_row,
 					 red_out           => sprite_2_red,
 					 green_out         => sprite_2_green,
 					 blue_out          => sprite_2_blue);
 
 	Sprite_Compositor : Object_Manager
-		generic map (SPRITE_1_LANE => 1,
-						 SPRITE_2_LANE => 0)
-		port map (sprite_1_red   => sprite_1_red,
+		generic map (SPRITE_0_LANE => 0,
+						 SPRITE_1_LANE => 1,
+						 SPRITE_2_LANE => 2)
+		port map (sprite_0_red   => sprite_0_red,
+					 sprite_0_green => sprite_0_green,
+					 sprite_0_blue  => sprite_0_blue,
+					 sprite_1_red   => sprite_1_red,
 					 sprite_1_green => sprite_1_green,
 					 sprite_1_blue  => sprite_1_blue,
 					 sprite_2_red   => sprite_2_red,
