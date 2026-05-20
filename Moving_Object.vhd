@@ -27,16 +27,18 @@ use IEEE.std_logic_unsigned.all;
 --   All clocked sub-components (the two ROMs and the Moving process) share
 --   the same clock, which should be the VGA pixel clock (video_clock).
 -- ------------------------------------------------------------------------------
-entity Moving_Object is
-   generic (REAL_HEIGHT : positive            := 60;
-            REAL_WIDTH  : positive            := 80;
-            LANE        : integer range 0 to 2 := 1);
-   port (enable, clock, vertical_sync : in  std_logic;
-			reset, obj_reset, arrived 	  : in  std_logic;
-         pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
-         speed                        : in  std_logic_vector(3 downto 0);
-         red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
-end entity Moving_Object;
+	entity Moving_Object is
+		generic (REAL_HEIGHT : positive            := 60;
+					REAL_WIDTH  : positive            := 80;
+					LANE        : integer range 0 to 2 := 1);
+		port (enable, clock, vertical_sync : in  std_logic;
+				reset  							  : in  std_logic;
+				obj_type                     : in  std_logic_vector(1 downto 0); 
+				arrived 			  				  : out std_logic;
+				pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
+				speed                        : in  std_logic_vector(3 downto 0);
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end entity Moving_Object;
 
 architecture moving_object_behaviour of Moving_Object is
 
@@ -105,7 +107,7 @@ architecture moving_object_behaviour of Moving_Object is
    -- TODO: drive this from a real reset signal instead of relying on
    -- signal-initialisation semantics.
    -- ---------------------------------------------------------------------------
-   signal object_distance : std_logic_vector(9 downto 0) := (others => '1');
+   signal object_distance : std_logic_vector(9 downto 0) := (others => '0');
 
    -- ---------------------------------------------------------------------------
    -- Per-face colours
@@ -175,8 +177,12 @@ architecture moving_object_behaviour of Moving_Object is
 
 	
 	-- Lane detection
-	signal arrived : std_logic;
-	signal obj_reset : std_logic;
+	signal object_arrived : std_logic;
+	signal object_reset   : std_logic;
+	signal object_active  : std_logic;
+
+	signal effective_height : std_logic_vector(9 downto 0);
+	
 begin
 
    -- ---------------------------------------------------------------------------
@@ -215,17 +221,22 @@ begin
    -- model's max (120 height, 80 width) via bit-slicing. Constants come from
    -- the Python-side data generation scripts.
    -- ---------------------------------------------------------------------------
-   scale_height_product <= object_height_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+	-- 01=gift(short height), 10=short, 11=tall
+	effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
+							  conv_std_logic_vector(60,  10) when obj_type = "10" else
+                       conv_std_logic_vector(120, 10);  -- "11" tall
+	
+   scale_height_product <= object_height_raw * effective_height;
    scale_width_product  <= object_width_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
    object_height <= scale_height_product(16 downto 7);
    object_width  <= scale_width_product(15 downto 6);
 
    scale_width_back_product  <= object_width_back_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
-   scale_height_back_product <= object_height_back_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+   scale_height_back_product <= object_height_back_raw * effective_height;
    object_width_back  <= scale_width_back_product(15 downto 6);
    object_height_back <= scale_height_back_product(16 downto 7);
 
-   scale_top_height_product <= top_height_raw * conv_std_logic_vector(REAL_HEIGHT, 10);
+   scale_top_height_product <= top_height_raw * effective_height;
    top_height               <= scale_top_height_product(16 downto 7);
 
    -- ---------------------------------------------------------------------------
@@ -233,31 +244,39 @@ begin
    -- falling edge of vertical_sync (i.e. once per frame), unless we've
    -- reached zero (object has arrived at the camera).
    -- ---------------------------------------------------------------------------
-   Moving : process(clock)
-   begin
-      if rising_edge(clock) then
-			arrived <= '0';
-         vertical_sync_prev <= vertical_sync;
-			
-			if obj_reset = '1' then
-				object_distance <= (others => '1');
-			
-         elsif ((vertical_sync = '0') and (vertical_sync_prev = '1')) then
-            if (enable = '1') then
-               if (object_distance = "0000000000") then
-                  arrived <= '1';
-               else
-                  object_distance <= object_distance + ("000000" & speed);
-               end if;
-            end if;
-         end if;
-      end if;
-   end process Moving;
+	Moving : process(clock)
+	begin
+		 if rising_edge(clock) then
+			  object_arrived     <= '0';
+			  vertical_sync_prev <= vertical_sync;
+
+			  if reset = '1' then
+					object_distance <= (others => '1');
+					object_active 	 <= '0';
+
+			  elsif (vertical_sync = '0') and (vertical_sync_prev = '1') then
+					if enable = '1' and object_active = '0' then
+						object_active <= '1';
+					end if;
+					
+					if object_active = '1' then
+						 if object_distance >= conv_std_logic_vector(479, 10) then
+							  object_arrived  <= '1';
+							  object_distance <= (others => '0');
+							  object_active   <= '0';
+						 else
+							  object_distance <= object_distance + ("000000" & speed);
+						 end if;
+					end if;
+				end if;
+			end if;
+	end process;
 
    -- ---------------------------------------------------------------------------
    -- Front face: a filled rectangle centred on (object_x, object_y).
    -- ---------------------------------------------------------------------------
-   object_front_on <= '1' when ((pixel_row    >= object_y - object_height) and
+   object_front_on <= '1' when ((object_active = '1' 								and
+											pixel_row    >= object_y - object_height) and
                                 (pixel_row    <= object_y)                 and
                                 (pixel_column >= object_x - object_width)  and
                                 (pixel_column <= object_x + object_width))
@@ -306,13 +325,15 @@ begin
                                 (others => '0')    when (inverted_local = "0000000000")         else
                                 actual_side_shift;
 
-   left_side_on  <= '1' when ((pixel_row    >= object_y - object_height - top_height)         and
+   left_side_on  <= '1' when ((object_active = '1' and
+										 pixel_row    >= object_y - object_height - top_height)         and
                               (pixel_row    <= object_y - side_top_boundary)                  and
                               (pixel_column >= object_x - object_width - actual_side_shift_clamped) and
                               (pixel_column <= object_x - object_width))
                     else '0';
 
-   right_side_on <= '1' when ((pixel_row    >= object_y - object_height - top_height)         and
+   right_side_on <= '1' when ((object_active = '1' and
+										 pixel_row    >= object_y - object_height - top_height)         and
                               (pixel_row    <= object_y - side_top_boundary)                  and
                               (pixel_column <= object_x + object_width + actual_side_shift_clamped) and
                               (pixel_column >= object_x + object_width))
@@ -378,5 +399,7 @@ begin
    blue_out  <= object_blue  when (object_front_on = '1') else
                 top_blue     when (object_top_on   = '1') else
                 side_blue;
+					 
+	arrived 	 <= object_arrived;
 
 end architecture moving_object_behaviour;

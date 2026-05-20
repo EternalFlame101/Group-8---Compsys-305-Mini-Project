@@ -10,7 +10,7 @@ entity lfsr_8bit is
 		clock 	:	in std_logic;
 		reset		:	in std_logic;
 		enable 	:	in std_logic;
-		output	: 	out std_logic
+		output	: 	out std_logic_vector(7 downto 0)
 	);
 end entity;
 
@@ -26,19 +26,19 @@ begin
 			if reset = '1' then
 				reg <= SEED;
 			elsif enable = '1' then 
-				fb := reg(0);
-				reg(7) <= fb; 
-				reg(6) <= reg(7);
-				reg(5) <= reg(6) xor fb; 
-				reg(4) <= reg(5) xor fb;
-				reg(3) <= reg(4) xor fb;
-				reg(2) <= reg(3);
-				reg(1) <= reg(2);
-				reg(0) <= reg(1);
+				fb := reg(7);           -- tap MSB out
+				reg(7) <= reg(6);
+				reg(6) <= reg(5);
+				reg(5) <= reg(4) xor fb;
+				reg(4) <= reg(3) xor fb;
+				reg(3) <= reg(2) xor fb;
+				reg(2) <= reg(1);
+				reg(1) <= reg(0);
+				reg(0) <= fb;
 			end if;
 		end if; 
 	end process;
 	
-	output <= reg(0);
+	output <= reg;
 
 end architecture beh;

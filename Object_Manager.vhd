@@ -40,7 +40,7 @@ begin
 					 sprite_1_green when (sprite_1_active = '1') else
                 sprite_2_green when (sprite_2_active = '1') else
                 "0000";
-   blue_out  <= sprite_0_green when (sprite_0_active = '1') else
+   blue_out  <= sprite_0_blue  when (sprite_0_active = '1') else
 					 sprite_1_blue  when (sprite_1_active = '1') else
                 sprite_2_blue  when (sprite_2_active = '1') else
                 "0000";
