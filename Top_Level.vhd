@@ -15,6 +15,8 @@ entity Top_Level is
          LEDR                : out   std_logic_vector(9 downto 0);
          PS2_DAT             : inout std_logic;
          PS2_CLK             : inout std_logic;
+			PS2_DAT2            : inout std_logic;
+			PS2_CLK2            : inout std_logic;
 
          -- SD card (DE0-CV onboard slot, native pin names)
          SD_CLK              : out   std_logic;
@@ -72,7 +74,7 @@ architecture game_behaviour of Top_Level is
       port (clock, vertical_sync    : in  std_logic;
             pixel_row, pixel_column : in  std_logic_vector(9 downto 0);
             radius                  : in  std_logic_vector(6 downto 0);
-            left_click              : in  std_logic;
+            left_click	            : in  std_logic;
             ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
    end component Orbiting_Ball;
 
@@ -173,7 +175,7 @@ architecture game_behaviour of Top_Level is
             reset                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
-            mouse_left_click             : in  std_logic;
+            mouse_left_click	           : in  std_logic;
             any_key_pressed              : in  std_logic;
             start_screen_active          : out std_logic;
             selected_mode                : out std_logic_vector(1 downto 0);
@@ -215,8 +217,8 @@ architecture game_behaviour of Top_Level is
 					LANE_TRANSITION_FRAMES : positive := 64);
 		port (clock, reset, vertical_sync             : in  std_logic;
 				pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
-				mouse_left_click                        : in  std_logic;
-				mouse_right_click                       : in  std_logic;
+				mouse_left_click		                   : in  std_logic;
+				mouse_right_click		                   : in  std_logic;
 				jump_input                              : in  std_logic;
 				player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
 				player_lane                             : out std_logic_vector(1 downto 0);
@@ -280,6 +282,12 @@ architecture game_behaviour of Top_Level is
    signal right_click  : std_logic;
    signal mouse_row    : std_logic_vector(9 downto 0);
    signal mouse_column : std_logic_vector(9 downto 0);
+	
+	-- Second mouse signals (player 2)
+	signal left_click_2   : std_logic;
+	signal right_click_2  : std_logic;
+	signal mouse_row_2    : std_logic_vector(9 downto 0);
+	signal mouse_column_2 : std_logic_vector(9 downto 0);
 
    -- SD card signals
    signal init_done_signal       : std_logic;
@@ -348,7 +356,7 @@ begin
                 pixel_row     => pixel_row,
                 pixel_column  => pixel_column,
                 radius        => conv_std_logic_vector(100, 7),
-                left_click    => left_click,
+                left_click    => left_click_2,
                 ball_x_out    => ball_x_out,
                 ball_y_out    => ball_y_out);
 
@@ -366,8 +374,8 @@ begin
       generic map (SIZE_CONST => 8)
       port map (pixel_column => pixel_column,
                 pixel_row    => pixel_row,
-                ball_x       => mouse_column,
-                ball_y       => mouse_row,
+                ball_x       => mouse_column_2,
+                ball_y       => mouse_row_2,
                 red          => mouse_cursor_red,
                 green        => mouse_cursor_green,
                 blue         => mouse_cursor_blue);
@@ -565,11 +573,21 @@ begin
                 right_button        => right_click,
                 mouse_cursor_row    => mouse_row,
                 mouse_cursor_column => mouse_column);
+					 
+	Mouse_Controller_2 : Mouse
+		port map (clock               => CLOCK_50,
+					 reset               => not RESET_N,
+					 mouse_data          => PS2_DAT2,
+					 mouse_clock         => PS2_CLK2,
+					 left_button         => left_click_2,
+					 right_button        => right_click_2,
+					 mouse_cursor_row    => mouse_row_2,
+					 mouse_cursor_column => mouse_column_2);
 
    SD_Initialiser : SD_Init
       port map (clock              => CLOCK_50,
                 reset              => not RESET_N,
-                start_init         => left_click,
+                start_init         => left_click_2,
                 byte_address       => SW(8 downto 0),
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
@@ -596,9 +614,9 @@ begin
                 reset               => not RESET_N,
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column,
-                mouse_row           => mouse_row,
-                mouse_column        => mouse_column,
-                mouse_left_click    => left_click,
+                mouse_row           => mouse_row_2,
+                mouse_column        => mouse_column_2,
+                mouse_left_click		=> left_click_2,
                 any_key_pressed     => any_key_pressed,
                 start_screen_active => start_screen_active,
                 selected_mode       => selected_mode,
@@ -654,20 +672,20 @@ begin
 						 SCREEN_HEIGHT => 480,
 						 SPRITE_SIZE   => 32,
 						 SPRITE_SCALE  => 3)
-		port map (clock             => video_clock,
-					 reset             => not RESET_N,
-					 vertical_sync     => vertical_sync,
-					 pixel_row         => pixel_row,
-					 pixel_column      => pixel_column,
-					 mouse_left_click  => left_click,
-					 mouse_right_click => right_click,
-					 jump_input        => not KEY(0),
-					 player_red        => player_red,
-					 player_green      => player_green,
-					 player_blue       => player_blue,
-					 player_lane       => player_lane,
-					 player_state      => player_state,
-					 cat_view_position => cat_view_position);
+		port map (clock             		=> video_clock,
+					 reset             		=> not RESET_N,
+					 vertical_sync     		=> vertical_sync,
+					 pixel_row         		=> pixel_row,
+					 pixel_column      		=> pixel_column,
+					 mouse_left_click		  	=> left_click_2,
+					 mouse_right_click		=> right_click_2,
+					 jump_input        		=> not KEY(0),
+					 player_red        		=> player_red,
+					 player_green      		=> player_green,
+					 player_blue       		=> player_blue,
+					 player_lane       		=> player_lane,
+					 player_state      		=> player_state,
+					 cat_view_position 		=> cat_view_position);
 
    Player_Object_Compositor : Player_And_Objects_Manager
       port map (player_red    => player_red,
