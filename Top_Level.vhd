@@ -209,9 +209,9 @@ architecture game_behaviour of Top_Level is
 	component Player is
 		generic (SCREEN_WIDTH           : positive := 640;
 					SCREEN_HEIGHT          : positive := 480;
-					SPRITE_SIZE            : positive := 32;
-					SPRITE_SCALE           : positive := 4;
-					WALK_FRAME_DURATION    : positive := 10;
+					SPRITE_SIZE            : positive := 64;
+					SPRITE_SCALE           : positive := 2;
+					WALK_FRAME_DURATION    : positive := 8;
 					JUMP_TOTAL_FRAMES      : positive := 120;
 					JUMP_PEAK_HEIGHT       : positive := 60;
 					LANE_TRANSITION_FRAMES : positive := 64);
@@ -631,10 +631,10 @@ begin
    -- Centred behind the title block (title centre y ~ 132): sprite_y = 132 - 64 = 68.
    -- So the sprite spans (256..384) x (68..196), sitting behind the title and credits.
    Start_Screen_Background_Sprite : Sprites_Display
-      generic map (SPRITE_WIDTH  => 32,
-                   SPRITE_HEIGHT => 32,
+      generic map (SPRITE_WIDTH  => 64,
+                   SPRITE_HEIGHT => 64,
                    ADDR_BITS     => 12,
-                   SCALE         => 4,
+                   SCALE         => 2,
                    MIF_FILE      => "mif/jasper.mif")
       port map (clock        => video_clock,
                 pixel_row    => pixel_row,
@@ -670,8 +670,8 @@ begin
 	Player_Sprite_Renderer : Player
 		generic map (SCREEN_WIDTH  => 640,
 						 SCREEN_HEIGHT => 480,
-						 SPRITE_SIZE   => 32,
-						 SPRITE_SCALE  => 3)
+						 SPRITE_SIZE   => 64,
+						 SPRITE_SCALE  => 2)
 		port map (clock             		=> video_clock,
 					 reset             		=> not RESET_N,
 					 vertical_sync     		=> vertical_sync,
