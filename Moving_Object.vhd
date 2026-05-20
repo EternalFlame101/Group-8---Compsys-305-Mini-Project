@@ -135,13 +135,12 @@ architecture moving_object_behaviour of Moving_Object is
 
    signal back_width_at_row_combinational            : std_logic_vector(9 downto 0);
    signal side_top_boundary_combinational            : std_logic_vector(9 downto 0);
-   signal off_axis_top_skew_combinational            : std_logic_vector(9 downto 0);
+   signal top_skew_low_combinational                 : std_logic_vector(9 downto 0);
+   signal top_skew_high_combinational                : std_logic_vector(9 downto 0);
    signal baseline_top_cave_in_combinational         : std_logic_vector(9 downto 0);
    signal side_shift_unclamped_scaled_combinational  : std_logic_vector(9 downto 0);
    signal top_max_extension_scaled_combinational     : std_logic_vector(9 downto 0);
-   signal far_edge_cave_in_combinational             : std_logic_vector(9 downto 0);
-   signal near_edge_magnitude_combinational          : std_logic_vector(9 downto 0);
-   signal near_edge_is_outward_combinational         : std_logic;
+   signal apply_baseline_cave_in_combinational       : std_logic;
 
    -- Per-pixel Stage 1 registers
    signal side_top_boundary_pixel_stage_1            : std_logic_vector(9 downto 0);
@@ -369,20 +368,16 @@ begin
 
    back_width_at_row_combinational            <= object_width_stage_2 - width_difference_product(17 downto 8);
    side_top_boundary_combinational            <= height_difference_product(18 downto 9);
-   off_axis_top_skew_combinational            <= top_skew_product(23 downto 14);
+   top_skew_low_combinational                 <= top_skew_product(23 downto 14);
+   top_skew_high_combinational                <= top_skew_low_combinational(8 downto 0) & '0';
    baseline_top_cave_in_combinational         <= baseline_top_cave_in_product(18 downto 9);
    side_shift_unclamped_scaled_combinational  <= side_shift_product(23 downto 14);
    top_max_extension_scaled_combinational     <= top_max_extension_scaled_product(15 downto 6);
 
-   -- Combine baseline and off-axis amounts here in Stage 1 (registered) so
-   -- Stage 2 is just a 2-way mux. far_edge_cave_in is always positive; the
-   -- near edge is signed, so we encode it as (magnitude, is_outward).
-   far_edge_cave_in_combinational     <= baseline_top_cave_in_combinational + off_axis_top_skew_combinational;
-   near_edge_magnitude_combinational  <= (baseline_top_cave_in_combinational - off_axis_top_skew_combinational)
-                                            when baseline_top_cave_in_combinational >= off_axis_top_skew_combinational
-                                            else (off_axis_top_skew_combinational - baseline_top_cave_in_combinational);
-   near_edge_is_outward_combinational <= '1' when off_axis_top_skew_combinational > baseline_top_cave_in_combinational
-                                             else '0';
+   -- Frustum cave-in on the top face only displays when the cat is exactly
+   -- centred on this box (i.e. fully settled in this box's lane). Other times,
+   -- the cave-in is zero and the top edges follow File-2's off-axis skew math.
+   apply_baseline_cave_in_combinational <= '1' when box_is_off_centre_stage_2 = '0' else '0';
 
    -- ========================================================================
    -- Boundary values + underflow/overflow flags (Pixel Stage 1 combinational)
@@ -410,39 +405,48 @@ begin
    -- the result means the true value is negative (underflowed); bits 10..0
    -- carry the magnitude. The boundary value stored is the low 10 bits, which
    -- are valid when the flag is '0'.
+   --
+   -- Math: when the cat is dead-on (apply_baseline_cave_in = '1'), both edges
+   -- cave inward symmetrically using baseline_top_cave_in (this makes the
+   -- in-lane box look like a proper frustum). Otherwise we use File-2's
+   -- off-axis skew math uniformly across all lanes (no LANE=1 special case):
+   --   box on left of cat (box_side_of_cat = '0'):
+   --       top_left  = object_x - back_w + top_skew_high   (far edge, more cave-in)
+   --       top_right = object_x + back_w + top_skew_low    (near edge, flares outward)
+   --   box on right of cat (box_side_of_cat = '1'):
+   --       top_left  = object_x - back_w - top_skew_low    (near edge, flares outward)
+   --       top_right = object_x + back_w - top_skew_high   (far edge, more cave-in)
    Top_Edges_Boundary : process(object_x_stage_2, back_width_at_row_combinational,
-                                far_edge_cave_in_combinational,
-                                near_edge_magnitude_combinational,
-                                near_edge_is_outward_combinational,
-                                box_side_of_cat_stage_2, box_is_off_centre_stage_2)
-      variable left_extended  : std_logic_vector(11 downto 0);
-      variable right_extended : std_logic_vector(11 downto 0);
-      variable object_x_extended  : std_logic_vector(11 downto 0);
-      variable back_w_extended    : std_logic_vector(11 downto 0);
-      variable far_edge_extended  : std_logic_vector(11 downto 0);
-      variable near_edge_extended : std_logic_vector(11 downto 0);
+                                top_skew_low_combinational, top_skew_high_combinational,
+                                baseline_top_cave_in_combinational,
+                                apply_baseline_cave_in_combinational,
+                                box_side_of_cat_stage_2)
+      variable left_extended       : std_logic_vector(11 downto 0);
+      variable right_extended      : std_logic_vector(11 downto 0);
+      variable object_x_extended   : std_logic_vector(11 downto 0);
+      variable back_w_extended     : std_logic_vector(11 downto 0);
+      variable skew_low_extended   : std_logic_vector(11 downto 0);
+      variable skew_high_extended  : std_logic_vector(11 downto 0);
+      variable baseline_extended   : std_logic_vector(11 downto 0);
    begin
       object_x_extended  := "00" & object_x_stage_2;
       back_w_extended    := "00" & back_width_at_row_combinational;
-      far_edge_extended  := "00" & far_edge_cave_in_combinational;
-      near_edge_extended := "00" & near_edge_magnitude_combinational;
+      skew_low_extended  := "00" & top_skew_low_combinational;
+      skew_high_extended := "00" & top_skew_high_combinational;
+      baseline_extended  := "00" & baseline_top_cave_in_combinational;
 
-      -- Top-left: object_x - back_w + (far_edge | +near | -near)
-      if box_side_of_cat_stage_2 = '0' and box_is_off_centre_stage_2 = '1' then
-         left_extended := object_x_extended - back_w_extended + far_edge_extended;
-      elsif near_edge_is_outward_combinational = '1' then
-         left_extended := object_x_extended - back_w_extended - near_edge_extended;
+      if apply_baseline_cave_in_combinational = '1' then
+         -- Dead-on case: symmetric frustum cave-in on both edges
+         left_extended  := object_x_extended - back_w_extended + baseline_extended;
+         right_extended := object_x_extended + back_w_extended - baseline_extended;
+      elsif box_side_of_cat_stage_2 = '0' then
+         -- Box on left of cat (we view from its right side)
+         left_extended  := object_x_extended - back_w_extended + skew_high_extended;
+         right_extended := object_x_extended + back_w_extended + skew_low_extended;
       else
-         left_extended := object_x_extended - back_w_extended + near_edge_extended;
-      end if;
-
-      -- Top-right: object_x + back_w + (-far_edge | +near | -near)
-      if box_side_of_cat_stage_2 = '1' then
-         right_extended := object_x_extended + back_w_extended - far_edge_extended;
-      elsif near_edge_is_outward_combinational = '1' then
-         right_extended := object_x_extended + back_w_extended + near_edge_extended;
-      else
-         right_extended := object_x_extended + back_w_extended - near_edge_extended;
+         -- Box on right of cat (we view from its left side)
+         left_extended  := object_x_extended - back_w_extended - skew_low_extended;
+         right_extended := object_x_extended + back_w_extended - skew_high_extended;
       end if;
 
       top_left_combinational            <= left_extended(9 downto 0);
