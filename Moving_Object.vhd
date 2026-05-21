@@ -245,6 +245,7 @@ begin
    -- Per-frame distance update: advance object_distance by 'speed' on the
    -- falling edge of vertical_sync (i.e. once per frame), unless we've
    -- reached zero (object has arrived at the camera).
+	-- distance is from 0 to 160
    -- ---------------------------------------------------------------------------
 	Moving : process(clock)
 	begin
