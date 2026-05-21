@@ -123,6 +123,9 @@ architecture game_behaviour of Top_Level is
                REAL_WIDTH  : positive             := 80;
                LANE        : integer range 0 to 2 := 1);
       port (enable, clock, vertical_sync : in  std_logic;
+            reset						 	 		       : in  std_logic;
+				    obj_type								     : in  std_logic_vector(1 downto 0);
+				    arrived				 				       : out std_logic;
             pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
             speed                        : in  std_logic_vector(3 downto 0);
             cat_view_position            : in  std_logic_vector(7 downto 0);
@@ -216,6 +219,20 @@ architecture game_behaviour of Top_Level is
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
+	
+	component Spawn_Control is
+		port(clock         : in  std_logic;
+			  reset         : in  std_logic;
+			  vertical_sync : in  std_logic;
+			  arrived_0     : in  std_logic;
+			  arrived_1     : in  std_logic;
+			  arrived_2     : in  std_logic;
+			  lane_0_type   : out std_logic_vector(1 downto 0);
+			  lane_1_type   : out std_logic_vector(1 downto 0);
+			  lane_2_type   : out std_logic_vector(1 downto 0);
+			  debug_vsync_pulse : out std_logic;
+			  debug_lfsr        : out std_logic_vector(7 downto 0));
+	end component Spawn_Control;
 
    component Player is
       generic (SCREEN_WIDTH           : positive := 640;
@@ -326,6 +343,20 @@ architecture game_behaviour of Top_Level is
    signal read_byte_signal : std_logic_vector(7 downto 0);
 
    signal audio_dac_data : std_logic_vector(7 downto 0);
+	
+	
+	-- Spawn control signals 
+	signal lane_0_type : std_logic_vector(1 downto 0);
+	signal lane_1_type : std_logic_vector(1 downto 0);
+	signal lane_2_type : std_logic_vector(1 downto 0);
+	
+	
+	signal arrived_0, arrived_1, arrived_2 : std_logic;
+	
+	-- Testing
+	signal debug_vsync_pulse : std_logic;
+	signal debug_lfsr        : std_logic_vector(7 downto 0);
+	signal arrived_sticky : std_logic := '0';
 
    -- Player signals
    signal player_red, player_green, player_blue                            : std_logic_vector(3 downto 0);
@@ -506,30 +537,34 @@ begin
                 red_out          => background_composite_red,
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
-
-   Moving_Object_Lane_Zero : Moving_Object
-      generic map (REAL_HEIGHT => 120,
-                   REAL_WIDTH  => 70,
-                   LANE        => 0)
-      port map (enable            => not KEY(3),
-                clock             => video_clock,
-                vertical_sync     => vertical_sync,
-                pixel_column      => pixel_column,
-                pixel_row         => pixel_row,
-                speed             => conv_std_logic_vector(2, 4),
-                cat_view_position => cat_view_position,
-                row_out           => sprite_0_row,
-                red_out           => sprite_0_red,
-                green_out         => sprite_0_green,
-                blue_out          => sprite_0_blue);
+					 
+	Moving_Object_Lane_Two : Moving_Object
+      generic map (REAL_HEIGHT => 60,
+                   REAL_WIDTH  => 80,
+                   LANE        => 2)
+      port map (enable        => lane_2_type(1) or lane_2_type(0),
+                clock         => video_clock,
+                vertical_sync => vertical_sync,
+					 reset 			=> not RESET_N,
+					 obj_type 		=> lane_2_type,
+					 arrived			=> arrived_2,
+                pixel_column  => pixel_column,
+                pixel_row     => pixel_row,
+                speed         => conv_std_logic_vector(2, 4),
+                red_out       => sprite_2_red,
+                green_out     => sprite_2_green,
+                blue_out      => sprite_2_blue);
 
    Moving_Object_Lane_One : Moving_Object
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => not KEY(2),
+      port map (enable            => lane_1_type(1) or lane_1_type(0),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
+                reset 			      => not RESET_N,
+					      obj_type 		      => lane_1_type,
+					      arrived			      => arrived_1,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
@@ -539,13 +574,16 @@ begin
                 green_out         => sprite_1_green,
                 blue_out          => sprite_1_blue);
 
-   Moving_Object_Lane_Two : Moving_Object
+   Moving_Object_Lane_Zero : Moving_Object
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 2)
-      port map (enable            => not KEY(1),
+      port map (enable            => lane_0_type(1) or lane_0_type(0),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
+                reset			        => not RESET_N,
+					      obj_type 		      => lane_0_type,
+					      arrived			      => arrived_0,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
@@ -737,6 +775,19 @@ begin
                 green_out     => combined_sprite_green,
                 blue_out      => combined_sprite_blue);
 
+		
+	Spawn_Ctrl : Spawn_Control
+		port map(clock 			=> video_clock,
+					reset 			=> not(RESET_N),
+					vertical_sync  => vertical_sync,
+					arrived_0		=> arrived_0,
+					arrived_1		=> arrived_1,
+					arrived_2		=> arrived_2,
+					lane_0_type		=> lane_0_type, 
+					lane_1_type		=> lane_1_type,
+					lane_2_type		=> lane_2_type,
+					debug_vsync_pulse => debug_vsync_pulse,
+					debug_lfsr        => debug_lfsr);
    -- ---------------------------------------------------------------------------
    -- LED assignments
    --   LEDR(0)   = keyboard left arrow held
@@ -783,6 +834,26 @@ begin
 
    GPIO_0(35 downto 12) <= (others => '0');
 
+	
+	
+	-- LFSR testing
+--	LEDR(8) <= vertical_sync;
+--	LEDR(7 downto 0) <= debug_lfsr;         -- should change pattern over time
+--
+--	LEDR(9) <= pll_locked;
+--	
+--	LEDR(1) <= arrived_1;
+--	LEDR(0) <= arrived_2;
+--	
+--	process(video_clock)
+--	begin
+--		 if rising_edge(video_clock) then
+--			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
+--		 end if;
+--	end process;
+--
+--	LEDR(2) <= arrived_sticky;
+--	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low : Hex_To_Seven_Segment
       port map (hex_value      => read_byte_signal(3 downto 0),
@@ -822,4 +893,5 @@ begin
    VGA_HS <= horizontal_sync;
    VGA_VS <= vertical_sync;
 
+	
 end architecture game_behaviour;

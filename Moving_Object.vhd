@@ -3,17 +3,22 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
+
 entity Moving_Object is
    generic (REAL_HEIGHT : positive             := 60;
             REAL_WIDTH  : positive             := 80;
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
+         reset  							  : in  std_logic;
+				obj_type                     : in  std_logic_vector(1 downto 0); 
+				arrived 			  				  : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
          row_out                      : out std_logic_vector(9 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
+
 
 architecture moving_object_behaviour of Moving_Object is
 
@@ -192,6 +197,16 @@ architecture moving_object_behaviour of Moving_Object is
    -- Output registers
    signal red_out_register, green_out_register, blue_out_register : std_logic_vector(3 downto 0);
 
+	
+	-- Lane detection
+	signal object_arrived : std_logic;
+	signal object_reset   : std_logic;
+	signal object_active  : std_logic;
+
+	signal effective_height : std_logic_vector(9 downto 0);
+	
+	signal enable_latch : std_logic := '0';
+	
 begin
 
    -- ROM lookups
@@ -212,6 +227,106 @@ begin
                 track_row          => object_distance,
                 perspective_output => lane_spread_rom);
 
+   -- FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED
+   -- 01=gift(short height), 10=short, 11=tall
+	 effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
+							         conv_std_logic_vector(60,  10) when obj_type = "10" else
+                       conv_std_logic_vector(120, 10);  -- "11" tall
+	
+   scale_height_product <= object_height_raw * effective_height;
+   scale_width_product  <= object_width_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
+    
+   scale_width_back_product  <= object_width_back_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
+   scale_height_back_product <= object_height_back_raw * effective_height;
+
+   scale_top_height_product <= top_height_raw * effective_height;
+     
+   Moving : process(clock)
+	 begin
+		 if rising_edge(clock) then
+			  object_arrived     <= '0';
+			  vertical_sync_prev <= vertical_sync;
+
+			  if reset = '1' then
+					object_distance <= (others => '1');
+					object_active   <= '0';
+					enable_latch    <= '0';
+			  else
+					-- Update enable latch combinationally each cycle
+					if enable = '0' then
+						 enable_latch <= '0';
+					elsif object_active = '0' then
+						 enable_latch <= enable;
+					end if;
+
+					if (vertical_sync = '0') and (vertical_sync_prev = '1') then
+						 if enable_latch = '1' and object_active = '0' then
+							  object_active <= '1';
+						 end if;
+
+						 if object_active = '1' then
+							  if object_distance >= conv_std_logic_vector(479, 10) then
+									object_arrived  <= '1';
+									object_distance <= (others => '0');
+									object_active   <= '0';
+							  else
+									object_distance <= object_distance + ("000000" & speed);
+							  end if;
+						 end if;
+					end if;
+			  end if;
+		 end if;
+	 end process;
+
+     left_side_on  <= '1' when ((object_active = '1' and
+										 pixel_row    >= object_y - object_height - top_height)         and
+                              (pixel_row    <= object_y - side_top_boundary)                  and
+                              (pixel_column >= object_x - object_width - actual_side_shift_clamped) and
+                              (pixel_column <= object_x - object_width))
+                    else '0';
+
+     right_side_on <= '1' when ((object_active = '1' and
+										 pixel_row    >= object_y - object_height - top_height)         and
+                              (pixel_row    <= object_y - side_top_boundary)                  and
+                              (pixel_column <= object_x + object_width + actual_side_shift_clamped) and
+                              (pixel_column >= object_x + object_width))
+                    else '0';
+    object_front_on <= '1' when ((object_active = '1' 								and
+											pixel_row    >= object_y - object_height) and
+                                (pixel_row    <= object_y)                 and
+                                (pixel_column >= object_x - object_width)  and
+                                (pixel_column <= object_x + object_width))
+                      else '0';
+
+    object_red   <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_front_on = '1') else                        -- others = green
+						 "0000";
+	  object_green <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+						 "0111" when (object_front_on = '1') else
+						 "0000";
+	  object_blue  <= "0000" when (object_front_on = '1' and obj_type = "01") else
+						 "0001" when (object_front_on = '1') else
+						 "0000";
+      
+   side_red   <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_side_on = '1') else                        -- others = green
+						 "0000";
+	side_green <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
+						 "0011" when (object_side_on = '1') else
+						 "0000";
+	side_blue  <= "0000" when (object_side_on = '1' and obj_type = "01") else
+						 "0001" when (object_side_on = '1') else
+						 "0000";
+    
+    top_red   <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_top_on = '1') else                        -- others = green
+						 "0000";
+	top_green <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
+						 "1111" when (object_top_on = '1') else
+						 "0000";
+	top_blue  <= "0000" when (object_top_on = '1' and obj_type = "01") else
+						 "0001" when (object_top_on = '1') else
+						 "0000";
    -- ========================================================================
    -- Frame Stage 1 combinational
    -- ========================================================================
@@ -599,6 +714,7 @@ begin
    green_out <= green_out_register;
    blue_out  <= blue_out_register;
 
+	arrived 	 <= object_arrived;
    row_out <= object_distance;
 
 end architecture moving_object_behaviour;
