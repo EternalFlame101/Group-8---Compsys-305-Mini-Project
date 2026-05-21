@@ -15,6 +15,8 @@ entity Top_Level is
          LEDR                : out   std_logic_vector(9 downto 0);
          PS2_DAT             : inout std_logic;
          PS2_CLK             : inout std_logic;
+         PS2_DAT2            : inout std_logic;
+         PS2_CLK2            : inout std_logic;
 
          -- SD card (DE0-CV onboard slot, native pin names)
          SD_CLK              : out   std_logic;
@@ -68,6 +70,17 @@ architecture game_behaviour of Top_Level is
             mouse_clock               : inout std_logic);
    end component Mouse;
 
+   component Keyboard is
+      port (clock              : in    std_logic;
+            reset              : in    std_logic;
+            ps2_data           : inout std_logic;
+            ps2_clock          : inout std_logic;
+            left_key           : out   std_logic;
+            right_key          : out   std_logic;
+            jump_key           : out   std_logic;
+            dive_key           : out   std_logic);
+   end component Keyboard;
+
    component Orbiting_Ball is
       port (clock, vertical_sync    : in  std_logic;
             pixel_row, pixel_column : in  std_logic_vector(9 downto 0);
@@ -93,9 +106,10 @@ architecture game_behaviour of Top_Level is
    end component Background_Generator;
 
    component Track_Generator is
-      port (clock, vertical_sync          : in  std_logic;
-            pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-            red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
+      port (clock, vertical_sync         : in  std_logic;
+            pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+            cat_view_position            : in  std_logic_vector(7 downto 0);
+            red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Track_Generator;
 
    component Background_Manager is
@@ -105,18 +119,25 @@ architecture game_behaviour of Top_Level is
    end component Background_Manager;
 
    component Moving_Object is
-      generic (REAL_HEIGHT : positive            := 60;
-               REAL_WIDTH  : positive            := 80;
+      generic (REAL_HEIGHT : positive             := 60;
+               REAL_WIDTH  : positive             := 80;
                LANE        : integer range 0 to 2 := 1);
-      port (enable, clock, vertical_sync   : in  std_logic;
-            pixel_column, pixel_row        : in  std_logic_vector(9 downto 0);
-            speed                          : in  std_logic_vector(3 downto 0);
-            red_out, green_out, blue_out   : out std_logic_vector(3 downto 0));
+      port (enable, clock, vertical_sync : in  std_logic;
+            pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
+            speed                        : in  std_logic_vector(3 downto 0);
+            cat_view_position            : in  std_logic_vector(7 downto 0);
+            row_out                      : out std_logic_vector(9 downto 0);
+            red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Moving_Object;
 
    component Object_Manager is
-      port (sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
+      generic (SPRITE_0_LANE : integer range 0 to 2 := 1;
+               SPRITE_1_LANE : integer range 0 to 2 := 0;
+               SPRITE_2_LANE : integer range 0 to 2 := 2);
+      port (sprite_0_red, sprite_0_green, sprite_0_blue : in  std_logic_vector(3 downto 0);
+            sprite_1_red, sprite_1_green, sprite_1_blue : in  std_logic_vector(3 downto 0);
             sprite_2_red, sprite_2_green, sprite_2_blue : in  std_logic_vector(3 downto 0);
+            cat_lane                                    : in  std_logic_vector(1 downto 0);
             red_out,      green_out,      blue_out      : out std_logic_vector(3 downto 0));
    end component Object_Manager;
 
@@ -196,6 +217,32 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
 
+   component Player is
+      generic (SCREEN_WIDTH           : positive := 640;
+               SCREEN_HEIGHT          : positive := 480;
+               SPRITE_SIZE            : positive := 64;
+               SPRITE_SCALE           : positive := 2;
+               WALK_FRAME_DURATION    : positive := 8;
+               JUMP_TOTAL_FRAMES      : positive := 120;
+               JUMP_PEAK_HEIGHT       : positive := 60;
+               LANE_TRANSITION_FRAMES : positive := 64);
+      port (clock, reset, vertical_sync             : in  std_logic;
+            pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
+            mouse_left_click                        : in  std_logic;
+            mouse_right_click                       : in  std_logic;
+            jump_input                              : in  std_logic;
+            player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
+            player_lane                             : out std_logic_vector(1 downto 0);
+            player_state                            : out std_logic;
+            cat_view_position                       : out std_logic_vector(7 downto 0));
+   end component Player;
+
+   component Player_And_Objects_Manager is
+      port (player_red,  player_green,  player_blue  : in  std_logic_vector(3 downto 0);
+            objects_red, objects_green, objects_blue : in  std_logic_vector(3 downto 0);
+            red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
+   end component Player_And_Objects_Manager;
+
    -- ---------------------------------------------------------------------------
    -- Signals
    -- ---------------------------------------------------------------------------
@@ -205,32 +252,34 @@ architecture game_behaviour of Top_Level is
    signal video_on                       : std_logic;
 
    -- Training-mode graphics layer signals (orbiting ball + text + mouse demo)
-   signal training_red, training_green, training_blue 				: std_logic_vector(3 downto 0);
-   signal orbit_ball_red,  orbit_ball_green,  orbit_ball_blue  	: std_logic_vector(3 downto 0);
-   signal mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : std_logic_vector(3 downto 0);
-   signal text_small_red,  text_small_green,  text_small_blue  	: std_logic_vector(3 downto 0);
-   signal text_large_red,  text_large_green,  text_large_blue  	: std_logic_vector(3 downto 0);
+   signal training_red, training_green, training_blue              : std_logic_vector(3 downto 0);
+   signal orbit_ball_red,  orbit_ball_green,  orbit_ball_blue      : std_logic_vector(3 downto 0);
+   signal mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue  : std_logic_vector(3 downto 0);
+   signal text_small_red,  text_small_green,  text_small_blue      : std_logic_vector(3 downto 0);
+   signal text_large_red,  text_large_green,  text_large_blue      : std_logic_vector(3 downto 0);
 
    -- Racing-mode graphics layer signals (background + track + moving objects)
-   signal racing_red, racing_green, racing_blue 														: std_logic_vector(3 downto 0);
-   signal background_layer_red, background_layer_green, background_layer_blue 				: std_logic_vector(3 downto 0);
-   signal track_layer_red,      track_layer_green,      track_layer_blue      				: std_logic_vector(3 downto 0);
-   signal sprite_1_red,         sprite_1_green,         sprite_1_blue         				: std_logic_vector(3 downto 0);
-   signal sprite_2_red,         sprite_2_green,         sprite_2_blue         				: std_logic_vector(3 downto 0);
-   signal background_composite_red, background_composite_green, background_composite_blue : std_logic_vector(3 downto 0);
-   signal sprite_composite_red,     sprite_composite_green,     sprite_composite_blue     : std_logic_vector(3 downto 0);
+   signal racing_red, racing_green, racing_blue                                            : std_logic_vector(3 downto 0);
+   signal background_layer_red, background_layer_green, background_layer_blue              : std_logic_vector(3 downto 0);
+   signal track_layer_red,      track_layer_green,      track_layer_blue                   : std_logic_vector(3 downto 0);
+   signal sprite_0_row,         sprite_1_row,           sprite_2_row                       : std_logic_vector(9 downto 0);
+   signal sprite_0_red,         sprite_0_green,         sprite_0_blue                      : std_logic_vector(3 downto 0);
+   signal sprite_1_red,         sprite_1_green,         sprite_1_blue                      : std_logic_vector(3 downto 0);
+   signal sprite_2_red,         sprite_2_green,         sprite_2_blue                      : std_logic_vector(3 downto 0);
+   signal background_composite_red, background_composite_green, background_composite_blue  : std_logic_vector(3 downto 0);
+   signal sprite_composite_red,     sprite_composite_green,     sprite_composite_blue      : std_logic_vector(3 downto 0);
 
    -- Start screen output signals
-   signal start_screen_red    		: std_logic_vector(3 downto 0);
-   signal start_screen_green  		: std_logic_vector(3 downto 0);
-   signal start_screen_blue   		: std_logic_vector(3 downto 0);
-   signal start_screen_sprite_red   : std_logic_vector(3 downto 0);
-   signal start_screen_sprite_green : std_logic_vector(3 downto 0);
-   signal start_screen_sprite_blue  : std_logic_vector(3 downto 0);
-   signal start_screen_active 		: std_logic;
-   signal selected_mode       		: std_logic_vector(1 downto 0);
-   signal latched_mode        		: std_logic_vector(1 downto 0);
-   signal any_key_pressed     		: std_logic;
+   signal start_screen_red           : std_logic_vector(3 downto 0);
+   signal start_screen_green         : std_logic_vector(3 downto 0);
+   signal start_screen_blue          : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_red    : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_green  : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_blue   : std_logic_vector(3 downto 0);
+   signal start_screen_active        : std_logic;
+   signal selected_mode              : std_logic_vector(1 downto 0);
+   signal latched_mode               : std_logic_vector(1 downto 0);
+   signal any_key_pressed            : std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
    signal red_final, green_final, blue_final : std_logic_vector(3 downto 0);
@@ -239,11 +288,28 @@ architecture game_behaviour of Top_Level is
    signal pixel_row, pixel_column : std_logic_vector(9 downto 0);
    signal ball_x_out, ball_y_out  : std_logic_vector(9 downto 0);
 
-   -- Mouse signals
+   -- Mouse signals (single mouse, now on PS/2 port 2)
    signal left_click   : std_logic;
    signal right_click  : std_logic;
    signal mouse_row    : std_logic_vector(9 downto 0);
    signal mouse_column : std_logic_vector(9 downto 0);
+
+   -- Keyboard signals (on PS/2 port 1).
+   --   keyboard_left_key, keyboard_right_key: arrow keys for lane shifts
+   --   keyboard_jump_key: spacebar OR up arrow (combined inside Keyboard.vhd)
+   --   keyboard_dive_key: down arrow (placeholder, currently unused at top level)
+   signal keyboard_left_key   : std_logic;
+   signal keyboard_right_key  : std_logic;
+   signal keyboard_jump_key   : std_logic;
+   signal keyboard_dive_key   : std_logic;
+
+   -- Combined player input signals (mouse OR keyboard).
+   --   player_left_input: mouse left click OR keyboard left arrow
+   --   player_right_input: mouse right click OR keyboard right arrow
+   --   player_jump_input: KEY(0) OR keyboard space/up arrow
+   signal player_left_input   : std_logic;
+   signal player_right_input  : std_logic;
+   signal player_jump_input   : std_logic;
 
    -- SD card signals
    signal init_done_signal       : std_logic;
@@ -261,6 +327,13 @@ architecture game_behaviour of Top_Level is
 
    signal audio_dac_data : std_logic_vector(7 downto 0);
 
+   -- Player signals
+   signal player_red, player_green, player_blue                            : std_logic_vector(3 downto 0);
+   signal player_lane                                                      : std_logic_vector(1 downto 0);
+   signal player_state                                                     : std_logic;
+   signal cat_view_position                                                : std_logic_vector(7 downto 0);
+   signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
+
 begin
 
    -- ---------------------------------------------------------------------------
@@ -276,6 +349,17 @@ begin
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
    any_key_pressed <= not (KEY(3) and KEY(2) and KEY(1) and KEY(0));
+
+   -- ---------------------------------------------------------------------------
+   -- Combined player input signals. Mouse and keyboard work in parallel as
+   -- alternative controls: holding either source high will register as the
+   -- input being active. Player.vhd internally edge-detects all three so
+   -- holding a key/button results in exactly one lane shift / one jump,
+   -- not a continuous stream.
+   -- ---------------------------------------------------------------------------
+   player_left_input  <= left_click  or keyboard_left_key;
+   player_right_input <= right_click or keyboard_right_key;
+   player_jump_input  <= (not KEY(0)) or keyboard_jump_key;
 
    -- ---------------------------------------------------------------------------
    -- VGA sync (true 25 MHz pixel clock)
@@ -403,13 +487,14 @@ begin
                 blue_out      => background_layer_blue);
 
    Track_Layer : Track_Generator
-      port map (clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_row     => pixel_row,
-                pixel_column  => pixel_column,
-                red_out       => track_layer_red,
-                green_out     => track_layer_green,
-                blue_out      => track_layer_blue);
+      port map (clock             => video_clock,
+                vertical_sync     => vertical_sync,
+                pixel_row         => pixel_row,
+                pixel_column      => pixel_column,
+                cat_view_position => cat_view_position,
+                red_out           => track_layer_red,
+                green_out         => track_layer_green,
+                blue_out          => track_layer_blue);
 
    Background_Compositor : Background_Manager
       port map (background_red   => background_layer_red,
@@ -422,41 +507,68 @@ begin
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
 
-   Moving_Object_Lane_One : Moving_Object
-      generic map (REAL_HEIGHT => 60,
-                   REAL_WIDTH  => 80,
-                   LANE        => 1)
-      port map (enable        => not KEY(2),
-                clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_column  => pixel_column,
-                pixel_row     => pixel_row,
-                speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_1_red,
-                green_out     => sprite_1_green,
-                blue_out      => sprite_1_blue);
-
    Moving_Object_Lane_Zero : Moving_Object
       generic map (REAL_HEIGHT => 120,
-                   REAL_WIDTH  => 80,
+                   REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable        => not KEY(3),
-                clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_column  => pixel_column,
-                pixel_row     => pixel_row,
-                speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_2_red,
-                green_out     => sprite_2_green,
-                blue_out      => sprite_2_blue);
+      port map (enable            => not KEY(3),
+                clock             => video_clock,
+                vertical_sync     => vertical_sync,
+                pixel_column      => pixel_column,
+                pixel_row         => pixel_row,
+                speed             => conv_std_logic_vector(2, 4),
+                cat_view_position => cat_view_position,
+                row_out           => sprite_0_row,
+                red_out           => sprite_0_red,
+                green_out         => sprite_0_green,
+                blue_out          => sprite_0_blue);
+
+   Moving_Object_Lane_One : Moving_Object
+      generic map (REAL_HEIGHT => 60,
+                   REAL_WIDTH  => 70,
+                   LANE        => 1)
+      port map (enable            => not KEY(2),
+                clock             => video_clock,
+                vertical_sync     => vertical_sync,
+                pixel_column      => pixel_column,
+                pixel_row         => pixel_row,
+                speed             => conv_std_logic_vector(2, 4),
+                cat_view_position => cat_view_position,
+                row_out           => sprite_1_row,
+                red_out           => sprite_1_red,
+                green_out         => sprite_1_green,
+                blue_out          => sprite_1_blue);
+
+   Moving_Object_Lane_Two : Moving_Object
+      generic map (REAL_HEIGHT => 120,
+                   REAL_WIDTH  => 70,
+                   LANE        => 2)
+      port map (enable            => not KEY(1),
+                clock             => video_clock,
+                vertical_sync     => vertical_sync,
+                pixel_column      => pixel_column,
+                pixel_row         => pixel_row,
+                speed             => conv_std_logic_vector(2, 4),
+                cat_view_position => cat_view_position,
+                row_out           => sprite_2_row,
+                red_out           => sprite_2_red,
+                green_out         => sprite_2_green,
+                blue_out          => sprite_2_blue);
 
    Sprite_Compositor : Object_Manager
-      port map (sprite_1_red   => sprite_1_red,
+      generic map (SPRITE_0_LANE => 0,
+                   SPRITE_1_LANE => 1,
+                   SPRITE_2_LANE => 2)
+      port map (sprite_0_red   => sprite_0_red,
+                sprite_0_green => sprite_0_green,
+                sprite_0_blue  => sprite_0_blue,
+                sprite_1_red   => sprite_1_red,
                 sprite_1_green => sprite_1_green,
                 sprite_1_blue  => sprite_1_blue,
                 sprite_2_red   => sprite_2_red,
                 sprite_2_green => sprite_2_green,
                 sprite_2_blue  => sprite_2_blue,
+                cat_lane       => player_lane,
                 red_out        => sprite_composite_red,
                 green_out      => sprite_composite_green,
                 blue_out       => sprite_composite_blue);
@@ -471,9 +583,9 @@ begin
                 background_red   => background_composite_red,
                 background_green => background_composite_green,
                 background_blue  => background_composite_blue,
-                sprite_red       => sprite_composite_red,
-                sprite_green     => sprite_composite_green,
-                sprite_blue      => sprite_composite_blue,
+                sprite_red       => combined_sprite_red,
+                sprite_green     => combined_sprite_green,
+                sprite_blue      => combined_sprite_blue,
                 mouse_red        => "0000",
                 mouse_green      => "0000",
                 mouse_blue       => "0000",
@@ -485,11 +597,23 @@ begin
    -- PERIPHERALS (stay on CLOCK_50 for protocol timing)
    -- ===========================================================================
 
+   -- Keyboard now occupies the primary PS/2 port (PS2_DAT / PS2_CLK).
+   Keyboard_Controller : Keyboard
+      port map (clock     => CLOCK_50,
+                reset     => not RESET_N,
+                ps2_data  => PS2_DAT,
+                ps2_clock => PS2_CLK,
+                left_key  => keyboard_left_key,
+                right_key => keyboard_right_key,
+                jump_key  => keyboard_jump_key,
+                dive_key  => keyboard_dive_key);
+
+   -- Mouse moved to the secondary PS/2 port (PS2_DAT2 / PS2_CLK2).
    Mouse_Controller : Mouse
       port map (clock               => CLOCK_50,
                 reset               => not RESET_N,
-                mouse_data          => PS2_DAT,
-                mouse_clock         => PS2_CLK,
+                mouse_data          => PS2_DAT2,
+                mouse_clock         => PS2_CLK2,
                 left_button         => left_click,
                 right_button        => right_click,
                 mouse_cursor_row    => mouse_row,
@@ -498,7 +622,7 @@ begin
    SD_Initialiser : SD_Init
       port map (clock              => CLOCK_50,
                 reset              => not RESET_N,
-                start_init         => not KEY(0),
+                start_init         => left_click,
                 byte_address       => SW(8 downto 0),
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
@@ -542,10 +666,10 @@ begin
    -- Centred behind the title block (title centre y ~ 132): sprite_y = 132 - 64 = 68.
    -- So the sprite spans (256..384) x (68..196), sitting behind the title and credits.
    Start_Screen_Background_Sprite : Sprites_Display
-      generic map (SPRITE_WIDTH  => 32,
-                   SPRITE_HEIGHT => 32,
+      generic map (SPRITE_WIDTH  => 64,
+                   SPRITE_HEIGHT => 64,
                    ADDR_BITS     => 12,
-                   SCALE         => 4,
+                   SCALE         => 2,
                    MIF_FILE      => "mif/jasper.mif")
       port map (clock        => video_clock,
                 pixel_row    => pixel_row,
@@ -557,42 +681,89 @@ begin
                 blue_out     => start_screen_sprite_blue);
 
    Final_Compositor_Inst : Screen_Compositor
-      port map (start_screen_active      => start_screen_active,
-                latched_mode             => latched_mode,
-                start_screen_red         => start_screen_red,
-                start_screen_green       => start_screen_green,
-                start_screen_blue        => start_screen_blue,
-                start_screen_sprite_red  => start_screen_sprite_red,
+      port map (start_screen_active       => start_screen_active,
+                latched_mode              => latched_mode,
+                start_screen_red          => start_screen_red,
+                start_screen_green        => start_screen_green,
+                start_screen_blue         => start_screen_blue,
+                start_screen_sprite_red   => start_screen_sprite_red,
                 start_screen_sprite_green => start_screen_sprite_green,
-                start_screen_sprite_blue => start_screen_sprite_blue,
-                mouse_cursor_red         => mouse_cursor_red,
-                mouse_cursor_green       => mouse_cursor_green,
-                mouse_cursor_blue        => mouse_cursor_blue,
-                training_red             => training_red,
-                training_green           => training_green,
-                training_blue            => training_blue,
-                racing_red               => racing_red,
-                racing_green             => racing_green,
-                racing_blue              => racing_blue,
-                red_out                  => red_final,
-                green_out                => green_final,
-                blue_out                 => blue_final);
+                start_screen_sprite_blue  => start_screen_sprite_blue,
+                mouse_cursor_red          => mouse_cursor_red,
+                mouse_cursor_green        => mouse_cursor_green,
+                mouse_cursor_blue         => mouse_cursor_blue,
+                training_red              => training_red,
+                training_green            => training_green,
+                training_blue             => training_blue,
+                racing_red                => racing_red,
+                racing_green              => racing_green,
+                racing_blue               => racing_blue,
+                red_out                   => red_final,
+                green_out                 => green_final,
+                blue_out                  => blue_final);
+
+   -- Player driven by mouse OR keyboard (whichever the player chooses to use).
+   -- Player.vhd internally edge-detects mouse_left_click, mouse_right_click,
+   -- and jump_input so holding any one source still produces exactly one
+   -- discrete lane shift / one jump per press.
+   Player_Sprite_Renderer : Player
+      generic map (SCREEN_WIDTH  => 640,
+                   SCREEN_HEIGHT => 480,
+                   SPRITE_SIZE   => 64,
+                   SPRITE_SCALE  => 2)
+      port map (clock             => video_clock,
+                reset             => not RESET_N,
+                vertical_sync     => vertical_sync,
+                pixel_row         => pixel_row,
+                pixel_column      => pixel_column,
+                mouse_left_click  => player_left_input,
+                mouse_right_click => player_right_input,
+                jump_input        => player_jump_input,
+                player_red        => player_red,
+                player_green      => player_green,
+                player_blue       => player_blue,
+                player_lane       => player_lane,
+                player_state      => player_state,
+                cat_view_position => cat_view_position);
+
+   Player_Object_Compositor : Player_And_Objects_Manager
+      port map (player_red    => player_red,
+                player_green  => player_green,
+                player_blue   => player_blue,
+                objects_red   => sprite_composite_red,
+                objects_green => sprite_composite_green,
+                objects_blue  => sprite_composite_blue,
+                red_out       => combined_sprite_red,
+                green_out     => combined_sprite_green,
+                blue_out      => combined_sprite_blue);
 
    -- ---------------------------------------------------------------------------
    -- LED assignments
-   --   LEDR(3:0) = SD init state indicator
-   --   LEDR(4)   = SD init done
+   --   LEDR(0)   = keyboard left arrow held
+   --   LEDR(1)   = keyboard right arrow held
+   --   LEDR(2)   = keyboard jump (space OR up arrow) held
+   --   LEDR(3)   = keyboard dive (down arrow) held
+   --   LEDR(4)   = SD init done           [temporarily disabled]
    --   LEDR(5)   = PLL locked
    --   LEDR(6)   = start screen active
    --   LEDR(8:7) = latched game mode (00 none, 01 training, 10 single, 11 two)
-   --   LEDR(9)   = SD read done
+   --   LEDR(9)   = SD read done           [temporarily disabled]
+   --
+   -- The four lowest LEDs are temporarily repurposed as keyboard debug
+   -- indicators. The original SD card init_state_indicator / init_done /
+   -- read_done assignments are commented out below; restore them when done
+   -- testing the keyboard.
    -- ---------------------------------------------------------------------------
-   LEDR(3 downto 0) <= init_state_indicator;
-   LEDR(4)          <= init_done_signal;
+   LEDR(0) <= keyboard_left_key;
+   LEDR(1) <= keyboard_right_key;
+   LEDR(2) <= keyboard_jump_key;
+   LEDR(3) <= keyboard_dive_key;
+   -- LEDR(3 downto 0) <= init_state_indicator;
+   LEDR(4)          <= '0';   -- was init_done_signal
    LEDR(5)          <= pll_locked;
    LEDR(6)          <= start_screen_active;
    LEDR(8 downto 7) <= latched_mode;
-   LEDR(9)          <= read_done_signal;
+   LEDR(9)          <= '0';   -- was read_done_signal
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
    GPIO_0(0) <= sd_serial_clock;   -- CLK
