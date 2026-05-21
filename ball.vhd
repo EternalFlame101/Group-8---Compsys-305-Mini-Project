@@ -24,6 +24,6 @@ begin
 						else '0';
 
 	red 	<= "1111" when (ball_on = '1') else "0000";
-	green <= "1111" when (ball_on = '1') else "0000";
+	green <= "1100" when (ball_on = '1') else "0000";
 	blue 	<= "1111" when (ball_on = '1') else "0000";
 end architecture ball_behavior;
