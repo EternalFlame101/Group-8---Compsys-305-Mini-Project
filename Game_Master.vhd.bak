@@ -17,21 +17,5 @@ entity Game_Master is
 end entity Game_Master;
 
 architecture game_master_behaviour of Game_Master is
-	-- state type
-	type game_state is (INIT_SCREEN, TRAINING, NORMAL, PAUSE, WIN, LOSE) := INIT_SCREEN;
-	
-	-- components
-	
-	
-	-- signals
-	
-	
 begin
-	-- start as init screen
-	-- move onto either modes, training or normal
-	-- pause is a enable that gates EVERYTHING, moves back to training or normal based of what mode it was in
-	-- win and lose loops back to init screen
-	-- training set number of waves -> init screen after completeing
-	
-	
 end architecture game_master
