@@ -12,7 +12,7 @@ entity Mouse is
          mouse_clock               : inout std_logic);
 end entity Mouse;
 
-architecture mouse_behavior of Mouse is
+architecture mouse_behaviour of Mouse is
    type state_type is (inhibit_transmission, load_command, load_command_2,
                        wait_output_ready, wait_command_acknowledgement, input_packets);
 
@@ -255,4 +255,4 @@ begin
          end if;
       end if;
    end process Receive_UART;
-end architecture mouse_behavior;
+end architecture mouse_behaviour;

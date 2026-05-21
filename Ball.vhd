@@ -11,7 +11,7 @@ entity Ball is
 				red, green, blue 			: out std_logic_vector(3 downto 0));		
 end entity Ball;
 
-architecture ball_behavior of Ball is
+architecture ball_behaviour of Ball is
 	signal ball_on	: std_logic;
 	signal size 	: std_logic_vector(9 downto 0);  
 begin           
@@ -26,4 +26,4 @@ begin
 	red 	<= "1111" when (ball_on = '1') else "0000";
 	green <= "1100" when (ball_on = '1') else "0000";
 	blue 	<= "1111" when (ball_on = '1') else "0000";
-end architecture ball_behavior;
+end architecture ball_behaviour;

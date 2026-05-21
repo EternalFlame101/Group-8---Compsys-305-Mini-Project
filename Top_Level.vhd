@@ -542,18 +542,20 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable        => lane_2_type(1) or lane_2_type(0),
-                clock         => video_clock,
-                vertical_sync => vertical_sync,
-					 reset 			=> not RESET_N,
-					 obj_type 		=> lane_2_type,
-					 arrived			=> arrived_2,
-                pixel_column  => pixel_column,
-                pixel_row     => pixel_row,
-                speed         => conv_std_logic_vector(2, 4),
-                red_out       => sprite_2_red,
-                green_out     => sprite_2_green,
-                blue_out      => sprite_2_blue);
+      port map (enable            => lane_2_type(1) or lane_2_type(0),
+                clock             => video_clock,
+                vertical_sync     => vertical_sync,
+                reset             => not RESET_N,
+                obj_type          => lane_2_type,
+                arrived           => arrived_2,
+                pixel_column      => pixel_column,
+                pixel_row         => pixel_row,
+                speed             => conv_std_logic_vector(2, 4),
+                cat_view_position => cat_view_position,
+                row_out           => sprite_2_row,
+                red_out           => sprite_2_red,
+                green_out         => sprite_2_green,
+                blue_out          => sprite_2_blue);
 
    Moving_Object_Lane_One : Moving_Object
       generic map (REAL_HEIGHT => 60,
@@ -577,21 +579,21 @@ begin
    Moving_Object_Lane_Zero : Moving_Object
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
-                   LANE        => 2)
+                   LANE        => 0)
       port map (enable            => lane_0_type(1) or lane_0_type(0),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset			        => not RESET_N,
-					      obj_type 		      => lane_0_type,
-					      arrived			      => arrived_0,
+                reset             => not RESET_N,
+                obj_type          => lane_0_type,
+                arrived           => arrived_0,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
                 cat_view_position => cat_view_position,
-                row_out           => sprite_2_row,
-                red_out           => sprite_2_red,
-                green_out         => sprite_2_green,
-                blue_out          => sprite_2_blue);
+                row_out           => sprite_0_row,
+                red_out           => sprite_0_red,
+                green_out         => sprite_0_green,
+                blue_out          => sprite_0_blue);
 
    Sprite_Compositor : Object_Manager
       generic map (SPRITE_0_LANE => 0,
@@ -788,6 +790,7 @@ begin
 					lane_2_type		=> lane_2_type,
 					debug_vsync_pulse => debug_vsync_pulse,
 					debug_lfsr        => debug_lfsr);
+					
    -- ---------------------------------------------------------------------------
    -- LED assignments
    --   LEDR(0)   = keyboard left arrow held
@@ -822,7 +825,7 @@ begin
    GPIO_0(2) <= sd_command;        -- MOSI
    GPIO_0(3) <= sd_data_in;        -- MISO
 
-   -- DAC0800 data lines (B1 = MSB = audio_dac_data(7), B8 = LSB = audio_dac_data(0))
+   -- DAC0802LCN data lines (B1 = MSB = audio_dac_data(7), B8 = LSB = audio_dac_data(0))
    GPIO_0(11) <= audio_dac_data(7);   -- B1 (MSB)
    GPIO_0(10) <= audio_dac_data(6);   -- B2
    GPIO_0(9)  <= audio_dac_data(5);   -- B3
@@ -833,27 +836,25 @@ begin
    GPIO_0(4)  <= audio_dac_data(0);   -- B8 (LSB)
 
    GPIO_0(35 downto 12) <= (others => '0');
-
-	
 	
 	-- LFSR testing
---	LEDR(8) <= vertical_sync;
---	LEDR(7 downto 0) <= debug_lfsr;         -- should change pattern over time
---
---	LEDR(9) <= pll_locked;
---	
---	LEDR(1) <= arrived_1;
---	LEDR(0) <= arrived_2;
---	
---	process(video_clock)
---	begin
---		 if rising_edge(video_clock) then
---			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
---		 end if;
---	end process;
---
---	LEDR(2) <= arrived_sticky;
---	
+	--	LEDR(8) <= vertical_sync;
+	--	LEDR(7 downto 0) <= debug_lfsr;         -- should change pattern over time
+	--
+	--	LEDR(9) <= pll_locked;
+	--	
+	--	LEDR(1) <= arrived_1;
+	--	LEDR(0) <= arrived_2;
+	--	
+	--	process(video_clock)
+	--	begin
+	--		 if rising_edge(video_clock) then
+	--			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
+	--		 end if;
+	--	end process;
+	--
+	--	LEDR(2) <= arrived_sticky;
+	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low : Hex_To_Seven_Segment
       port map (hex_value      => read_byte_signal(3 downto 0),
@@ -893,5 +894,4 @@ begin
    VGA_HS <= horizontal_sync;
    VGA_VS <= vertical_sync;
 
-	
 end architecture game_behaviour;

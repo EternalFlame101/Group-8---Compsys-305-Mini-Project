@@ -227,25 +227,18 @@ begin
                 track_row          => object_distance,
                 perspective_output => lane_spread_rom);
 
-   -- FREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEED
-   -- 01=gift(short height), 10=short, 11=tall
-	 effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
-							         conv_std_logic_vector(60,  10) when obj_type = "10" else
+   -- Per-spawn height selection based on obj_type:
+   --   "01" = gift (short),  "10" = short obstacle,  "11" = tall obstacle
+   -- Width is not type-dependent; it stays driven by the REAL_WIDTH generic below.
+   effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
+                       conv_std_logic_vector(60,  10) when obj_type = "10" else
                        conv_std_logic_vector(120, 10);  -- "11" tall
-	
-   scale_height_product <= object_height_raw * effective_height;
-   scale_width_product  <= object_width_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
-    
-   scale_width_back_product  <= object_width_back_raw  * conv_std_logic_vector(REAL_WIDTH,  10);
-   scale_height_back_product <= object_height_back_raw * effective_height;
-
-   scale_top_height_product <= top_height_raw * effective_height;
      
    Moving : process(clock)
 	 begin
 		 if rising_edge(clock) then
 			  object_arrived     <= '0';
-			  vertical_sync_prev <= vertical_sync;
+			  vertical_sync_previous <= vertical_sync;
 
 			  if reset = '1' then
 					object_distance <= (others => '1');
@@ -259,7 +252,7 @@ begin
 						 enable_latch <= enable;
 					end if;
 
-					if (vertical_sync = '0') and (vertical_sync_prev = '1') then
+					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
 						 if enable_latch = '1' and object_active = '0' then
 							  object_active <= '1';
 						 end if;
@@ -278,55 +271,6 @@ begin
 		 end if;
 	 end process;
 
-     left_side_on  <= '1' when ((object_active = '1' and
-										 pixel_row    >= object_y - object_height - top_height)         and
-                              (pixel_row    <= object_y - side_top_boundary)                  and
-                              (pixel_column >= object_x - object_width - actual_side_shift_clamped) and
-                              (pixel_column <= object_x - object_width))
-                    else '0';
-
-     right_side_on <= '1' when ((object_active = '1' and
-										 pixel_row    >= object_y - object_height - top_height)         and
-                              (pixel_row    <= object_y - side_top_boundary)                  and
-                              (pixel_column <= object_x + object_width + actual_side_shift_clamped) and
-                              (pixel_column >= object_x + object_width))
-                    else '0';
-    object_front_on <= '1' when ((object_active = '1' 								and
-											pixel_row    >= object_y - object_height) and
-                                (pixel_row    <= object_y)                 and
-                                (pixel_column >= object_x - object_width)  and
-                                (pixel_column <= object_x + object_width))
-                      else '0';
-
-    object_red   <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
-						 "0001" when (object_front_on = '1') else                        -- others = green
-						 "0000";
-	  object_green <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
-						 "0111" when (object_front_on = '1') else
-						 "0000";
-	  object_blue  <= "0000" when (object_front_on = '1' and obj_type = "01") else
-						 "0001" when (object_front_on = '1') else
-						 "0000";
-      
-   side_red   <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
-						 "0001" when (object_side_on = '1') else                        -- others = green
-						 "0000";
-	side_green <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
-						 "0011" when (object_side_on = '1') else
-						 "0000";
-	side_blue  <= "0000" when (object_side_on = '1' and obj_type = "01") else
-						 "0001" when (object_side_on = '1') else
-						 "0000";
-    
-    top_red   <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
-						 "0001" when (object_top_on = '1') else                        -- others = green
-						 "0000";
-	top_green <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
-						 "1111" when (object_top_on = '1') else
-						 "0000";
-	top_blue  <= "0000" when (object_top_on = '1' and obj_type = "01") else
-						 "0001" when (object_top_on = '1') else
-						 "0000";
    -- ========================================================================
    -- Frame Stage 1 combinational
    -- ========================================================================
@@ -339,11 +283,11 @@ begin
    box_side_of_cat_combinational                     <= '1' when box_position_relative_to_cat_combinational >  0 else '0';
    box_is_off_centre_combinational                   <= '1' when box_position_relative_to_cat_combinational /= 0 else '0';
 
-   object_height_scaled_product_combinational      <= object_height_rom      * conv_std_logic_vector(REAL_HEIGHT, 10);
+   object_height_scaled_product_combinational      <= object_height_rom      * effective_height;
    object_width_scaled_product_combinational       <= object_width_rom       * conv_std_logic_vector(REAL_WIDTH,  10);
    object_width_back_scaled_product_combinational  <= object_width_back_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
-   object_height_back_scaled_product_combinational <= object_height_back_rom * conv_std_logic_vector(REAL_HEIGHT, 10);
-   top_height_scaled_product_combinational         <= top_height_rom         * conv_std_logic_vector(REAL_HEIGHT, 10);
+   object_height_back_scaled_product_combinational <= object_height_back_rom * effective_height;
+   top_height_scaled_product_combinational         <= top_height_rom         * effective_height;
 
    object_height_combinational      <= object_height_scaled_product_combinational(16 downto 7);
    object_width_combinational       <= object_width_scaled_product_combinational(15 downto 6);
@@ -430,25 +374,6 @@ begin
          box_off_screen_stage_2                   <= box_off_screen_combinational;
       end if;
    end process Frame_Stage_2;
-
-   -- ========================================================================
-   -- Distance update (per-frame)
-   -- ========================================================================
-   Moving : process(clock)
-   begin
-      if rising_edge(clock) then
-         vertical_sync_previous <= vertical_sync;
-         if ((vertical_sync = '0') and (vertical_sync_previous = '1')) then
-            if (enable = '1') then
-               if (object_distance = "0000000000") then
-                  null;
-               else
-                  object_distance <= object_distance + ("000000" & speed);
-               end if;
-            end if;
-         end if;
-      end if;
-   end process Moving;
 
    -- ========================================================================
    -- Per-pixel Stage 1 combinational: row derivations + all multiplies
@@ -685,16 +610,27 @@ begin
                      '0';
 
    -- Priority mux: front > top > side
-   red_combinational   <= "0001" when (object_front_on = '1') else
+   -- For each face: gifts (obj_type = "01") render yellow (R+G, no B);
+   --                obstacles keep the original face-specific green palette.
+   red_combinational   <= "0111" when (object_front_on = '1' and obj_type = "01") else
+                          "0001" when (object_front_on = '1') else
+                          "0111" when (object_top_on   = '1' and obj_type = "01") else
                           "0001" when (object_top_on   = '1') else
+                          "0111" when (object_side_on  = '1' and obj_type = "01") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
-   green_combinational <= "0111" when (object_front_on = '1') else
+   green_combinational <= "0111" when (object_front_on = '1' and obj_type = "01") else
+                          "0111" when (object_front_on = '1') else
+                          "0111" when (object_top_on   = '1' and obj_type = "01") else
                           "1111" when (object_top_on   = '1') else
+                          "0111" when (object_side_on  = '1' and obj_type = "01") else
                           "0011" when (object_side_on  = '1') else
                           "0000";
-   blue_combinational  <= "0001" when (object_front_on = '1') else
+   blue_combinational  <= "0000" when (object_front_on = '1' and obj_type = "01") else
+                          "0001" when (object_front_on = '1') else
+                          "0000" when (object_top_on   = '1' and obj_type = "01") else
                           "0001" when (object_top_on   = '1') else
+                          "0000" when (object_side_on  = '1' and obj_type = "01") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
 
