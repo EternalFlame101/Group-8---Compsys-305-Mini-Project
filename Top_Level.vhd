@@ -245,9 +245,10 @@ architecture game_behaviour of Top_Level is
                LANE_TRANSITION_FRAMES : positive := 64);
       port (clock, reset, vertical_sync             : in  std_logic;
             pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
-            mouse_left_click                        : in  std_logic;
-            mouse_right_click                       : in  std_logic;
+            shift_left_input                        : in  std_logic;
+            shift_right_input                       : in  std_logic;
             jump_input                              : in  std_logic;
+            dive_input                              : in  std_logic;
             player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
             player_lane                             : out std_logic_vector(1 downto 0);
             player_state                            : out std_logic;
@@ -314,19 +315,34 @@ architecture game_behaviour of Top_Level is
    -- Keyboard signals (on PS/2 port 1).
    --   keyboard_left_key, keyboard_right_key: arrow keys for lane shifts
    --   keyboard_jump_key: spacebar OR up arrow (combined inside Keyboard.vhd)
-   --   keyboard_dive_key: down arrow (placeholder, currently unused at top level)
+   --   keyboard_dive_key: down arrow
    signal keyboard_left_key   : std_logic;
    signal keyboard_right_key  : std_logic;
    signal keyboard_jump_key   : std_logic;
    signal keyboard_dive_key   : std_logic;
 
-   -- Combined player input signals (mouse OR keyboard).
-   --   player_left_input: mouse left click OR keyboard left arrow
-   --   player_right_input: mouse right click OR keyboard right arrow
-   --   player_jump_input: KEY(0) OR keyboard space/up arrow
-   signal player_left_input   : std_logic;
-   signal player_right_input  : std_logic;
-   signal player_jump_input   : std_logic;
+   -- Combined player input signals.
+   --   player_shift_left_input:  KEY(1)            OR keyboard left arrow
+   --   player_shift_right_input: KEY(0)            OR keyboard right arrow
+   --   player_jump_input:        mouse left click  OR keyboard space/up arrow
+   --   player_dive_input:        mouse right click OR keyboard down arrow
+   signal player_shift_left_input  : std_logic;
+   signal player_shift_right_input : std_logic;
+   signal player_jump_input        : std_logic;
+   signal player_dive_input        : std_logic;
+
+   -- Raw (un-gated) ORs and per-input gate latches. The gate is held closed
+   -- while the start screen is active and until the source has been seen
+   -- released at least once after the start screen closes. See Input_Gate
+   -- process below for details.
+   signal player_shift_left_raw    : std_logic;
+   signal player_shift_right_raw   : std_logic;
+   signal player_jump_raw          : std_logic;
+   signal player_dive_raw          : std_logic;
+   signal shift_left_gate_closed   : std_logic := '1';
+   signal shift_right_gate_closed  : std_logic := '1';
+   signal jump_gate_closed         : std_logic := '1';
+   signal dive_gate_closed         : std_logic := '1';
 
    -- SD card signals
    signal init_done_signal       : std_logic;
@@ -382,15 +398,54 @@ begin
    any_key_pressed <= not (KEY(3) and KEY(2) and KEY(1) and KEY(0));
 
    -- ---------------------------------------------------------------------------
-   -- Combined player input signals. Mouse and keyboard work in parallel as
-   -- alternative controls: holding either source high will register as the
-   -- input being active. Player.vhd internally edge-detects all three so
-   -- holding a key/button results in exactly one lane shift / one jump,
-   -- not a continuous stream.
+   -- Combined player input signals. The various sources work in parallel as
+   -- alternative controls: holding any source high will register as the input
+   -- being active. Player.vhd internally edge-detects all four so holding a
+   -- key/button results in exactly one lane shift / jump / dive, not a
+   -- continuous stream.
+   --   Lane shifts: KEY(1)/KEY(0) on the FPGA board OR arrow keys on keyboard.
+   --     KEY pins are active-low pushbuttons (pressed = '0'), so we invert.
+   --   Jump:        mouse left click  OR keyboard spacebar/up arrow.
+   --   Dive:        mouse right click OR keyboard down arrow.
+   --
+   -- The raw_* signals are the unfiltered ORs. The gated player_*_input
+   -- signals further suppress them while the start screen is active, and
+   -- until each source has been seen released at least once after the start
+   -- screen closes. This prevents the click/keypress that picked the game
+   -- mode from carrying over as a jump (or KEY-still-held inputs from
+   -- causing an immediate lane shift) the instant gameplay begins.
    -- ---------------------------------------------------------------------------
-   player_left_input  <= left_click  or keyboard_left_key;
-   player_right_input <= right_click or keyboard_right_key;
-   player_jump_input  <= (not KEY(0)) or keyboard_jump_key;
+   player_shift_left_raw  <= (not KEY(1)) or keyboard_left_key;
+   player_shift_right_raw <= (not KEY(0)) or keyboard_right_key;
+   player_jump_raw        <= left_click   or keyboard_jump_key;
+   player_dive_raw        <= right_click  or keyboard_dive_key;
+
+   -- Per-input "must be released once after start screen closes" latch.
+   -- While start_screen_active = '1' the latch is forced to '1' (gate closed).
+   -- After it falls, the latch clears only on a clock where the corresponding
+   -- raw input is low -- i.e. the player has let go of whatever they were
+   -- holding. From then on the gate is open until reset / next start screen.
+   Input_Gate : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         if (RESET_N = '0') or (start_screen_active = '1') then
+            shift_left_gate_closed  <= '1';
+            shift_right_gate_closed <= '1';
+            jump_gate_closed        <= '1';
+            dive_gate_closed        <= '1';
+         else
+            if player_shift_left_raw  = '0' then shift_left_gate_closed  <= '0'; end if;
+            if player_shift_right_raw = '0' then shift_right_gate_closed <= '0'; end if;
+            if player_jump_raw        = '0' then jump_gate_closed        <= '0'; end if;
+            if player_dive_raw        = '0' then dive_gate_closed        <= '0'; end if;
+         end if;
+      end if;
+   end process Input_Gate;
+
+   player_shift_left_input  <= player_shift_left_raw  and (not shift_left_gate_closed);
+   player_shift_right_input <= player_shift_right_raw and (not shift_right_gate_closed);
+   player_jump_input        <= player_jump_raw        and (not jump_gate_closed);
+   player_dive_input        <= player_dive_raw        and (not dive_gate_closed);
 
    -- ---------------------------------------------------------------------------
    -- VGA sync (true 25 MHz pixel clock)
@@ -742,10 +797,10 @@ begin
                 green_out                 => green_final,
                 blue_out                  => blue_final);
 
-   -- Player driven by mouse OR keyboard (whichever the player chooses to use).
-   -- Player.vhd internally edge-detects mouse_left_click, mouse_right_click,
-   -- and jump_input so holding any one source still produces exactly one
-   -- discrete lane shift / one jump per press.
+   -- Player driven by KEY pushbuttons, mouse clicks, and keyboard in parallel.
+   -- Player.vhd internally edge-detects shift_left_input, shift_right_input,
+   -- jump_input, and dive_input so holding any source still produces exactly
+   -- one discrete action per press (no key repeat).
    Player_Sprite_Renderer : Player
       generic map (SCREEN_WIDTH  => 640,
                    SCREEN_HEIGHT => 480,
@@ -756,9 +811,10 @@ begin
                 vertical_sync     => vertical_sync,
                 pixel_row         => pixel_row,
                 pixel_column      => pixel_column,
-                mouse_left_click  => player_left_input,
-                mouse_right_click => player_right_input,
+                shift_left_input  => player_shift_left_input,
+                shift_right_input => player_shift_right_input,
                 jump_input        => player_jump_input,
+                dive_input        => player_dive_input,
                 player_red        => player_red,
                 player_green      => player_green,
                 player_blue       => player_blue,

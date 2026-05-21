@@ -14,9 +14,10 @@ entity Player is
             LANE_TRANSITION_FRAMES : positive := 64);
    port (clock, reset, vertical_sync             : in  std_logic;
          pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
-         mouse_left_click                        : in  std_logic;
-         mouse_right_click                       : in  std_logic;
+         shift_left_input                        : in  std_logic;
+         shift_right_input                       : in  std_logic;
          jump_input                              : in  std_logic;
+         dive_input                              : in  std_logic;
          player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
          player_lane                             : out std_logic_vector(1 downto 0);
          player_state                            : out std_logic;
@@ -44,12 +45,34 @@ architecture player_behaviour of Player is
    constant ROLL_FRAME_STEP    : integer  := 8;
    constant TRANSITION_SPEED   : integer  := 2;
 
+   -- Dive animation:
+   --   6 frames (squish1, squish2, squish3, squish2, squish1, neutral),
+   --   each held for DIVE_FRAME_DURATION vsyncs.
+   --   Total = 6 * 6 = 36 vsyncs ~ 0.6 s at 60 Hz (close to the requested 0.5 s
+   --   while keeping divisible integer math).
+   --
+   -- Fast-drop on dive-while-airborne:
+   --   When dive is triggered mid-jump, jump_frame_count is snapped to
+   --   (JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES) so the parabola plays its
+   --   final tail rapidly. With FAST_DROP_TAIL_FRAMES = 10, the cat lands in
+   --   10 vsyncs (~166 ms) regardless of how high it was.
+   constant DIVE_TOTAL_FRAMES     : integer  := 36;
+   constant DIVE_FRAME_DURATION   : integer  := 6;
+   constant FAST_DROP_TAIL_FRAMES : integer  := 10;
+
    -- Logical state
    signal current_lane_int : integer range 0 to 2 := 1;
    signal current_state    : std_logic            := '0';
    signal walk_frame_index : std_logic_vector(2 downto 0)             := "000";
    signal walk_vsync_count : integer range 0 to WALK_FRAME_DURATION   := 0;
    signal jump_frame_count : integer range 0 to JUMP_TOTAL_FRAMES     := 0;
+
+   -- Dive state. dive_active mirrors current_state for the jump: '1' while the
+   -- 36-frame squish animation is playing, '0' otherwise. dive_frame_count
+   -- counts vsyncs from 0..35 during a dive.
+   signal dive_active           : std_logic := '0';
+   signal dive_frame_count      : integer range 0 to DIVE_TOTAL_FRAMES := 0;
+   signal dive_input_previous   : std_logic := '0';
 
    -- Jump-height math (now pipelined)
    signal jump_distance_from_apex    : integer range 0 to JUMP_TOTAL_FRAMES                       := 0;
@@ -64,6 +87,7 @@ architecture player_behaviour of Player is
    signal view_pos_target   : integer range -LANE_RESOLUTION to LANE_RESOLUTION := 0;
    signal transition_active : std_logic := '0';
    signal transition_step   : integer range -TRANSITION_SPEED to TRANSITION_SPEED := 0;
+	
    -- '0' = left roll (negative direction), '1' = right roll (positive direction).
    -- Latched at transition start so the playback direction stays consistent even
    -- when view_pos_int crosses zero on a lane-2 -> lane-0 style move.
@@ -100,6 +124,15 @@ architecture player_behaviour of Player is
    signal roll_225_frame_red, roll_225_frame_green, roll_225_frame_blue : std_logic_vector(3 downto 0);
    signal roll_270_frame_red, roll_270_frame_green, roll_270_frame_blue : std_logic_vector(3 downto 0);
    signal roll_315_frame_red, roll_315_frame_green, roll_315_frame_blue : std_logic_vector(3 downto 0);
+
+   -- Dive (squish) frame outputs. The animation plays
+   --   squish1 -> squish2 -> squish3 -> squish2 -> squish1 -> neutral
+   -- so we only need three new ROMs (squish1, squish2, squish3); squish2 and
+   -- squish1 are read twice each from the same ROMs, and the final neutral
+   -- frame reuses the existing neutral_frame_* outputs.
+   signal squish_1_frame_red, squish_1_frame_green, squish_1_frame_blue : std_logic_vector(3 downto 0);
+   signal squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue : std_logic_vector(3 downto 0);
+   signal squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue : std_logic_vector(3 downto 0);
 
 begin
 
@@ -327,6 +360,54 @@ begin
                 blue_out     => roll_315_frame_blue);
 
    -- ---------------------------------------------------------------------------
+   -- Dive (squish) sprite ROMs
+   -- ---------------------------------------------------------------------------
+   Squish_1_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "py_files/img_to_mif/mif/squish1_set2_mif.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => squish_1_frame_red,
+                green_out    => squish_1_frame_green,
+                blue_out     => squish_1_frame_blue);
+
+   Squish_2_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "py_files/img_to_mif/mif/squish2_set2_mif.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => squish_2_frame_red,
+                green_out    => squish_2_frame_green,
+                blue_out     => squish_2_frame_blue);
+
+   Squish_3_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "py_files/img_to_mif/mif/squish3_set2_mif.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => squish_3_frame_red,
+                green_out    => squish_3_frame_green,
+                blue_out     => squish_3_frame_blue);
+
+   -- ---------------------------------------------------------------------------
    -- State machine
    -- ---------------------------------------------------------------------------
    Animation_Process : process(clock, reset)
@@ -337,11 +418,13 @@ begin
          walk_frame_index     <= "000";
          walk_vsync_count     <= 0;
          jump_frame_count     <= 0;
+         dive_active          <= '0';
+         dive_frame_count     <= 0;
+         dive_input_previous  <= '0';
          vsync_previous       <= '0';
          click_previous       <= '0';
          right_click_previous <= '0';
          jump_input_previous  <= '0';
-         current_lane_int     <= 1;
          view_pos_int         <= 0;
          view_pos_target      <= 0;
          transition_active    <= '0';
@@ -353,12 +436,12 @@ begin
 
          if (vertical_sync = '1') and (vsync_previous = '0') then
 
-            -- Walk cycle: only advances when not transitioning (cat is rolling,
-            -- not walking, during a lane shift). Frame is held at neutral
-            -- ("000") on the first vsync after a transition completes via the
-            -- reset just below.
+            -- Walk cycle: only advances when not transitioning AND not jumping
+            -- AND not diving. The cat is rolling/jumping/squishing during those
+            -- states, not walking. Frame is held at neutral ("000") on the
+            -- first vsync after a transition completes via the reset just below.
             if transition_active = '0' then
-               if current_state = '0' then
+               if current_state = '0' and dive_active = '0' then
                   if walk_vsync_count = WALK_FRAME_DURATION - 1 then
                      walk_vsync_count <= 0;
                      walk_frame_index <= walk_frame_index + 1;
@@ -371,18 +454,74 @@ begin
                walk_frame_index <= "000";
             end if;
 
-            -- Jump state advances regardless of transitions (barrel roll is allowed)
-            if current_state = '0' then
-               if (jump_input = '1') and (jump_input_previous = '0') then
-                  current_state    <= '1';
-                  jump_frame_count <= 0;
+            -- =============================================================
+            -- Jump and dive state machines (mutually-overriding)
+            -- =============================================================
+            -- Override rules:
+            --   * Jump and dive can each be triggered while the other is
+            --     active. Dive-on-jump triggers a fast-drop (jump_frame_count
+            --     snaps to the parabola tail) and starts the squish animation
+            --     in parallel. Jump-on-dive cancels the squish and starts a
+            --     fresh jump.
+            --   * Roll (lane transition) does NOT cancel jump or dive, and
+            --     jump/dive do NOT cancel an active roll -- they run in
+            --     parallel (cat can roll while airborne or while squishing).
+            --   * A second jump press while already jumping is ignored
+            --     (no double-jump). Same for dive.
+            -- These are evaluated independently so both edges arriving on the
+            -- same vsync end up cleanly: dive-edge wins for state transition,
+            -- but jump-edge can override it on the very next vsync.
+            -- -------------------------------------------------------------
+
+            -- Edge-detected inputs for this vsync.
+            -- jump_edge = jump_input  rising edge
+            -- dive_edge = dive_input  rising edge
+            -- (Computed in-line below via the *_previous registers.)
+
+            if (dive_input = '1') and (dive_input_previous = '0') and (dive_active = '0') then
+               -- Dive edge AND not already diving: start dive. Cancel jump
+               -- and snap to the parabola tail so the cat falls fast if
+               -- airborne. Pressing dive while already diving does nothing
+               -- (no re-dive / dive cancel).
+               dive_active      <= '1';
+               dive_frame_count <= 0;
+               if current_state = '1' then
+                  -- Airborne: snap jump_frame_count toward landing so the
+                  -- remaining parabola arc plays out over FAST_DROP_TAIL_FRAMES
+                  -- vsyncs. current_state stays '1' so jump_pixel_offset
+                  -- continues to be derived from the parabola until the tail
+                  -- completes normally below.
+                  jump_frame_count <= JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES;
                end if;
+            elsif (jump_input = '1') and (jump_input_previous = '0') and (current_state = '0') then
+               -- Jump edge AND not already jumping: start jump. Cancel any
+               -- active dive. Pressing jump while already jumping does
+               -- nothing (no double-jump).
+               current_state    <= '1';
+               jump_frame_count <= 0;
+               dive_active      <= '0';
+               dive_frame_count <= 0;
             else
-               if jump_frame_count = JUMP_TOTAL_FRAMES - 1 then
-                  current_state    <= '0';
-                  jump_frame_count <= 0;
-               else
-                  jump_frame_count <= jump_frame_count + 1;
+               -- No new input: advance whichever animations are running.
+
+               -- Jump frame counter advance / completion.
+               if current_state = '1' then
+                  if jump_frame_count = JUMP_TOTAL_FRAMES - 1 then
+                     current_state    <= '0';
+                     jump_frame_count <= 0;
+                  else
+                     jump_frame_count <= jump_frame_count + 1;
+                  end if;
+               end if;
+
+               -- Dive frame counter advance / completion.
+               if dive_active = '1' then
+                  if dive_frame_count = DIVE_TOTAL_FRAMES - 1 then
+                     dive_active      <= '0';
+                     dive_frame_count <= 0;
+                  else
+                     dive_frame_count <= dive_frame_count + 1;
+                  end if;
                end if;
             end if;
 
@@ -391,13 +530,9 @@ begin
                if view_pos_int = view_pos_target then
                   transition_active <= '0';
                   roll_frame_index  <= 0;
-                  if view_pos_target = -LANE_RESOLUTION then
-                     current_lane_int <= 0;
-                  elsif view_pos_target = LANE_RESOLUTION then
-                     current_lane_int <= 2;
-                  else
-                     current_lane_int <= 1;
-                  end if;
+                  -- current_lane_int is now derived combinationally from
+                  -- view_pos_int (see assignment below), so it has already
+                  -- switched when the cat passed the halfway point.
                else
                   view_pos_int <= view_pos_int + transition_step;
 
@@ -417,7 +552,7 @@ begin
                   end if;
                end if;
             else
-               if (mouse_right_click = '1') and (right_click_previous = '0') then
+               if (shift_right_input = '1') and (right_click_previous = '0') then
                   if current_lane_int = 0 then
                      view_pos_target   <= 0;
                      transition_step   <= TRANSITION_SPEED;
@@ -431,7 +566,7 @@ begin
                      roll_direction    <= '1';
                      roll_frame_index  <= 0;
                   end if;
-               elsif (mouse_left_click = '1') and (click_previous = '0') then
+               elsif (shift_left_input = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
                      view_pos_target   <= 0;
                      transition_step   <= -TRANSITION_SPEED;
@@ -448,19 +583,23 @@ begin
                end if;
             end if;
 
-            click_previous       <= mouse_left_click;
-            right_click_previous <= mouse_right_click;
+            click_previous       <= shift_left_input;
+            right_click_previous <= shift_right_input;
             jump_input_previous  <= jump_input;
+            dive_input_previous  <= dive_input;
          end if;
       end if;
    end process Animation_Process;
 
    -- ---------------------------------------------------------------------------
    -- Frame mux.
-   -- Priority: rolling (lane transition) > walking. Jumping just shifts the
-   -- sprite up vertically; the underlying frame (walk or roll) keeps playing.
+   -- Priority: rolling (lane transition) > dive (squish) > walking.
+   -- Jumping does NOT enter the mux -- it only shifts the sprite up vertically
+   -- via jump_pixel_offset; the underlying frame (walk or roll) keeps playing.
+   -- Dive DOES enter the mux because the cat changes shape (squish frames).
    -- ---------------------------------------------------------------------------
    Frame_Selector : process(transition_active, roll_direction, roll_frame_index,
+                            dive_active, dive_frame_count,
                             current_state, walk_frame_index,
                             neutral_frame_red,  neutral_frame_green,  neutral_frame_blue,
                             left_1_frame_red,   left_1_frame_green,   left_1_frame_blue,
@@ -473,7 +612,11 @@ begin
                             roll_180_frame_red, roll_180_frame_green, roll_180_frame_blue,
                             roll_225_frame_red, roll_225_frame_green, roll_225_frame_blue,
                             roll_270_frame_red, roll_270_frame_green, roll_270_frame_blue,
-                            roll_315_frame_red, roll_315_frame_green, roll_315_frame_blue)
+                            roll_315_frame_red, roll_315_frame_green, roll_315_frame_blue,
+                            squish_1_frame_red, squish_1_frame_green, squish_1_frame_blue,
+                            squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue,
+                            squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue)
+      variable dive_step : integer range 0 to 5;
    begin
       if transition_active = '1' then
          -- Rolling. Left roll plays  -45, -90, -135, -180, -225, -270, -315, 0.
@@ -517,6 +660,26 @@ begin
                   player_red <= neutral_frame_red;  player_green <= neutral_frame_green;  player_blue <= neutral_frame_blue;
             end case;
          end if;
+      elsif dive_active = '1' then
+         -- Dive. 6-step squish animation, DIVE_FRAME_DURATION (=6) vsyncs per
+         -- step, total 36 vsyncs. Step sequence:
+         --   0 -> squish1   1 -> squish2   2 -> squish3
+         --   3 -> squish2   4 -> squish1   5 -> neutral
+         dive_step := dive_frame_count / DIVE_FRAME_DURATION;
+         case dive_step is
+            when 0 =>
+               player_red <= squish_1_frame_red; player_green <= squish_1_frame_green; player_blue <= squish_1_frame_blue;
+            when 1 =>
+               player_red <= squish_2_frame_red; player_green <= squish_2_frame_green; player_blue <= squish_2_frame_blue;
+            when 2 =>
+               player_red <= squish_3_frame_red; player_green <= squish_3_frame_green; player_blue <= squish_3_frame_blue;
+            when 3 =>
+               player_red <= squish_2_frame_red; player_green <= squish_2_frame_green; player_blue <= squish_2_frame_blue;
+            when 4 =>
+               player_red <= squish_1_frame_red; player_green <= squish_1_frame_green; player_blue <= squish_1_frame_blue;
+            when others =>
+               player_red <= neutral_frame_red;  player_green <= neutral_frame_green;  player_blue <= neutral_frame_blue;
+         end case;
       else
          -- Walking. 8-frame cycle:
          --   000 neutral, 001 right_1, 010 right_2, 011 right_1,
@@ -541,6 +704,15 @@ begin
          end case;
       end if;
    end process Frame_Selector;
+
+   -- Derive the current lane combinationally from view_pos_int. The cat is
+   -- considered "in" a lane once its view position has crossed the midpoint
+   -- (half of LANE_RESOLUTION = 32) between two lanes, so collision detection
+   -- and Object_Manager priority track the cat's visual position rather than
+   -- waiting for the full 64-frame transition to complete.
+   current_lane_int <= 0 when view_pos_int < -(LANE_RESOLUTION / 2) else
+                       2 when view_pos_int >  (LANE_RESOLUTION / 2) else
+                       1;
 
    player_lane       <= conv_std_logic_vector(current_lane_int, 2);
    player_state      <= current_state;
