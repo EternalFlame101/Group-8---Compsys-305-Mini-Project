@@ -39,17 +39,19 @@ architecture beh of Spawn_Control is
         );
     end component;
 
-    signal lfsr_address  : std_logic_vector(7 downto 0);
-    signal rom_lane_0    : std_logic_vector(1 downto 0);
-    signal rom_lane_1    : std_logic_vector(1 downto 0);
-    signal rom_lane_2    : std_logic_vector(1 downto 0);
-    signal vsync_pulse   : std_logic := '0';
-    signal spawn_trigger : std_logic := '0';
-    signal rom_valid     : std_logic := '0';
-    signal active_0      : std_logic := '0';
-    signal active_1      : std_logic := '0';
-    signal active_2      : std_logic := '0';
-    signal frame_counter : integer range 0 to 416666 := 0;
+    signal lfsr_address   : std_logic_vector(7 downto 0);
+    signal rom_lane_0     : std_logic_vector(1 downto 0);
+    signal rom_lane_1     : std_logic_vector(1 downto 0);
+    signal rom_lane_2     : std_logic_vector(1 downto 0);
+    signal lfsr_enable    : std_logic := '0';
+    signal active_0       : std_logic := '0';
+    signal active_1       : std_logic := '0';
+    signal active_2       : std_logic := '0';
+    signal any_arrived    : std_logic := '0';
+	 
+	 signal wave_pending   : std_logic := '1';  -- initiate
+	 signal wave_running   : std_logic := '0';
+	 signal rom_valid      : std_logic := '0';
 
 begin
 
@@ -58,7 +60,7 @@ begin
         port map (
             clock  => clock,
             reset  => '0',
-            enable => vsync_pulse,
+            enable => lfsr_enable,
             output => lfsr_address
         );
 
@@ -71,57 +73,47 @@ begin
             lane_2_out => rom_lane_2
         );
 
-    process(clock)
-    begin
-        if rising_edge(clock) then
-            vsync_pulse <= '0';
+    -- Pipeline: advance LFSR on arrival, read ROM 2 cycles later
+		process(clock)
+		begin
+			 if rising_edge(clock) then
+				  lfsr_enable <= '0';
+				  rom_valid   <= lfsr_enable;
 
-            if frame_counter = 416666 then
-                frame_counter <= 0;
-                vsync_pulse   <= '1';
-            else
-                frame_counter <= frame_counter + 1;
-            end if;
+				  if wave_pending = '1' and wave_running = '0' then
+						lfsr_enable  <= '1';
+						wave_pending <= '0';
+						wave_running <= '1';
+				  end if;
 
-            spawn_trigger <= vsync_pulse;
-            rom_valid     <= spawn_trigger;
-        end if;
-    end process;
+				  if rom_valid = '1' then
+						wave_running <= '0';  -- now safe to accept new arrived
+				  end if;
+				  
+				  if wave_running = '0' then
+					  if arrived_0 = '1' or arrived_1 = '1' or arrived_2 = '1' then
+							wave_pending <= '1';
+					  end if;
+				  end if;
+			 end if;
+		end process;
 
-    process(clock)
-    begin
-        if rising_edge(clock) then
-            if arrived_0 = '1' then
-                active_0    <= '0';
-                lane_0_type <= "00";
-            end if;
-            if arrived_1 = '1' then
-                active_1    <= '0';
-                lane_1_type <= "00";
-            end if;
-            if arrived_2 = '1' then
-                active_2    <= '0';
-                lane_2_type <= "00";
-            end if;
+		process(clock)
+		begin
+			 if rising_edge(clock) then
+				  if rom_valid = '1' then
+						lane_0_type <= rom_lane_0;
+						lane_1_type <= rom_lane_1;
+						lane_2_type <= rom_lane_2;
+				  end if;
 
-            if rom_valid = '1' then
-                if rom_lane_0 /= "00" and active_0 = '0' then
-                    lane_0_type <= rom_lane_0;
-                    active_0    <= '1';
-                end if;
-                if rom_lane_1 /= "00" and active_1 = '0' then
-                    lane_1_type <= rom_lane_1;
-                    active_1    <= '1';
-                end if;
-                if rom_lane_2 /= "00" and active_2 = '0' then
-                    lane_2_type <= rom_lane_2;
-                    active_2    <= '1';
-                end if;
-            end if;
-        end if;
-    end process;
+				  if arrived_0 = '1' then lane_0_type <= "00"; end if;
+				  if arrived_1 = '1' then lane_1_type <= "00"; end if;
+				  if arrived_2 = '1' then lane_2_type <= "00"; end if;
+			 end if;
+		end process;
 
-    debug_vsync_pulse <= vsync_pulse;
+    debug_vsync_pulse <= lfsr_enable;
     debug_lfsr        <= lfsr_address;
 
 end architecture beh;

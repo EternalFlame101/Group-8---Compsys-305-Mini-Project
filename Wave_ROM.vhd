@@ -49,7 +49,7 @@ begin
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "spawn_patterns.mif",
+						 init_file              => "mif/spawn_patterns.mif",
 						 intended_device_family => "cyclone v",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",

@@ -183,6 +183,8 @@ architecture moving_object_behaviour of Moving_Object is
 
 	signal effective_height : std_logic_vector(9 downto 0);
 	
+	signal enable_latch : std_logic := '0';
+	
 begin
 
    -- ---------------------------------------------------------------------------
@@ -244,6 +246,19 @@ begin
    -- falling edge of vertical_sync (i.e. once per frame), unless we've
    -- reached zero (object has arrived at the camera).
    -- ---------------------------------------------------------------------------
+	process(clock)
+	begin
+		 if rising_edge(clock) then
+			  if reset = '1' then
+					enable_latch <= '0';
+			  elsif enable = '0' then
+					enable_latch <= '0';
+			  elsif enable = '1' and object_active = '0' then
+					enable_latch <= '1';
+			  end if;
+		 end if;
+	end process;
+	
 	Moving : process(clock)
 	begin
 		 if rising_edge(clock) then
@@ -255,7 +270,7 @@ begin
 					object_active 	 <= '0';
 
 			  elsif (vertical_sync = '0') and (vertical_sync_prev = '1') then
-					if enable = '1' and object_active = '0' then
+					if enable_latch = '1' and object_active = '0' then
 						object_active <= '1';
 					end if;
 					
@@ -282,9 +297,15 @@ begin
                                 (pixel_column <= object_x + object_width))
                       else '0';
 
-   object_red   <= "0001" when (object_front_on = '1') else "0000";
-   object_green <= "0111" when (object_front_on = '1') else "0000";
-   object_blue  <= "0001" when (object_front_on = '1') else "0000";
+   object_red   <= "0101" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_front_on = '1') else                        -- others = green
+						 "0000";
+	object_green <= "0101" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+						 "0111" when (object_front_on = '1') else
+						 "0000";
+	object_blue  <= "0000" when (object_front_on = '1' and obj_type = "01") else
+						 "0001" when (object_front_on = '1') else
+						 "0000";
 
    -- ---------------------------------------------------------------------------
    -- Back-edge interpolation: width and height at the back of the object are
