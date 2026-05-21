@@ -246,19 +246,6 @@ begin
    -- falling edge of vertical_sync (i.e. once per frame), unless we've
    -- reached zero (object has arrived at the camera).
    -- ---------------------------------------------------------------------------
-	process(clock)
-	begin
-		 if rising_edge(clock) then
-			  if reset = '1' then
-					enable_latch <= '0';
-			  elsif enable = '0' then
-					enable_latch <= '0';
-			  elsif enable = '1' and object_active = '0' then
-					enable_latch <= '1';
-			  end if;
-		 end if;
-	end process;
-	
 	Moving : process(clock)
 	begin
 		 if rising_edge(clock) then
@@ -267,24 +254,33 @@ begin
 
 			  if reset = '1' then
 					object_distance <= (others => '1');
-					object_active 	 <= '0';
-
-			  elsif (vertical_sync = '0') and (vertical_sync_prev = '1') then
-					if enable_latch = '1' and object_active = '0' then
-						object_active <= '1';
+					object_active   <= '0';
+					enable_latch    <= '0';
+			  else
+					-- Update enable latch combinationally each cycle
+					if enable = '0' then
+						 enable_latch <= '0';
+					elsif object_active = '0' then
+						 enable_latch <= enable;
 					end if;
-					
-					if object_active = '1' then
-						 if object_distance >= conv_std_logic_vector(479, 10) then
-							  object_arrived  <= '1';
-							  object_distance <= (others => '0');
-							  object_active   <= '0';
-						 else
-							  object_distance <= object_distance + ("000000" & speed);
+
+					if (vertical_sync = '0') and (vertical_sync_prev = '1') then
+						 if enable_latch = '1' and object_active = '0' then
+							  object_active <= '1';
+						 end if;
+
+						 if object_active = '1' then
+							  if object_distance >= conv_std_logic_vector(479, 10) then
+									object_arrived  <= '1';
+									object_distance <= (others => '0');
+									object_active   <= '0';
+							  else
+									object_distance <= object_distance + ("000000" & speed);
+							  end if;
 						 end if;
 					end if;
-				end if;
-			end if;
+			  end if;
+		 end if;
 	end process;
 
    -- ---------------------------------------------------------------------------
@@ -297,10 +293,10 @@ begin
                                 (pixel_column <= object_x + object_width))
                       else '0';
 
-   object_red   <= "0101" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+   object_red   <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
 						 "0001" when (object_front_on = '1') else                        -- others = green
 						 "0000";
-	object_green <= "0101" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
+	object_green <= "0111" when (object_front_on = '1' and obj_type = "01") else  -- gift = red
 						 "0111" when (object_front_on = '1') else
 						 "0000";
 	object_blue  <= "0000" when (object_front_on = '1' and obj_type = "01") else
@@ -364,9 +360,15 @@ begin
                      right_side_on when (LANE = 0) else
                      '0';
 
-   side_red   <= "0001" when (object_side_on = '1') else "0000";
-   side_green <= "0011" when (object_side_on = '1') else "0000";
-   side_blue  <= "0001" when (object_side_on = '1') else "0000";
+	side_red   <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_side_on = '1') else                        -- others = green
+						 "0000";
+	side_green <= "0111" when (object_side_on = '1' and obj_type = "01") else  -- gift = red
+						 "0011" when (object_side_on = '1') else
+						 "0000";
+	side_blue  <= "0000" when (object_side_on = '1' and obj_type = "01") else
+						 "0001" when (object_side_on = '1') else
+						 "0000";
 
    -- ---------------------------------------------------------------------------
    -- Top face: a quadrilateral that tapers inward toward the back of the
@@ -402,9 +404,15 @@ begin
                               (pixel_column <= top_right))
                     else '0';
 
-   top_red   <= "0001" when (object_top_on = '1') else "0000";
-   top_green <= "1111" when (object_top_on = '1') else "0000";
-   top_blue  <= "0001" when (object_top_on = '1') else "0000";
+	top_red   <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
+						 "0001" when (object_top_on = '1') else                        -- others = green
+						 "0000";
+	top_green <= "0111" when (object_top_on = '1' and obj_type = "01") else  -- gift = red
+						 "1111" when (object_top_on = '1') else
+						 "0000";
+	top_blue  <= "0000" when (object_top_on = '1' and obj_type = "01") else
+						 "0001" when (object_top_on = '1') else
+						 "0000";
 
    -- ---------------------------------------------------------------------------
    -- Final per-pixel priority mux: front > top > side

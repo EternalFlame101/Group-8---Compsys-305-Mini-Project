@@ -659,12 +659,12 @@ begin
    --   LEDR(8:7) = latched game mode (00 none, 01 training, 10 single, 11 two)
    --   LEDR(9)   = SD read done
    -- ---------------------------------------------------------------------------
---   LEDR(3 downto 0) <= init_state_indicator;
---   LEDR(4)          <= init_done_signal;
---   LEDR(5)          <= pll_locked;
---   LEDR(6)          <= start_screen_active;
---   LEDR(8 downto 7) <= latched_mode;
---   LEDR(9)          <= read_done_signal;
+   LEDR(3 downto 0) <= init_state_indicator;
+   LEDR(4)          <= init_done_signal;
+   LEDR(5)          <= pll_locked;
+   LEDR(6)          <= start_screen_active;
+   LEDR(8 downto 7) <= latched_mode;
+   LEDR(9)          <= read_done_signal;
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
    GPIO_0(0) <= sd_serial_clock;   -- CLK
@@ -686,24 +686,24 @@ begin
 
 	
 	
-	
-	LEDR(8) <= vertical_sync;
+	-- LFSR testing
+--	LEDR(8) <= vertical_sync;
 --	LEDR(7 downto 0) <= debug_lfsr;         -- should change pattern over time
+--
+--	LEDR(9) <= pll_locked;
 --	
-	LEDR(9) <= pll_locked;
-	
-	LEDR(1) <= arrived_1;
-	LEDR(0) <= arrived_2;
-	
-	process(video_clock)
-	begin
-		 if rising_edge(video_clock) then
-			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
-		 end if;
-	end process;
-
-	LEDR(2) <= arrived_sticky;
-	
+--	LEDR(1) <= arrived_1;
+--	LEDR(0) <= arrived_2;
+--	
+--	process(video_clock)
+--	begin
+--		 if rising_edge(video_clock) then
+--			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
+--		 end if;
+--	end process;
+--
+--	LEDR(2) <= arrived_sticky;
+--	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low : Hex_To_Seven_Segment
       port map (hex_value      => read_byte_signal(3 downto 0),
