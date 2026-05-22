@@ -154,17 +154,18 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Word_Display;
 
-   component SD_Init is
+	component SD_Init is
+      generic (TOTAL_SECTORS : positive := 30280);
       port (clock              : in  std_logic;
             reset              : in  std_logic;
             start_init         : in  std_logic;
-            byte_address       : in  std_logic_vector(8 downto 0);
+            byte_address       : in  std_logic_vector(9 downto 0);
             spi_clock_out      : out std_logic;
             spi_mosi_out       : out std_logic;
             spi_miso_in        : in  std_logic;
             spi_chip_select_n  : out std_logic;
             init_done          : out std_logic;
-            read_done          : out std_logic;
+            audio_ready        : out std_logic;
             init_failed        : out std_logic;
             state_indicator    : out std_logic_vector(3 downto 0);
             last_response_byte : out std_logic_vector(7 downto 0);
@@ -176,13 +177,17 @@ architecture game_behaviour of Top_Level is
             seven_segments : out std_logic_vector(6 downto 0));
    end component Hex_To_Seven_Segment;
 
-   component Audio_Test_Generator is
+	component Audio_Playback is
       generic (CLOCK_FREQUENCY : positive := 50_000_000;
                SAMPLE_RATE     : positive := 44_100);
-      port (clock    : in  std_logic;
-            reset    : in  std_logic;
-            dac_data : out std_logic_vector(7 downto 0));
-   end component Audio_Test_Generator;
+      port (clock        : in  std_logic;
+            reset        : in  std_logic;
+            audio_ready  : in  std_logic;
+            buffer_byte  : in  std_logic_vector(7 downto 0);
+            byte_address : out std_logic_vector(9 downto 0);
+            dac_high     : out std_logic_vector(7 downto 0);
+            dac_low      : out std_logic_vector(7 downto 0));
+   end component Audio_Playback;
 
    component Start_Screen is
       port (video_clock                  : in  std_logic;
@@ -350,16 +355,16 @@ architecture game_behaviour of Top_Level is
    signal init_state_indicator   : std_logic_vector(3 downto 0);
    signal last_response_byte_sig : std_logic_vector(7 downto 0);
 
-   signal sd_serial_clock : std_logic;
-   signal sd_command      : std_logic;
-   signal sd_chip_select  : std_logic;
-   signal sd_data_in      : std_logic;
+   signal sd_serial_clock 	: std_logic;
+   signal sd_command      	: std_logic;
+   signal sd_chip_select  	: std_logic;
+   signal sd_data_in      	: std_logic;
 
-   signal read_done_signal : std_logic;
-   signal read_byte_signal : std_logic_vector(7 downto 0);
-
-   signal audio_dac_data : std_logic_vector(7 downto 0);
-	
+   signal audio_dac_high 		: std_logic_vector(7 downto 0);   -- high byte -> new DAC (GPIO_0[19..12])
+   signal audio_dac_low  		: std_logic_vector(7 downto 0);   -- low byte  -> old DAC (GPIO_0[11..4])
+	signal audio_ready_signal 	: std_logic;
+   signal sd_buffer_byte     	: std_logic_vector(7 downto 0);
+   signal audio_byte_address 	: std_logic_vector(9 downto 0);	
 	
 	-- Spawn control signals 
 	signal lane_0_type : std_logic_vector(1 downto 0);
@@ -714,26 +719,33 @@ begin
                 mouse_cursor_row    => mouse_row,
                 mouse_cursor_column => mouse_column);
 
-   SD_Initialiser : SD_Init
+	SD_Initialiser : SD_Init
+      generic map (TOTAL_SECTORS => 30280)
       port map (clock              => CLOCK_50,
                 reset              => not RESET_N,
-                start_init         => left_click,
-                byte_address       => SW(8 downto 0),
+                start_init         => not KEY(2),
+                byte_address       => audio_byte_address,
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
                 spi_miso_in        => sd_data_in,
                 spi_chip_select_n  => sd_chip_select,
                 init_done          => init_done_signal,
-                read_done          => read_done_signal,
+                audio_ready        => audio_ready_signal,
                 init_failed        => init_failed_signal,
                 state_indicator    => init_state_indicator,
                 last_response_byte => last_response_byte_sig,
-                read_byte          => read_byte_signal);
-
-   Audio_Generator : Audio_Test_Generator
-      port map (clock    => CLOCK_50,
-                reset    => not RESET_N,
-                dac_data => audio_dac_data);
+                read_byte          => sd_buffer_byte);
+					 
+	Audio_Generator : Audio_Playback
+      generic map (CLOCK_FREQUENCY => 50_000_000,
+                   SAMPLE_RATE     => 44_100)
+      port map (clock        => CLOCK_50,
+                reset        => not RESET_N,
+                audio_ready  => audio_ready_signal,
+                buffer_byte  => sd_buffer_byte,
+                byte_address => audio_byte_address,
+                dac_high     => audio_dac_high,
+                dac_low      => audio_dac_low);
 
    -- ===========================================================================
    -- START SCREEN + BACKGROUND SPRITE + FINAL COMPOSITOR
@@ -881,17 +893,27 @@ begin
    GPIO_0(2) <= sd_command;        -- MOSI
    GPIO_0(3) <= sd_data_in;        -- MISO
 
-   -- DAC0802LCN data lines (B1 = MSB = audio_dac_data(7), B8 = LSB = audio_dac_data(0))
-   GPIO_0(11) <= audio_dac_data(7);   -- B1 (MSB)
-   GPIO_0(10) <= audio_dac_data(6);   -- B2
-   GPIO_0(9)  <= audio_dac_data(5);   -- B3
-   GPIO_0(8)  <= audio_dac_data(4);   -- B4
-   GPIO_0(7)  <= audio_dac_data(3);   -- B5
-   GPIO_0(6)  <= audio_dac_data(2);   -- B6
-   GPIO_0(5)  <= audio_dac_data(1);   -- B7
-   GPIO_0(4)  <= audio_dac_data(0);   -- B8 (LSB)
+   -- High-byte DAC (new DAC, GPIO_0[19..12]) — B1=MSB, B8=LSB
+   GPIO_0(19) <= audio_dac_high(7);   -- B1 (MSB)
+   GPIO_0(18) <= audio_dac_high(6);   -- B2
+   GPIO_0(17) <= audio_dac_high(5);   -- B3
+   GPIO_0(16) <= audio_dac_high(4);   -- B4
+   GPIO_0(15) <= audio_dac_high(3);   -- B5
+   GPIO_0(14) <= audio_dac_high(2);   -- B6
+   GPIO_0(13) <= audio_dac_high(1);   -- B7
+   GPIO_0(12) <= audio_dac_high(0);   -- B8 (LSB)
 
-   GPIO_0(35 downto 12) <= (others => '0');
+   -- Low-byte DAC (old DAC, GPIO_0[11..4]) — B1=MSB, B8=LSB
+   GPIO_0(11) <= audio_dac_low(7);   -- B1 (MSB)
+   GPIO_0(10) <= audio_dac_low(6);   -- B2
+   GPIO_0(9)  <= audio_dac_low(5);   -- B3
+   GPIO_0(8)  <= audio_dac_low(4);   -- B4
+   GPIO_0(7)  <= audio_dac_low(3);   -- B5
+   GPIO_0(6)  <= audio_dac_low(2);   -- B6
+   GPIO_0(5)  <= audio_dac_low(1);   -- B7
+   GPIO_0(4)  <= audio_dac_low(0);   -- B8 (LSB)
+
+   GPIO_0(35 downto 20) <= (others => '0');
 	
 	-- LFSR testing
 	--	LEDR(8) <= vertical_sync;
@@ -913,11 +935,11 @@ begin
 	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(3 downto 0),
+      port map (hex_value      => sd_buffer_byte(3 downto 0),
                 seven_segments => HEX0);
 
    Hex_Buffer_High : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(7 downto 4),
+      port map (hex_value      => sd_buffer_byte(7 downto 4),
                 seven_segments => HEX1);
 
    -- HEX4/HEX5 show the last raw SPI response byte (for debugging failures)
