@@ -253,7 +253,7 @@ architecture game_behaviour of Top_Level is
                SPRITE_SIZE            : positive := 64;
                SPRITE_SCALE           : positive := 2;
                WALK_FRAME_DURATION    : positive := 8;
-               JUMP_TOTAL_FRAMES      : positive := 120;
+               JUMP_TOTAL_FRAMES      : positive := 64;
                JUMP_PEAK_HEIGHT       : positive := 60;
                LANE_TRANSITION_FRAMES : positive := 64);
       port (clock, reset, vertical_sync             : in  std_logic;

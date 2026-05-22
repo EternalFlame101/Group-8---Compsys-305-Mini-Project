@@ -498,6 +498,7 @@ set_global_assignment -name VHDL_FILE Moving_Object.vhd
 set_global_assignment -name VHDL_FILE Mouse.vhd
 set_global_assignment -name VHDL_FILE LFSR.vhd
 set_global_assignment -name VHDL_FILE Keyboard.vhd
+set_global_assignment -name VHDL_FILE Jump_Offset_LUT.vhd
 set_global_assignment -name VHDL_FILE Hex_To_Seven_Segment.vhd
 set_global_assignment -name VHDL_FILE Graphics_Manager.vhd
 set_global_assignment -name VHDL_FILE Game_Master.vhd
