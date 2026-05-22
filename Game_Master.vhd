@@ -44,6 +44,7 @@ architecture game_master_behaviour of Game_Master is
 	end component Collision_Detector;
 	
    -- signals
+	
 	-- ===== state signals ================================
    signal current_state 					: game_state_type := INIT_SCREEN;
 	signal next_state							: game_state_type;
@@ -61,6 +62,7 @@ architecture game_master_behaviour of Game_Master is
 	signal lane_1_collision 				: std_logic;
 	signal lane_2_collision 				: std_logic;
 	signal obj_or_gift						: std_logic; -- 0 for obj, 1 for gift
+	
 	
 
 begin
@@ -142,6 +144,7 @@ begin
 		next_state <= current_state;
 		case (current_state) is
 			when INIT_SCREEN =>
+				next_state <= NORMAL;
 				if (startscreen_enable = '0') then
 					if (mode_selected = '0') then
 						next_state <= TRAINING;
@@ -154,7 +157,7 @@ begin
 			when NORMAL =>
 				if (lane_0_collision or lane_1_collision or lane_2_collision) = '1' then
 					if (obj_or_gift = '0') then
-						next_state <= LOSE;
+						null;
 					else
 						null;
 					end if;

@@ -667,7 +667,7 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable            => lane_2_enable,
+      port map (enable            => (lane_2_type(1) or lane_2_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -686,7 +686,7 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => lane_1_enable,
+      port map (enable            => (lane_1_type(1) or lane_1_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset 			    => not RESET_N,
@@ -705,7 +705,7 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable            => lane_0_enable,
+      port map (enable            => (lane_0_type(1) or lane_0_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -930,7 +930,7 @@ begin
 	-- ===========================================================================
 	FSM : Game_Master
 		port map  (clock					=> CLOCK_50,
-					  reset					=> RESET_N,
+					  reset					=> not RESET_N,
 					  lane_0_gift			=> not(lane_0_type(1)),
 					  lane_1_gift			=> not(lane_1_type(1)),
 					  lane_2_gift			=> not(lane_2_type(1)),
@@ -943,7 +943,7 @@ begin
 					  player_lane			=> player_lane,
 					  player_state			=> player_state,
 					  startscreen_enable => start_screen_active,
-					  mode_selected		=> selected_mode,
+					  mode_selected		=> latched_mode,
 					  game_enable			=> game_enable,
 					  endscreen_enable	=> endscreen_enable,
 					  endscreen_outcome	=> endscreen_outcome,
