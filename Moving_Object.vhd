@@ -10,8 +10,8 @@ entity Moving_Object is
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
          reset  							  : in  std_logic;
-				obj_type                     : in  std_logic_vector(1 downto 0); 
-				arrived 			  				  : out std_logic;
+			obj_type                     : in  std_logic_vector(1 downto 0); 
+			arrived 			  				  : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
