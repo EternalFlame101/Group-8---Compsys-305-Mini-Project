@@ -38,8 +38,8 @@ entity Start_Screen is
          mouse_left_click             : in  std_logic;
          any_key_pressed              : in  std_logic;
          start_screen_active          : out std_logic;
-         selected_mode                : out std_logic_vector(1 downto 0);
-         latched_mode                 : out std_logic_vector(1 downto 0);
+         selected_mode                : out std_logic;
+         latched_mode                 : out std_logic;
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Start_Screen;
 
@@ -67,8 +67,8 @@ architecture start_screen_behaviour of Start_Screen is
 
    -- Internal copy of selected_mode so we can both drive an output port and
    -- feed the mode-latch process from it.
-   signal selected_mode_internal : std_logic_vector(1 downto 0);
-   signal latched_mode_internal  : std_logic_vector(1 downto 0);
+   signal selected_mode_internal : std_logic;
+   signal latched_mode_internal  : std_logic;
 
    -- ---------------------------------------------------------------------------
    -- Input synchronisers and rising-edge detection
@@ -230,7 +230,7 @@ begin
    begin
       if reset = '1' then
          screen_state           <= title_screen;
-         selected_mode_internal <= "00";
+         selected_mode_internal <= '0';
       elsif rising_edge(video_clock) then
          case screen_state is
             when title_screen =>
@@ -241,13 +241,10 @@ begin
             when mode_select =>
                if mouse_left_click_edge = '1' then
                   if training_hovered = '1' then
-                     selected_mode_internal <= "01";
+                     selected_mode_internal <= '0';
                      screen_state           <= game_running;
                   elsif single_player_hovered = '1' then
-                     selected_mode_internal <= "10";
-                     screen_state           <= game_running;
-                  elsif two_player_hovered = '1' then
-                     selected_mode_internal <= "11";
+                     selected_mode_internal <= '1';
                      screen_state           <= game_running;
                   end if;
                end if;
@@ -265,7 +262,7 @@ begin
    Mode_Latch : process(video_clock, reset)
    begin
       if reset = '1' then
-         latched_mode_internal <= "00";
+         latched_mode_internal <= '0';
          screen_state_previous <= title_screen;
       elsif rising_edge(video_clock) then
          screen_state_previous <= screen_state;
@@ -622,59 +619,7 @@ begin
                 green_out      => single_player_large_green,
                 blue_out       => single_player_large_blue);
 
-   -- ---------------------------------------------------------------------------
-   -- TWO PLAYER button: small + large
-   -- ---------------------------------------------------------------------------
-   Two_Player_Small : Word_Display
-      generic map (STRING_LENGTH => 10,
-                   SCALE         => 2,
-                   TEXT_RED      => "1001",
-                   TEXT_GREEN    => "0111",
-                   TEXT_BLUE     => "1100")
-      port map (clock          => video_clock,
-                characters     => "010100" &  -- T
-                                  "010111" &  -- W
-                                  "001111" &  -- O
-                                  "100000" &  -- sp
-                                  "010000" &  -- P
-                                  "001100" &  -- L
-                                  "000001" &  -- A
-                                  "011001" &  -- Y
-                                  "000101" &  -- E
-                                  "010010",   -- R
-                x_position     => conv_std_logic_vector(TWO_PLAYER_SMALL_X, 10),
-                y_position     => conv_std_logic_vector(TWO_PLAYER_SMALL_Y, 10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
-                red_out        => two_player_small_red,
-                green_out      => two_player_small_green,
-                blue_out       => two_player_small_blue);
-
-   Two_Player_Large : Word_Display
-      generic map (STRING_LENGTH => 10,
-                   SCALE         => 3,
-                   TEXT_RED      => "1001",
-                   TEXT_GREEN    => "0111",
-                   TEXT_BLUE     => "1100")
-      port map (clock          => video_clock,
-                characters     => "010100" &  -- T
-                                  "010111" &  -- W
-                                  "001111" &  -- O
-                                  "100000" &  -- sp
-                                  "010000" &  -- P
-                                  "001100" &  -- L
-                                  "000001" &  -- A
-                                  "011001" &  -- Y
-                                  "000101" &  -- E
-                                  "010010",   -- R
-                x_position     => conv_std_logic_vector(TWO_PLAYER_LARGE_X, 10),
-                y_position     => conv_std_logic_vector(TWO_PLAYER_LARGE_Y, 10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
-                red_out        => two_player_large_red,
-                green_out      => two_player_large_green,
-                blue_out       => two_player_large_blue);
-
+   
    -- ---------------------------------------------------------------------------
    -- Hover mux per button: large pixels when hovered, small pixels otherwise.
    -- ---------------------------------------------------------------------------
@@ -686,10 +631,6 @@ begin
    single_player_green <= single_player_large_green when single_player_hovered = '1' else single_player_small_green;
    single_player_blue  <= single_player_large_blue  when single_player_hovered = '1' else single_player_small_blue;
 
-   two_player_red   <= two_player_large_red   when two_player_hovered = '1' else two_player_small_red;
-   two_player_green <= two_player_large_green when two_player_hovered = '1' else two_player_small_green;
-   two_player_blue  <= two_player_large_blue  when two_player_hovered = '1' else two_player_small_blue;
-
    -- ---------------------------------------------------------------------------
    -- Output compositor: only the layers belonging to the current state are visible.
    -- ---------------------------------------------------------------------------
@@ -700,8 +641,7 @@ begin
                                subtitle_red,      subtitle_green,      subtitle_blue,
                                header_red,        header_green,        header_blue,
                                training_red,      training_green,      training_blue,
-                               single_player_red, single_player_green, single_player_blue,
-                               two_player_red,    two_player_green,    two_player_blue)
+                               single_player_red, single_player_green, single_player_blue)
    begin
       case screen_state is
          when title_screen =>
@@ -710,9 +650,9 @@ begin
             blue_out  <= title_blue  or credits_one_blue  or credits_two_blue  or subtitle_blue;
 
          when mode_select =>
-            red_out   <= header_red   or training_red   or single_player_red   or two_player_red;
-            green_out <= header_green or training_green or single_player_green or two_player_green;
-            blue_out  <= header_blue  or training_blue  or single_player_blue  or two_player_blue;
+            red_out   <= header_red   or training_red   or single_player_red;
+            green_out <= header_green or training_green or single_player_green;
+            blue_out  <= header_blue  or training_blue  or single_player_blue;
 
          when game_running =>
             red_out   <= (others => '0');

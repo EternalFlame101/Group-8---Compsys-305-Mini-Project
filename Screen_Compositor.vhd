@@ -28,7 +28,7 @@ use IEEE.std_logic_unsigned.all;
 
 entity Screen_Compositor is
    port (start_screen_active : in  std_logic;
-         latched_mode        : in  std_logic_vector(1 downto 0);
+         latched_mode        : in  std_logic;
 
          -- Start screen text layer
          start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
@@ -97,7 +97,7 @@ begin
          end if;
       else
          case latched_mode is
-            when "10" | "11" =>
+            when '1' =>
                red_out   <= racing_red;
                green_out <= racing_green;
                blue_out  <= racing_blue;

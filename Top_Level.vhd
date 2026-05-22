@@ -3,6 +3,11 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
+-- ======= DO NOT REMOVE ==================
+-- fixes VGA issues
+library altera;
+use altera.altera_primitives_components.all;
+
 entity Top_Level is
    port (CLOCK_50            : in    std_logic;
          RESET_N             : in    std_logic;
@@ -27,6 +32,9 @@ entity Top_Level is
 end entity Top_Level;
 
 architecture game_behaviour of Top_Level is
+	-- ================== DO NOT REMOVE =========================================
+	-- fixes the VGA issues
+	signal video_clock_prebuffered : std_logic;
 
    -- ---------------------------------------------------------------------------
    -- Components
@@ -192,8 +200,8 @@ architecture game_behaviour of Top_Level is
             mouse_left_click             : in  std_logic;
             any_key_pressed              : in  std_logic;
             start_screen_active          : out std_logic;
-            selected_mode                : out std_logic_vector(1 downto 0);
-            latched_mode                 : out std_logic_vector(1 downto 0);
+            selected_mode                : out std_logic;
+            latched_mode                 : out std_logic;
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Start_Screen;
 
@@ -211,7 +219,7 @@ architecture game_behaviour of Top_Level is
 
    component Screen_Compositor is
       port (start_screen_active : in  std_logic;
-            latched_mode        : in  std_logic_vector(1 downto 0);
+            latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
@@ -260,6 +268,29 @@ architecture game_behaviour of Top_Level is
             objects_red, objects_green, objects_blue : in  std_logic_vector(3 downto 0);
             red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
    end component Player_And_Objects_Manager;
+	
+	component Game_Master is
+		port(clock            	: in  std_logic;
+			  reset					: in  std_logic;
+			  lane_0_gift			: in 	std_logic; -- 0 for no gift in lane, 1 for gift in lane
+			  lane_1_gift			: in 	std_logic;
+			  lane_2_gift			: in 	std_logic;
+			  lane_0_obj_type  	: in  std_logic; -- 0 for short, 1 for tall
+			  lane_1_obj_type  	: in  std_logic;
+			  lane_2_obj_type  	: in  std_logic;
+			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  player_lane			: in	std_logic_vector(1 downto 0);
+			  player_state			: in 	std_logic;
+			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
+			  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
+			  game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
+			  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
+			  speed            	: out std_logic_vector(3 downto 0); -- manages speed
+			  score            	: out std_logic_vector(5 downto 0));
+	end component Game_Master;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -295,8 +326,8 @@ architecture game_behaviour of Top_Level is
    signal start_screen_sprite_green  : std_logic_vector(3 downto 0);
    signal start_screen_sprite_blue   : std_logic_vector(3 downto 0);
    signal start_screen_active        : std_logic;
-   signal selected_mode              : std_logic_vector(1 downto 0);
-   signal latched_mode               : std_logic_vector(1 downto 0);
+   signal selected_mode              : std_logic;
+   signal latched_mode               : std_logic;
    signal any_key_pressed            : std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
@@ -380,8 +411,30 @@ architecture game_behaviour of Top_Level is
    signal player_state                                                     : std_logic;
    signal cat_view_position                                                : std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
+	
+	-- fsm output signals
+	signal lane_0_enable : std_logic;
+	signal lane_1_enable : std_logic;
+	signal lane_2_enable	: std_logic;
+	
+	signal game_enable		: std_logic;
+	signal endscreen_enable : std_logic;
+	signal endscreen_outcome: std_logic;
+	
+	signal speed	: std_logic_vector(3 downto 0);
+	signal score	: std_logic_vector(5 downto 0);
 
 begin
+	-- ==================== DO NOT REMOVE ================================
+	-- buffers video clock and fixes all issues to do with vga
+	-- original issue is that clock fanouts was around 1000 
+	-- additional logic pushes too much and breaks it
+	video_clock_buf : GLOBAL
+		port map (
+		  a_in  => video_clock_prebuffered,
+		  a_out => video_clock
+		);
+
 
    -- ---------------------------------------------------------------------------
    -- Video PLL: produces a true 25 MHz pixel clock from 50 MHz input.
@@ -389,7 +442,7 @@ begin
    Pixel_Clock_PLL : Video_PLL
       port map (refclk   => CLOCK_50,
                 rst      => not RESET_N,
-                outclk_0 => video_clock,
+                outclk_0 => video_clock_prebuffered,
                 locked   => pll_locked);
 
    -- ---------------------------------------------------------------------------
@@ -593,11 +646,23 @@ begin
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
 					 
+	-- =============================================================================
+	-- registering stuff to make it run
+	-- =============================================================================
+	process(video_clock)
+	begin
+		 if rising_edge(video_clock) then
+			  lane_0_enable <= (lane_0_type(1) or lane_0_type(0)) and game_enable;
+			  lane_1_enable <= (lane_1_type(1) or lane_1_type(0)) and game_enable;
+			  lane_2_enable <= (lane_2_type(1) or lane_2_type(0)) and game_enable;
+		 end if;
+	end process;
+	
 	Moving_Object_Lane_Two : Moving_Object
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable            => lane_2_type(1) or lane_2_type(0),
+      port map (enable            => lane_2_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -616,12 +681,12 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => lane_1_type(1) or lane_1_type(0),
+      port map (enable            => lane_1_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset 			      => not RESET_N,
-					      obj_type 		      => lane_1_type,
-					      arrived			      => arrived_1,
+                reset 			    => not RESET_N,
+					 obj_type 		    => lane_1_type,
+					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
@@ -635,7 +700,7 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable            => lane_0_type(1) or lane_0_type(0),
+      port map (enable            => lane_0_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -846,7 +911,34 @@ begin
 					lane_2_type		=> lane_2_type,
 					debug_vsync_pulse => debug_vsync_pulse,
 					debug_lfsr        => debug_lfsr);
-					
+	
+	
+	-- ===========================================================================
+	-- FSM
+	-- ===========================================================================
+	FSM : Game_Master
+		port map  (clock					=> CLOCK_50,
+					  reset					=> RESET_N,
+					  lane_0_gift			=> not(lane_0_type(1)),
+					  lane_1_gift			=> not(lane_1_type(1)),
+					  lane_2_gift			=> not(lane_2_type(1)),
+					  lane_0_obj_type		=> lane_0_type(0),
+					  lane_1_obj_type		=> lane_1_type(0),
+					  lane_2_obj_type		=> lane_2_type(0),
+					  lane_0_obj_dist		=> sprite_0_row,
+					  lane_1_obj_dist		=> sprite_1_row,
+					  lane_2_obj_dist		=> sprite_2_row,
+					  player_lane			=> player_lane,
+					  player_state			=> player_state,
+					  startscreen_enable => start_screen_active,
+					  mode_selected		=> selected_mode,
+					  game_enable			=> game_enable,
+					  endscreen_enable	=> endscreen_enable,
+					  endscreen_outcome	=> endscreen_outcome,
+					  speed					=> speed,
+					  score					=> score);
+	
+	
    -- ---------------------------------------------------------------------------
    -- LED assignments
    --   LEDR(0)   = keyboard left arrow held
@@ -864,15 +956,16 @@ begin
    -- read_done assignments are commented out below; restore them when done
    -- testing the keyboard.
    -- ---------------------------------------------------------------------------
-   LEDR(0) <= keyboard_left_key;
-   LEDR(1) <= keyboard_right_key;
-   LEDR(2) <= keyboard_jump_key;
-   LEDR(3) <= keyboard_dive_key;
+   LEDR(0) <= endscreen_outcome;
+   LEDR(1) <= game_enable;
+   LEDR(2) <= '0';
+   LEDR(3) <= '0';
    -- LEDR(3 downto 0) <= init_state_indicator;
    LEDR(4)          <= '0';   -- was init_done_signal
    LEDR(5)          <= pll_locked;
    LEDR(6)          <= start_screen_active;
-   LEDR(8 downto 7) <= latched_mode;
+   LEDR(7) 			  <= latched_mode;
+	LEDR(8)			  <= '0';
    LEDR(9)          <= '0';   -- was read_done_signal
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
