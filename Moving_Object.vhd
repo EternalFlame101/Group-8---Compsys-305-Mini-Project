@@ -34,6 +34,7 @@ entity Moving_Object is
    port (enable, clock, vertical_sync : in  std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
+			wave_arrived 					  : out std_logic;
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
 
@@ -171,6 +172,8 @@ architecture moving_object_behaviour of Moving_Object is
    -- approximates a factor of 2/3 while keeping enough bits to avoid overflow.
    signal lane_offset_product : std_logic_vector(13 downto 0);
    signal lane_offset         : std_logic_vector(9 downto 0);
+	
+	signal arrived : std_logic;
 
 begin
 
@@ -232,10 +235,11 @@ begin
    begin
       if rising_edge(clock) then
          vertical_sync_prev <= vertical_sync;
+			arrived <= '0';
          if ((vertical_sync = '0') and (vertical_sync_prev = '1')) then
             if (enable = '1') then
                if (object_distance = "0000000000") then
-                  null;
+						arrived <= '1';
                else
                   object_distance <= object_distance + ("000000" & speed);
                end if;
@@ -353,6 +357,8 @@ begin
    top_red   <= "0001" when (object_top_on = '1') else "0000";
    top_green <= "1111" when (object_top_on = '1') else "0000";
    top_blue  <= "0001" when (object_top_on = '1') else "0000";
+	
+	wave_arrived <= arrived;
 
    -- ---------------------------------------------------------------------------
    -- Final per-pixel priority mux: front > top > side

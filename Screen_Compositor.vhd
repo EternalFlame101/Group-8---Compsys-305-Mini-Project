@@ -38,6 +38,9 @@ entity Screen_Compositor is
 
          -- Mouse cursor sprite (overlay on start screen only)
          mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
+			
+			-- HUD
+			HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
 
          -- Training-mode pipeline output
          training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
@@ -54,6 +57,7 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal mouse_cursor_active        : std_logic;
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
+	signal HUD_active : std_logic;
 
 begin
 
@@ -66,11 +70,14 @@ begin
 
    start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000"
                                  else '0';
+											
+	HUD_active <= '1' when (HUD_red or HUD_green or HUD_blue) /= "0000" else '0';
 
-   Final_Mux : process(start_screen_active, latched_mode,
+   Final_Mux : process(start_screen_active, HUD_active, latched_mode,
                        mouse_cursor_active, start_screen_text_active, start_screen_sprite_active,
                        start_screen_red,        start_screen_green,        start_screen_blue,
                        start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
+							  HUD_red, HUD_green, HUD_blue,
                        mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
                        training_red,            training_green,            training_blue,
                        racing_red,              racing_green,              racing_blue)
@@ -98,13 +105,13 @@ begin
       else
          case latched_mode is
             when "10" | "11" =>
+               red_out   <= HUD_red;
+               green_out <= HUD_green;
+               blue_out  <= HUD_blue;
+            when others =>
                red_out   <= racing_red;
                green_out <= racing_green;
                blue_out  <= racing_blue;
-            when others =>
-               red_out   <= training_red;
-               green_out <= training_green;
-               blue_out  <= training_blue;
          end case;
       end if;
    end process Final_Mux;
