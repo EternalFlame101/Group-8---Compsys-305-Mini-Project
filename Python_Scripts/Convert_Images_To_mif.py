@@ -3,6 +3,9 @@ from PIL import Image
 from collections import Counter
 import argparse
 
+script_dir = Path(__file__).resolve().parent
+project_root = script_dir.parent
+
 
 def get_luminance(pixel):
     r, g, b = pixel
@@ -12,9 +15,14 @@ def get_luminance(pixel):
 def image_to_mif(image_path, output_path=None, output_folder='Images_To_mif/mif', target_width=64, target_height=64, num_colours=6):
     image_path = Path(image_path)
     if output_path is None:
-        output_path = Path(output_folder) / f"{image_path.stem}.mif"
+        output_folder = Path(output_folder)
+        if not output_folder.is_absolute():
+            output_folder = project_root / output_folder
+        output_path = output_folder / f"{image_path.stem}.mif"
     else:
         output_path = Path(output_path)
+        if not output_path.is_absolute():
+            output_path = project_root / output_path
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -85,16 +93,8 @@ def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_
     input_folder = Path(input_folder)
     supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff'}
 
-    if not input_folder.exists():
-        script_dir = Path(__file__).resolve().parent
-        alt_path = (script_dir / input_folder).resolve()
-        project_root = script_dir.parent
-        alt_project_root = (project_root / input_folder).resolve()
-
-        if alt_path.exists():
-            input_folder = alt_path
-        elif alt_project_root.exists():
-            input_folder = alt_project_root
+    if not input_folder.is_absolute():
+        input_folder = project_root / input_folder
 
     if input_folder.is_file():
         images = [input_folder]
@@ -107,6 +107,10 @@ def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_
     if not images:
         print(f"No images found in {input_folder}")
         return
+
+    output_folder = Path(output_folder)
+    if not output_folder.is_absolute():
+        output_folder = project_root / output_folder
 
     for image_path in sorted(images):
         image_to_mif(
@@ -121,8 +125,8 @@ def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert all cat images to 12-bit RGB MIF files.')
-    parser.add_argument('--input',   default='Images_To_mif/Images/cat_walking',  help='Input folder containing cat2 images (default: Image_To_mif/Image/cat_walking)')
-    parser.add_argument('--output',  default='Images_To_mif/mif',       help='Output folder for MIF files (default: mif)')
+    parser.add_argument('--input',   default='Images_To_mif/Images/cat_walking',  help='Input folder containing cat2 images under project root')
+    parser.add_argument('--output',  default='Images_To_mif/mif',       help='Output folder for MIF files under project root')
     parser.add_argument('--width',   type=int, default=64, help='Target width (default: 64)')
     parser.add_argument('--height',  type=int, default=64, help='Target height (default: 64)')
     parser.add_argument('--colours', type=int, default=6, help='Reduce image to N colours (black + N-1 sprite colours)')

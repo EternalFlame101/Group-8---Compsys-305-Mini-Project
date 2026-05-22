@@ -181,7 +181,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/neutral_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/neutral.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -196,7 +196,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/left_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -211,7 +211,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/left_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -226,7 +226,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/right_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -241,7 +241,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/right_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -259,7 +259,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-45_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-45.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -274,7 +274,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-90_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-90.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -289,7 +289,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-135_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-135.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -304,7 +304,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-180_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-180.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -319,7 +319,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-225_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-225.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -334,7 +334,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-270_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-270.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -349,7 +349,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-315_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-315.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -367,7 +367,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -382,7 +382,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -397,7 +397,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish3_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish3.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
