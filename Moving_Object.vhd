@@ -207,6 +207,7 @@ architecture moving_object_behaviour of Moving_Object is
 	
 	signal enable_latch : std_logic := '0';
 	
+	signal enable_seen_low : std_logic := '1';
 begin
 
    -- ROM lookups
@@ -244,12 +245,15 @@ begin
 					object_distance <= (others => '1');
 					object_active   <= '0';
 					enable_latch    <= '0';
+					enable_seen_low <= '1';
 			  else
 					-- Update enable latch combinationally each cycle
 					if enable = '0' then
-						 enable_latch <= '0';
-					elsif object_active = '0' then
-						 enable_latch <= enable;
+						 enable_latch    <= '0';
+						 enable_seen_low <= '1';
+					elsif object_active = '0' and enable_seen_low = '1' then
+						 enable_latch    <= enable;
+						 enable_seen_low <= '0';
 					end if;
 
 					if (vertical_sync = '0') and (vertical_sync_previous = '1') then

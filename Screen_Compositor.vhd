@@ -39,6 +39,9 @@ entity Screen_Compositor is
          -- Mouse cursor sprite (overlay on start screen only)
          mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
 
+			-- HUD
+			HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
+			
          -- Training-mode pipeline output
          training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
 
@@ -54,59 +57,44 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal mouse_cursor_active        : std_logic;
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
+   signal HUD_active                 : std_logic;
+   signal racing_or_training_red     : std_logic_vector(3 downto 0);
+   signal racing_or_training_green   : std_logic_vector(3 downto 0);
+   signal racing_or_training_blue    : std_logic_vector(3 downto 0);
 
 begin
 
-   -- Each layer is "on" wherever it has any non-zero colour channel.
-   mouse_cursor_active <= '1' when (mouse_cursor_red or mouse_cursor_green or mouse_cursor_blue) /= "0000"
-                          else '0';
+   mouse_cursor_active        <= '1' when (mouse_cursor_red    or mouse_cursor_green    or mouse_cursor_blue)    /= "0000" else '0';
+   start_screen_text_active   <= '1' when (start_screen_red    or start_screen_green    or start_screen_blue)    /= "0000" else '0';
+   start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000" else '0';
+   HUD_active                 <= '1' when (HUD_red             or HUD_green             or HUD_blue)             /= "0000" else '0';
 
-   start_screen_text_active <= '1' when (start_screen_red or start_screen_green or start_screen_blue) /= "0000"
-                               else '0';
+   -- Pick racing or training based on latched_mode
+   racing_or_training_red   <= racing_red      when (latched_mode = "10" or latched_mode = "11") else training_red;
+   racing_or_training_green <= racing_green    when (latched_mode = "10" or latched_mode = "11") else training_green;
+   racing_or_training_blue  <= racing_blue     when (latched_mode = "10" or latched_mode = "11") else training_blue;
 
-   start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000"
-                                 else '0';
+   -- HUD overlays on top of whichever game pipeline is active
+   -- Start screen layers override everything when start_screen_active = '1'
+   red_out   <= mouse_cursor_red          when start_screen_active = '1' and mouse_cursor_active        = '1' else
+                start_screen_red          when start_screen_active = '1' and start_screen_text_active   = '1' else
+                start_screen_sprite_red   when start_screen_active = '1' and start_screen_sprite_active = '1' else
+                "0000"                    when start_screen_active = '1' else
+                HUD_red                   when HUD_active = '1' else
+                racing_or_training_red;
 
-   Final_Mux : process(start_screen_active, latched_mode,
-                       mouse_cursor_active, start_screen_text_active, start_screen_sprite_active,
-                       start_screen_red,        start_screen_green,        start_screen_blue,
-                       start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
-                       mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
-                       training_red,            training_green,            training_blue,
-                       racing_red,              racing_green,              racing_blue)
-   begin
-      if start_screen_active = '1' then
-         -- Priority for the start screen: mouse on top, then text, then sprite,
-         -- with black as the ultimate background where nothing is drawn.
-         if mouse_cursor_active = '1' then
-            red_out   <= mouse_cursor_red;
-            green_out <= mouse_cursor_green;
-            blue_out  <= mouse_cursor_blue;
-         elsif start_screen_text_active = '1' then
-            red_out   <= start_screen_red;
-            green_out <= start_screen_green;
-            blue_out  <= start_screen_blue;
-         elsif start_screen_sprite_active = '1' then
-            red_out   <= start_screen_sprite_red;
-            green_out <= start_screen_sprite_green;
-            blue_out  <= start_screen_sprite_blue;
-         else
-            red_out   <= (others => '0');
-            green_out <= (others => '0');
-            blue_out  <= (others => '0');
-         end if;
-      else
-         case latched_mode is
-            when "10" | "11" =>
-               red_out   <= racing_red;
-               green_out <= racing_green;
-               blue_out  <= racing_blue;
-            when others =>
-               red_out   <= training_red;
-               green_out <= training_green;
-               blue_out  <= training_blue;
-         end case;
-      end if;
-   end process Final_Mux;
+   green_out <= mouse_cursor_green        when start_screen_active = '1' and mouse_cursor_active        = '1' else
+                start_screen_green        when start_screen_active = '1' and start_screen_text_active   = '1' else
+                start_screen_sprite_green when start_screen_active = '1' and start_screen_sprite_active = '1' else
+                "0000"                    when start_screen_active = '1' else
+                HUD_green                 when HUD_active = '1' else
+                racing_or_training_green;
+
+   blue_out  <= mouse_cursor_blue         when start_screen_active = '1' and mouse_cursor_active        = '1' else
+                start_screen_blue         when start_screen_active = '1' and start_screen_text_active   = '1' else
+                start_screen_sprite_blue  when start_screen_active = '1' and start_screen_sprite_active = '1' else
+                "0000"                    when start_screen_active = '1' else
+                HUD_blue                  when HUD_active = '1' else
+                racing_or_training_blue;
 
 end architecture screen_compositor_behaviour;
