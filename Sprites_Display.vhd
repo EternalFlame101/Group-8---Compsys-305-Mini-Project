@@ -25,7 +25,7 @@ entity Sprites_Display is
             SPRITE_HEIGHT : positive := 64;
             ADDR_BITS     : positive := 12;
             SCALE         : positive := 2;
-            MIF_FILE      : string   := "knee.mif");
+            MIF_FILE      : string   := "Images_To_mif/mif/Placeholder.mif");
    port (clock                        : in  std_logic;
          pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
          sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
@@ -37,7 +37,7 @@ architecture sprites_display_behaviour of Sprites_Display is
    component Sprites_ROM is
       generic (DEPTH     : positive := 1024;
                ADDR_BITS : positive := 12;
-               MIF_FILE  : string   := "knee.mif");
+               MIF_FILE  : string   := "Images_To_mif/mif/Placeholder.mif");
       port (clock   : in  std_logic;
             address : in  std_logic_vector(11 downto 0);
             red     : out std_logic_vector(3 downto 0);

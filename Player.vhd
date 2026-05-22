@@ -31,7 +31,7 @@ architecture player_behaviour of Player is
                SPRITE_HEIGHT : positive := 64;
                ADDR_BITS     : positive := 12;
                SCALE         : positive := 2;
-               MIF_FILE      : string   := "mif/jasper.mif");
+               MIF_FILE      : string   := "Images_To_mif/mif/jasper.mif");
       port (clock                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
@@ -181,7 +181,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/neutral_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/neutral_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -196,7 +196,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/left_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_1_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -211,7 +211,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/left_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_2_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -226,7 +226,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/right_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_1_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -241,7 +241,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/right_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_2_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -259,7 +259,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-45_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-45_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -274,7 +274,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-90_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-90_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -289,7 +289,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-135_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-135_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -304,7 +304,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-180_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-180_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -319,7 +319,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-225_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-225_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -334,7 +334,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-270_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-270_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -349,7 +349,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-315_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-315_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -367,7 +367,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish1_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -382,7 +382,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish2_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -397,7 +397,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish3_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish3_set2_mif.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,

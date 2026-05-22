@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 from PIL import Image
 from collections import Counter
 import argparse
@@ -9,7 +9,7 @@ def get_luminance(pixel):
     return 0.299 * r + 0.587 * g + 0.114 * b
 
 
-def image_to_mif(image_path, output_path=None, output_folder='mif', target_width=32, target_height=32, num_colours=None):
+def image_to_mif(image_path, output_path=None, output_folder='Images_To_mif/mif', target_width=64, target_height=64, num_colours=6):
     image_path = Path(image_path)
     if output_path is None:
         output_path = Path(output_folder) / f"{image_path.stem}.mif"
@@ -77,21 +77,60 @@ def image_to_mif(image_path, output_path=None, output_folder='mif', target_width
         f.write("End;\n")
 
     print(f"Written {depth} pixels to {output_path}")
-    print(f"Palette used: {palette}")  # helpful for debugging
+    if num_colours is not None:
+        print(f"Palette used: {palette}")
+
+
+def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_folder='Images_To_mif/mif', target_width=64, target_height=64, num_colours=6):
+    input_folder = Path(input_folder)
+    supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff'}
+
+    if not input_folder.exists():
+        script_dir = Path(__file__).resolve().parent
+        alt_path = (script_dir / input_folder).resolve()
+        project_root = script_dir.parent
+        alt_project_root = (project_root / input_folder).resolve()
+
+        if alt_path.exists():
+            input_folder = alt_path
+        elif alt_project_root.exists():
+            input_folder = alt_project_root
+
+    if input_folder.is_file():
+        images = [input_folder]
+    elif input_folder.is_dir():
+        images = [f for f in input_folder.iterdir() if f.suffix.lower() in supported_extensions]
+    else:
+        print(f"No images found in {input_folder}")
+        return
+
+    if not images:
+        print(f"No images found in {input_folder}")
+        return
+
+    for image_path in sorted(images):
+        image_to_mif(
+            image_path,
+            output_path=None,
+            output_folder=output_folder,
+            target_width=target_width,
+            target_height=target_height,
+            num_colours=num_colours,
+        )
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert image to 12-bit RGB MIF file.')
-    parser.add_argument('image_file', help='Input image file path')
-    parser.add_argument('output_mif_path', nargs='?', default=None, help='Optional output MIF file path')
-    parser.add_argument('--width',  type=int, default=32, help='Target width (default: 32)')
-    parser.add_argument('--height', type=int, default=32, help='Target height (default: 32)')
-    parser.add_argument('--colours', type=int, default=None, help='Reduce image to N colours (black + N-1 sprite colours)')
+    parser = argparse.ArgumentParser(description='Convert all cat images to 12-bit RGB MIF files.')
+    parser.add_argument('--input',   default='Images_To_mif/Images/cat_walking',  help='Input folder containing cat2 images (default: Image_To_mif/Image/cat_walking)')
+    parser.add_argument('--output',  default='Images_To_mif/mif',       help='Output folder for MIF files (default: mif)')
+    parser.add_argument('--width',   type=int, default=64, help='Target width (default: 64)')
+    parser.add_argument('--height',  type=int, default=64, help='Target height (default: 64)')
+    parser.add_argument('--colours', type=int, default=6, help='Reduce image to N colours (black + N-1 sprite colours)')
     args = parser.parse_args()
 
-    image_to_mif(
-        args.image_file,
-        args.output_mif_path,
+    convert_cat2_folder(
+        input_folder=args.input,
+        output_folder=args.output,
         target_width=args.width,
         target_height=args.height,
         num_colours=args.colours,

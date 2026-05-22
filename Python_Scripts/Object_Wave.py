@@ -77,7 +77,7 @@ while len(pool) < 256:
     pool.append(pattern)
 pool = pool[:256]
 
-with open("mif/spawn_patterns.mif", "w") as f:
+with open("Images_To_mif/mif/spawn_patterns.mif", "w") as f:
     f.write("-- spawn_patterns.mif\n")
     f.write("-- 6-bit pattern: [5:4]=lane2  [3:2]=lane1  [1:0]=lane0\n")
     f.write("-- 00=nothing  01=gift  10=short  11=tall\n")

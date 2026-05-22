@@ -42,7 +42,7 @@ begin
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "tcgrom.mif",
+						 init_file              => "Images_To_mif/mif/tcgrom.mif",
 						 intended_device_family => "Cyclone V",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",

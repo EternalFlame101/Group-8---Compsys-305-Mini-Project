@@ -96,7 +96,7 @@ for i in range(DEPTH_MAX):
     side_taper_values.append(side_taper)
 
 # ── Write perspective (track spread) MIF ────────────────────────
-with open('perspective2.mif', 'w') as f:
+with open('Images_To_mif/mif/perspective.mif', 'w') as f:
     f.write('WIDTH=10;\n')
     f.write('DEPTH=160;\n')
     f.write('ADDRESS_RADIX=UNS;\n')
@@ -117,7 +117,7 @@ print("perspective.mif written")
 #   19 downto 10   top_taper    (10 bits)
 #    9 downto 0   side_taper   (10 bits)
 
-with open('object_data.mif', 'w') as f:
+with open('Images_To_mif/mif/object_data.mif', 'w') as f:
     f.write('WIDTH=80;\n')
     f.write('DEPTH=160;\n')
     f.write('ADDRESS_RADIX=UNS;\n')
