@@ -144,7 +144,6 @@ begin
 		next_state <= current_state;
 		case (current_state) is
 			when INIT_SCREEN =>
-				next_state <= NORMAL;
 				if (startscreen_enable = '0') then
 					if (mode_selected = '0') then
 						next_state <= TRAINING;
