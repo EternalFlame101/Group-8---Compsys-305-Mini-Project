@@ -262,7 +262,17 @@ begin
 						 end if;
 
 						 if object_active = '1' then
-							  if object_distance >= conv_std_logic_vector(479, 10) then
+							  -- Arrival threshold must stay inside the valid ROM
+							  -- range. Object_ROM / Perspective_ROM are 160 entries
+							  -- deep with an 8-bit address (Object_ROM.vhd line 68:
+							  -- rom_address <= track_row(7 downto 0)). If distance
+							  -- runs past 255, the lower 8 bits wrap back through
+							  -- 0..159 and the wave renders a SECOND time at the
+							  -- far position before finally arriving -- visible
+							  -- as pixel-identical "duplicate" wave pairs, with
+							  -- only one arrival event per pair (so Score_Counter
+							  -- increments by 1 per pair, not per wave).
+							  if object_distance >= conv_std_logic_vector(159, 10) then
 									object_arrived  <= '1';
 									object_distance <= (others => '0');
 									object_active   <= '0';
