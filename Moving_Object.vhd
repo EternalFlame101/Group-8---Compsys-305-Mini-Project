@@ -120,17 +120,81 @@ architecture moving_object_behaviour of Moving_Object is
    signal top_taper_stage_2                        : std_logic_vector(9 downto 0);
    signal box_off_screen_stage_2                   : std_logic;
 
+   -- Per-vsync precomputed constants. These are stable for every pixel within
+   -- a frame, so we compute them once in Frame_Stage_2 instead of redoing the
+   -- 2-subtract chain on every pixel clock cycle. Removing those subtracts
+   -- from Stage 1A's per-pixel comb is what brought pixel_clock above 100 MHz.
+   --   top_face_top_y  = object_y - object_height - top_height
+   --   side_face_top_y = object_y - object_height
+   signal top_face_top_y_stage_2  : std_logic_vector(9 downto 0);
+   signal side_face_top_y_stage_2 : std_logic_vector(9 downto 0);
+
    -- Distance update
    signal object_distance    : std_logic_vector(9 downto 0) := (others => '1');
    signal vertical_sync_previous : std_logic;
 
-   -- Per-pixel Stage 1 combinational (after frame Stage 2 registers)
-   signal rows_from_top_face_top              : std_logic_vector(9 downto 0);
-   signal rows_from_top_face_bottom           : std_logic_vector(9 downto 0);
-   signal rows_from_side_face_top             : std_logic_vector(9 downto 0);
-   signal rows_from_side_face_bottom          : std_logic_vector(9 downto 0);
-   signal side_column_offset                  : std_logic_vector(9 downto 0);
+   -- Per-pixel pipeline is split into Stage 1A (row derivations) + Stage 1B
+   -- (multiplier products) + Stage 1C (boundary calcs) + existing Stage 1 reg.
+   -- Each non-suffixed signal below is the REGISTERED output of its stage; the
+   -- corresponding `_combinational` signal is the comb input feeding the next
+   -- pipeline register. Splitting the per-pixel chain in two halves was needed
+   -- to clear the ~21 ns combinational path from object_height_stage_2 to
+   -- top_right_overflow_pixel_stage_1 that was capping pixel_clock Fmax at
+   -- ~45 MHz.
 
+   -- Stage 1A combinational (driven by Stage 1A comb, captured by Stage 1A reg).
+   -- rows_from_*_bottom were moved into Stage 1B comb so that the second
+   -- subtract (top_height - rows_from_top_face_top) runs in parallel with the
+   -- multiplies rather than chained inside Stage 1A. side_column_offset moved
+   -- to Stage 1B too once we precomputed object_x +/- object_width here as
+   -- left_side_x / right_side_x (vsync-stable, but recomputed per pixel under
+   -- the live pixel_column was capping Fmax at ~78 MHz).
+   signal rows_from_top_face_top_combinational  : std_logic_vector(9 downto 0);
+   signal rows_from_side_face_top_combinational : std_logic_vector(9 downto 0);
+   signal left_side_x_combinational             : std_logic_vector(9 downto 0);
+   signal right_side_x_combinational            : std_logic_vector(9 downto 0);
+
+   -- Stage 1A registered outputs (used by Stage 1B comb).
+   signal rows_from_top_face_top  : std_logic_vector(9 downto 0);
+   signal rows_from_side_face_top : std_logic_vector(9 downto 0);
+   signal left_side_x             : std_logic_vector(9 downto 0);
+   signal right_side_x            : std_logic_vector(9 downto 0);
+
+   -- Pixel coord pass-throughs through each pipeline stage so that pixel_row /
+   -- pixel_column reach the existing Stage 1 reg with the same 3-cycle latency
+   -- as everything else (1A reg + 1B reg + existing Stage 1 reg).
+   signal pixel_row_stage_1a    : std_logic_vector(9 downto 0);
+   signal pixel_column_stage_1a : std_logic_vector(9 downto 0);
+   signal pixel_row_stage_1b    : std_logic_vector(9 downto 0);
+   signal pixel_column_stage_1b : std_logic_vector(9 downto 0);
+
+   -- Stage 1B combinational signals for the bottom-row offsets. These feed
+   -- straight into the per-pixel multiplies in the same Stage 1B comb section.
+   signal rows_from_top_face_bottom_combinational  : std_logic_vector(9 downto 0);
+   signal rows_from_side_face_bottom_combinational : std_logic_vector(9 downto 0);
+
+   -- Stage 1B registered version of rows_from_side_face_bottom, needed by
+   -- Side_Face_Boundary (Stage 1C comb) for its clamp condition.
+   -- rows_from_top_face_bottom and side_column_offset are only consumed by
+   -- the Stage 1B multiplies in the same comb stage, so neither needs to be
+   -- registered -- the multiplies read the _combinational alias directly.
+   signal rows_from_side_face_bottom       : std_logic_vector(9 downto 0);
+   signal side_column_offset_combinational : std_logic_vector(9 downto 0);
+
+   -- Stage 1B combinational versions of all 6 per-pixel multiplier products.
+   -- top_max_extension_scaled_product used to stay pure combinational because
+   -- both its inputs are vsync-stable, but it sat in Stage 1C's critical path
+   -- (the multiply + bit-select feeds Side_Face_Boundary). Registering it adds
+   -- 1 cycle of harmless latency (the value is constant per vsync anyway) but
+   -- removes the multiply from the path that lands at side_face_right_overflow.
+   signal width_difference_product_combinational         : std_logic_vector(19 downto 0);
+   signal height_difference_product_combinational        : std_logic_vector(19 downto 0);
+   signal top_skew_product_combinational                 : std_logic_vector(27 downto 0);
+   signal side_shift_product_combinational               : std_logic_vector(27 downto 0);
+   signal top_max_extension_scaled_product_combinational : std_logic_vector(17 downto 0);
+   signal baseline_top_cave_in_product_combinational     : std_logic_vector(19 downto 0);
+
+   -- Stage 1B registered outputs (used by Stage 1C comb / boundary processes)
    signal width_difference_product       : std_logic_vector(19 downto 0);
    signal height_difference_product      : std_logic_vector(19 downto 0);
    signal top_skew_product               : std_logic_vector(27 downto 0);
@@ -372,39 +436,106 @@ begin
          top_max_extension_stage_2                <= top_max_extension_combinational;
          top_taper_stage_2                        <= top_taper_stage_1;
          box_off_screen_stage_2                   <= box_off_screen_combinational;
+
+         -- Per-vsync precomputed constants used by the per-pixel pipeline
+         -- (Stage 1A reads these as plain registers, no chained subtracts).
+         top_face_top_y_stage_2  <= object_y_stage_1 - object_height_stage_1 - top_height_stage_1;
+         side_face_top_y_stage_2 <= object_y_stage_1 - object_height_stage_1;
       end if;
    end process Frame_Stage_2;
 
    -- ========================================================================
-   -- Per-pixel Stage 1 combinational: row derivations + all multiplies
+   -- Per-pixel Stage 1A combinational: row derivations
+   -- Inputs: pixel_row, pixel_column (live), and Frame_Stage_2 precomputed
+   -- constants top_face_top_y_stage_2 / side_face_top_y_stage_2. Stage 1A is
+   -- now a single subtract + clamp per row signal -- the chained subtracts
+   -- that used to live here moved into Frame_Stage_2 (the per-vsync subs) and
+   -- Stage 1B comb (the rows_from_*_bottom subs).
    -- ========================================================================
-   rows_from_top_face_top <= (pixel_row - (object_y_stage_2 - object_height_stage_2 - top_height_stage_2))
-                                when (pixel_row >= (object_y_stage_2 - object_height_stage_2 - top_height_stage_2))
-                                else (others => '0');
-   rows_from_top_face_bottom <= (top_height_stage_2 - rows_from_top_face_top)
-                                   when (top_height_stage_2 >= rows_from_top_face_top) else (others => '0');
+   rows_from_top_face_top_combinational <= (pixel_row - top_face_top_y_stage_2)
+                                              when (pixel_row >= top_face_top_y_stage_2)
+                                              else (others => '0');
 
-   rows_from_side_face_top <= (pixel_row - (object_y_stage_2 - object_height_stage_2))
-                                 when (pixel_row >= (object_y_stage_2 - object_height_stage_2))
-                                 else (others => '0');
-   rows_from_side_face_bottom <= (object_height_stage_2 - rows_from_side_face_top)
-                                    when (object_height_stage_2 >= rows_from_side_face_top) else (others => '0');
+   rows_from_side_face_top_combinational <= (pixel_row - side_face_top_y_stage_2)
+                                               when (pixel_row >= side_face_top_y_stage_2)
+                                               else (others => '0');
 
-   side_column_offset <= ((object_x_stage_2 - object_width_stage_2) - pixel_column)
-                            when (box_side_of_cat_stage_2 = '1' and
-                                  pixel_column <= object_x_stage_2 - object_width_stage_2) else
-                         (pixel_column - (object_x_stage_2 + object_width_stage_2))
-                            when (box_side_of_cat_stage_2 = '0' and
-                                  box_is_off_centre_stage_2 = '1' and
-                                  pixel_column >= object_x_stage_2 + object_width_stage_2) else
-                         (others => '0');
+   -- Precomputed side edges. Both inputs are vsync-stable so these are
+   -- effectively constants between vsyncs; registering them in Stage 1A reg
+   -- removes a chained subtract from the per-pixel side_column_offset path.
+   left_side_x_combinational  <= object_x_stage_2 - object_width_stage_2;
+   right_side_x_combinational <= object_x_stage_2 + object_width_stage_2;
 
-   width_difference_product         <= width_difference_stage_2  * rows_from_top_face_top;
-   height_difference_product        <= height_difference_stage_2 * side_column_offset;
-   top_skew_product                 <= top_combined_taper_stage_2  * rows_from_top_face_bottom;
-   side_shift_product               <= side_combined_taper_stage_2 * rows_from_side_face_bottom;
-   top_max_extension_scaled_product <= top_max_extension_stage_2 * cat_distance_from_box_centre_slv_stage_2;
-   baseline_top_cave_in_product     <= top_taper_stage_2 * rows_from_top_face_bottom;
+   -- ========================================================================
+   -- Per-pixel Stage 1A register: latches the row derivations and pixel coords
+   -- ========================================================================
+   Per_Pixel_Stage_1A : process(clock)
+   begin
+      if rising_edge(clock) then
+         rows_from_top_face_top  <= rows_from_top_face_top_combinational;
+         rows_from_side_face_top <= rows_from_side_face_top_combinational;
+         left_side_x             <= left_side_x_combinational;
+         right_side_x            <= right_side_x_combinational;
+         pixel_row_stage_1a      <= pixel_row;
+         pixel_column_stage_1a   <= pixel_column;
+      end if;
+   end process Per_Pixel_Stage_1A;
+
+   -- ========================================================================
+   -- Per-pixel Stage 1B combinational: bottom-row subtracts + multiplier
+   -- products. Reads Stage 1A registered rows_from_*_top, computes the second
+   -- subtract (rows_from_*_bottom) combinationally, and feeds the result into
+   -- the big multiplies in the same comb stage. Quartus pushes the multiplies
+   -- into DSP blocks; the subtract is a carry chain in front of the DSP and
+   -- the combined depth (~5-6 ns) fits comfortably in one pipeline stage.
+   -- All 6 products are registered into Stage 1B; the per-vsync-stable one
+   -- (top_max_extension_scaled_product) was previously left as pure comb but
+   -- moving it into the register removes its multiply from the Stage 1C path
+   -- ending at side_face_right_overflow_pixel_stage_1.
+   -- ========================================================================
+   rows_from_top_face_bottom_combinational <= (top_height_stage_2 - rows_from_top_face_top)
+                                                 when (top_height_stage_2 >= rows_from_top_face_top) else (others => '0');
+   rows_from_side_face_bottom_combinational <= (object_height_stage_2 - rows_from_side_face_top)
+                                                  when (object_height_stage_2 >= rows_from_side_face_top) else (others => '0');
+
+   -- side_column_offset moved to Stage 1B comb (was Stage 1A reg). Inputs are
+   -- the Stage 1A registered precomputes plus the Stage 1A registered pixel
+   -- column, so the chain is two parallel compares + two parallel subtracts +
+   -- a mux -- short enough to leave room for the multiply that consumes it.
+   side_column_offset_combinational <= (left_side_x - pixel_column_stage_1a)
+                                          when (box_side_of_cat_stage_2 = '1' and
+                                                pixel_column_stage_1a <= left_side_x) else
+                                       (pixel_column_stage_1a - right_side_x)
+                                          when (box_side_of_cat_stage_2 = '0' and
+                                                box_is_off_centre_stage_2 = '1' and
+                                                pixel_column_stage_1a >= right_side_x) else
+                                       (others => '0');
+
+   width_difference_product_combinational         <= width_difference_stage_2  * rows_from_top_face_top;
+   height_difference_product_combinational        <= height_difference_stage_2 * side_column_offset_combinational;
+   top_skew_product_combinational                 <= top_combined_taper_stage_2  * rows_from_top_face_bottom_combinational;
+   side_shift_product_combinational               <= side_combined_taper_stage_2 * rows_from_side_face_bottom_combinational;
+   top_max_extension_scaled_product_combinational <= top_max_extension_stage_2 * cat_distance_from_box_centre_slv_stage_2;
+   baseline_top_cave_in_product_combinational     <= top_taper_stage_2 * rows_from_top_face_bottom_combinational;
+
+   -- ========================================================================
+   -- Per-pixel Stage 1B register: latches the per-pixel products and pass-
+   -- throughs needed by Stage 1C boundary calculations.
+   -- ========================================================================
+   Per_Pixel_Stage_1B : process(clock)
+   begin
+      if rising_edge(clock) then
+         width_difference_product         <= width_difference_product_combinational;
+         height_difference_product        <= height_difference_product_combinational;
+         top_skew_product                 <= top_skew_product_combinational;
+         side_shift_product               <= side_shift_product_combinational;
+         top_max_extension_scaled_product <= top_max_extension_scaled_product_combinational;
+         baseline_top_cave_in_product     <= baseline_top_cave_in_product_combinational;
+         rows_from_side_face_bottom       <= rows_from_side_face_bottom_combinational;
+         pixel_row_stage_1b               <= pixel_row_stage_1a;
+         pixel_column_stage_1b            <= pixel_column_stage_1a;
+      end if;
+   end process Per_Pixel_Stage_1B;
 
    back_width_at_row_combinational            <= object_width_stage_2 - width_difference_product(17 downto 8);
    side_top_boundary_combinational            <= height_difference_product(18 downto 9);
@@ -540,8 +671,8 @@ begin
    begin
       if rising_edge(clock) then
          side_top_boundary_pixel_stage_1            <= side_top_boundary_combinational;
-         pixel_row_pixel_stage_1                    <= pixel_row;
-         pixel_column_pixel_stage_1                 <= pixel_column;
+         pixel_row_pixel_stage_1                    <= pixel_row_stage_1b;
+         pixel_column_pixel_stage_1                 <= pixel_column_stage_1b;
 
          -- New boundary values and underflow/overflow flags
          front_face_left_boundary_pixel_stage_1     <= front_face_left_boundary_combinational;

@@ -123,6 +123,18 @@ architecture player_behaviour of Player is
    signal right_click_previous : std_logic := '0';
    signal jump_input_previous  : std_logic := '0';
 
+   -- 2-FF synchronizers for the 4 player inputs. shift_left_input,
+   -- shift_right_input, jump_input, and dive_input arrive from Keyboard
+   -- (CLOCK_50 domain), Mouse (CLOCK_50 domain), and KEY pushbuttons
+   -- (completely async). Without these, Quartus times the entire
+   -- Keyboard/Mouse logic chain into the video_clock domain and the pixel
+   -- clock collapses to ~46 MHz. The synchronizer breaks the path: only the
+   -- flop-to-flop hop between _meta and _sync is timed locally.
+   signal shift_left_input_meta,  shift_left_input_sync  : std_logic := '0';
+   signal shift_right_input_meta, shift_right_input_sync : std_logic := '0';
+   signal jump_input_meta,        jump_input_sync        : std_logic := '0';
+   signal dive_input_meta,        dive_input_sync        : std_logic := '0';
+	
    signal sprite_x_position : std_logic_vector(9 downto 0);
 
    -- Walk-cycle frame outputs (5 distinct frames; neutral_set2 is reused as
@@ -164,6 +176,23 @@ architecture player_behaviour of Player is
    signal jump_8_frame_red, jump_8_frame_green, jump_8_frame_blue : std_logic_vector(3 downto 0);
 
 begin
+
+   -- Cross-domain synchronizer. Runs in the video_clock domain (this
+   -- entity's clock). Single point where async/CLOCK_50 signals enter the
+   -- video pipeline; nothing downstream sees the raw inputs.
+   Input_Synchronizer : process(clock)
+   begin
+      if rising_edge(clock) then
+         shift_left_input_meta  <= shift_left_input;
+         shift_left_input_sync  <= shift_left_input_meta;
+         shift_right_input_meta <= shift_right_input;
+         shift_right_input_sync <= shift_right_input_meta;
+         jump_input_meta        <= jump_input;
+         jump_input_sync        <= jump_input_meta;
+         dive_input_meta        <= dive_input;
+         dive_input_sync        <= dive_input_meta;
+      end if;
+   end process Input_Synchronizer;
 
    -- ---------------------------------------------------------------------------
    -- Sprite x is a compile-time constant (cat is permanently centred).
@@ -623,7 +652,7 @@ begin
             -- dive_edge = dive_input  rising edge
             -- (Computed in-line below via the *_previous registers.)
 
-            if (dive_input = '1') and (dive_input_previous = '0') and (dive_active = '0') then
+            if (dive_input_sync = '1') and (dive_input_previous = '0') and (dive_active = '0') then
                -- Dive edge AND not already diving: start dive. Cancel jump
                -- and snap to the parabola tail so the cat falls fast if
                -- airborne. Pressing dive while already diving does nothing
@@ -638,7 +667,7 @@ begin
                   -- completes normally below.
                   jump_frame_count <= JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES;
                end if;
-            elsif (jump_input = '1') and (jump_input_previous = '0') and (current_state = '0') then
+            elsif (jump_input_sync = '1') and (jump_input_previous = '0') and (current_state = '0') then
                -- Jump edge AND not already jumping: start jump. Cancel any
                -- active dive. Pressing jump while already jumping does
                -- nothing (no double-jump).
@@ -697,7 +726,7 @@ begin
                   end if;
                end if;
             else
-               if (shift_right_input = '1') and (right_click_previous = '0') then
+               if (shift_right_input_sync = '1') and (right_click_previous = '0') then
                   if current_lane_int = 0 then
                      view_pos_target   <= 0;
                      transition_step   <= TRANSITION_SPEED;
@@ -711,7 +740,7 @@ begin
                      roll_direction    <= '1';
                      roll_frame_index  <= 0;
                   end if;
-               elsif (shift_left_input = '1') and (click_previous = '0') then
+               elsif (shift_left_input_sync = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
                      view_pos_target   <= 0;
                      transition_step   <= -TRANSITION_SPEED;
@@ -728,10 +757,10 @@ begin
                end if;
             end if;
 
-            click_previous       <= shift_left_input;
-            right_click_previous <= shift_right_input;
-            jump_input_previous  <= jump_input;
-            dive_input_previous  <= dive_input;
+            click_previous       <= shift_left_input_sync;
+            right_click_previous <= shift_right_input_sync;
+            jump_input_previous  <= jump_input_sync;
+            dive_input_previous  <= dive_input_sync;
          end if;
       end if;
    end process Animation_Process;
