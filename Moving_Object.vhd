@@ -3,7 +3,6 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
-
 entity Moving_Object is
    generic (REAL_HEIGHT : positive             := 60;
             REAL_WIDTH  : positive             := 80;
@@ -18,7 +17,6 @@ entity Moving_Object is
          row_out                      : out std_logic_vector(9 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
-
 
 architecture moving_object_behaviour of Moving_Object is
 
@@ -271,6 +269,7 @@ architecture moving_object_behaviour of Moving_Object is
 	
 	signal enable_latch : std_logic := '0';
 	
+	signal enable_seen_low : std_logic := '1';
 begin
 
    -- ROM lookups
@@ -308,21 +307,35 @@ begin
 					object_distance <= (others => '1');
 					object_active   <= '0';
 					enable_latch    <= '0';
+					enable_seen_low <= '1';
 			  else
 					-- Update enable latch combinationally each cycle
 					if enable = '0' then
-						 enable_latch <= '0';
-					elsif object_active = '0' then
-						 enable_latch <= enable;
+						 enable_latch    <= '0';
+						 enable_seen_low <= '1';
+					elsif object_active = '0' and enable_seen_low = '1' then
+						 enable_latch    <= enable;
+						 enable_seen_low <= '0';
 					end if;
 
 					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
 						 if enable_latch = '1' and object_active = '0' then
-							  object_active <= '1';
+							  object_active   <= '1';
+							  object_distance <= (others => '0');  -- reset NOW: prevents stale 1023 firing instant arrived
 						 end if;
 
 						 if object_active = '1' then
-							  if object_distance >= conv_std_logic_vector(479, 10) then
+							  -- Arrival threshold must stay inside the valid ROM
+							  -- range. Object_ROM / Perspective_ROM are 160 entries
+							  -- deep with an 8-bit address (Object_ROM.vhd line 68:
+							  -- rom_address <= track_row(7 downto 0)). If distance
+							  -- runs past 255, the lower 8 bits wrap back through
+							  -- 0..159 and the wave renders a SECOND time at the
+							  -- far position before finally arriving -- visible
+							  -- as pixel-identical "duplicate" wave pairs, with
+							  -- only one arrival event per pair (so Score_Counter
+							  -- increments by 1 per pair, not per wave).
+							  if object_distance >= conv_std_logic_vector(159, 10) then
 									object_arrived  <= '1';
 									object_distance <= (others => '0');
 									object_active   <= '0';

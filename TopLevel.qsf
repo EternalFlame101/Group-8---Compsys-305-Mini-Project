@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CEBA4F23C7
-set_global_assignment -name TOP_LEVEL_ENTITY Top_Level
+set_global_assignment -name TOP_LEVEL_ENTITY Top_Level2
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "14:47:09  APRIL 29, 2026"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Lite Edition"
@@ -464,9 +464,6 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -entity DE0_CV_Default
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -entity DE0_CV_Default -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -entity DE0_CV_Default -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -entity DE0_CV_Default -section_id Top
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 
 set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
@@ -507,6 +504,12 @@ set_global_assignment -name VHDL_FILE Character_ROM.vhd
 set_global_assignment -name VHDL_FILE Ball.vhd
 set_global_assignment -name VHDL_FILE Background_Manager.vhd
 set_global_assignment -name VHDL_FILE Background_Generator.vhd
+set_global_assignment -name VHDL_FILE Audio_Test_Generator.vhd
+set_global_assignment -name VHDL_FILE Top_Level2.vhd
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name VHDL_FILE HUD_Overlay.vhd
 set_global_assignment -name VHDL_FILE Audio_Playback.vhd
 set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
 set_global_assignment -name ENABLE_OCT_DONE OFF
