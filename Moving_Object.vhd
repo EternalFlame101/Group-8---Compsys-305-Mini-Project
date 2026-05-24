@@ -3,7 +3,6 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
-
 entity Moving_Object is
    generic (REAL_HEIGHT : positive             := 60;
             REAL_WIDTH  : positive             := 80;
@@ -18,7 +17,6 @@ entity Moving_Object is
          row_out                      : out std_logic_vector(9 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
-
 
 architecture moving_object_behaviour of Moving_Object is
 
@@ -258,7 +256,8 @@ begin
 
 					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
 						 if enable_latch = '1' and object_active = '0' then
-							  object_active <= '1';
+							  object_active   <= '1';
+							  object_distance <= (others => '0');  -- reset NOW: prevents stale 1023 firing instant arrived
 						 end if;
 
 						 if object_active = '1' then

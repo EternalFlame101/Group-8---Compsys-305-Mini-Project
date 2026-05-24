@@ -271,7 +271,7 @@ architecture game_behaviour of Top_Level2 is
 		port(video_clock						 : in std_logic;
 			  reset								 : in std_logic;
 			  pixel_row, pixel_column 		 : in std_logic_vector(9 downto 0);
-			  score								 : in std_logic_vector(5 downto 0);
+			  score								 : in std_logic_vector(7 downto 0);
 			  HUD_enable						 : in std_logic; -- in running or nah (in game master)
 			  HUD_active						 : out std_logic; 
 			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -399,7 +399,7 @@ architecture game_behaviour of Top_Level2 is
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 	
 	-- HUD
-	signal score 		: std_logic_vector(5 downto 0) := (others => '0');
+	signal score 		: std_logic_vector(7 downto 0) := (others => '0');
 	signal HUD_active : std_logic;
 	signal wave_scored : std_logic;
 
@@ -898,7 +898,7 @@ begin
 			  else
 					if arrived_0 = '0' and arrived_1 = '0' and arrived_2 = '0' then
 						 wave_scored <= '0';
-					elsif wave_scored = '0' and score /= "111111" and start_screen_active = '0' then
+					elsif wave_scored = '0' and score /= "11111111" and start_screen_active = '0' then
 						 score       <= score + 1;
 						 wave_scored <= '1';
 					end if;
