@@ -481,7 +481,9 @@ begin
    -- ---------------------------------------------------------------------------
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
-   any_key_pressed <= not (KEY(3) and KEY(2) and KEY(1) and KEY(0));
+   any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
+							  or left_click or right_click
+							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
 
    -- ---------------------------------------------------------------------------
    -- Combined player input signals. The various sources work in parallel as
@@ -532,22 +534,6 @@ begin
    player_shift_right_input <= player_shift_right_raw and (not shift_right_gate_closed);
    player_jump_input        <= player_jump_raw        and (not jump_gate_closed);
    player_dive_input        <= player_dive_raw        and (not dive_gate_closed);
-	
-	-- Long auto-reset: ~670ms at 25 MHz (2^24 cycles). Long enough to outlast
-   -- PLL lock, mouse PS/2 init, and any garbage on the input lines at boot.
-   -- KEY[3] serves as a manual reset since FPGA_RESET (PIN_P22) is not wired
-   -- to a usable pushbutton on this DE0-CV revision.
-   Startup_Reset_Gen : process(video_clock)
-   begin
-      if rising_edge(video_clock) then
-         if startup_reset_counter(23) = '0' then
-            startup_reset_counter <= startup_reset_counter + 1;
-         end if;
-      end if;
-   end process Startup_Reset_Gen;
-
-   startup_reset  <= not startup_reset_counter(23);
-   combined_reset <= startup_reset or (not RESET_N) or (not KEY(3));
 
    -- ---------------------------------------------------------------------------
    -- VGA sync (true 25 MHz pixel clock)
@@ -862,7 +848,7 @@ begin
 
    Start_Screen_Inst : Start_Screen
       port map (video_clock         => video_clock,
-                reset               => combined_reset,
+                reset               => not(RESET_N),
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column,
                 mouse_row           => mouse_row,
@@ -996,8 +982,8 @@ begin
 	-- FSM
 	-- ===========================================================================
 	FSM : Game_Master
-		port map  (clock					=> CLOCK_50,
-					  reset					=> combined_reset,
+		port map  (clock					=> video_clock,
+					  reset					=> not(RESET_N),
 					  lane_0_gift			=> not(lane_0_type(1)),
 					  lane_1_gift			=> not(lane_1_type(1)),
 					  lane_2_gift			=> not(lane_2_type(1)),
@@ -1047,7 +1033,7 @@ begin
    LEDR(6)  <= start_screen_active;
    LEDR(7) 	<= latched_mode;
    LEDR(8) 	<= startup_reset;
-   LEDR(9)  <= '0'; 
+   LEDR(9)  <= score(0); 
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
    GPIO_0(0) <= sd_serial_clock;   -- CLK
