@@ -1,4 +1,8 @@
 import random
+from pathlib import Path
+
+script_dir = Path(__file__).resolve().parent
+project_root = script_dir.parent
 
 OFF   = "00"
 GIFT  = "01"
@@ -77,7 +81,10 @@ while len(pool) < 256:
     pool.append(pattern)
 pool = pool[:256]
 
-with open("mif/spawn_patterns.mif", "w") as f:
+output_path = project_root / "Images_To_mif" / "mif" / "spawn_patterns.mif"
+output_path.parent.mkdir(parents=True, exist_ok=True)
+
+with open(output_path, "w") as f:
     f.write("-- spawn_patterns.mif\n")
     f.write("-- 6-bit pattern: [5:4]=lane2  [3:2]=lane1  [1:0]=lane0\n")
     f.write("-- 00=nothing  01=gift  10=short  11=tall\n")

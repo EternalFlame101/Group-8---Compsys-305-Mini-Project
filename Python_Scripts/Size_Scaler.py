@@ -1,4 +1,8 @@
 import math
+from pathlib import Path
+
+script_dir = Path(__file__).resolve().parent
+project_root = script_dir.parent
 
 # ── Shared parameters ──────────────────────────────────────────
 DEPTH_MAX     = 160      # number of distance steps
@@ -96,7 +100,9 @@ for i in range(DEPTH_MAX):
     side_taper_values.append(side_taper)
 
 # ── Write perspective (track spread) MIF ────────────────────────
-with open('perspective2.mif', 'w') as f:
+output_dir = project_root / 'Images_To_mif' / 'mif'
+output_dir.mkdir(parents=True, exist_ok=True)
+with open(output_dir / 'perspective.mif', 'w') as f:
     f.write('WIDTH=10;\n')
     f.write('DEPTH=160;\n')
     f.write('ADDRESS_RADIX=UNS;\n')
@@ -117,7 +123,7 @@ print("perspective.mif written")
 #   19 downto 10   top_taper    (10 bits)
 #    9 downto 0   side_taper   (10 bits)
 
-with open('object_data.mif', 'w') as f:
+with open(output_dir / 'object_data.mif', 'w') as f:
     f.write('WIDTH=80;\n')
     f.write('DEPTH=160;\n')
     f.write('ADDRESS_RADIX=UNS;\n')

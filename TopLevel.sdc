@@ -61,4 +61,9 @@ set_false_path -from [all_registers] -to [get_ports {VGA_R[*] VGA_G[*] VGA_B[*] 
 # SD card SPI interface (currently slow; not timing-critical at <1 MHz)
 # =============================================================================
 set_false_path -from [all_registers] -to [get_ports {SD_CLK SD_CMD SD_DATA[*]}]
-set_false_path -from [get_ports {SD_DATA[*]}] -to [all_registers]
+
+# SD_DATA[0] is bidirectional and shares a physical pin with GPIO_0[3]
+# on the DE0-CV (intentional, for scope probing). Both logical ports
+# need every-direction false_path because of the shared-pin routing.
+set_false_path -from [get_ports {SD_DATA[0] GPIO_0[3]}]
+set_false_path -to   [get_ports {SD_DATA[0] GPIO_0[3]}]

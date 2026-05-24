@@ -3,6 +3,11 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
+-- ======= DO NOT REMOVE ==================
+-- fixes VGA issues
+library altera;
+use altera.altera_primitives_components.all;
+
 entity Top_Level is
    port (CLOCK_50            : in    std_logic;
          RESET_N             : in    std_logic;
@@ -27,6 +32,9 @@ entity Top_Level is
 end entity Top_Level;
 
 architecture game_behaviour of Top_Level is
+	-- ================== DO NOT REMOVE =========================================
+	-- fixes the VGA issues
+	signal video_clock_prebuffered : std_logic;
 
    -- ---------------------------------------------------------------------------
    -- Components
@@ -154,17 +162,18 @@ architecture game_behaviour of Top_Level is
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Word_Display;
 
-   component SD_Init is
+	component SD_Init is
+      generic (TOTAL_SECTORS : positive := 30280);
       port (clock              : in  std_logic;
             reset              : in  std_logic;
             start_init         : in  std_logic;
-            byte_address       : in  std_logic_vector(8 downto 0);
+            byte_address       : in  std_logic_vector(9 downto 0);
             spi_clock_out      : out std_logic;
             spi_mosi_out       : out std_logic;
             spi_miso_in        : in  std_logic;
             spi_chip_select_n  : out std_logic;
             init_done          : out std_logic;
-            read_done          : out std_logic;
+            audio_ready        : out std_logic;
             init_failed        : out std_logic;
             state_indicator    : out std_logic_vector(3 downto 0);
             last_response_byte : out std_logic_vector(7 downto 0);
@@ -176,13 +185,17 @@ architecture game_behaviour of Top_Level is
             seven_segments : out std_logic_vector(6 downto 0));
    end component Hex_To_Seven_Segment;
 
-   component Audio_Test_Generator is
+	component Audio_Playback is
       generic (CLOCK_FREQUENCY : positive := 50_000_000;
                SAMPLE_RATE     : positive := 44_100);
-      port (clock    : in  std_logic;
-            reset    : in  std_logic;
-            dac_data : out std_logic_vector(7 downto 0));
-   end component Audio_Test_Generator;
+      port (clock        : in  std_logic;
+            reset        : in  std_logic;
+            audio_ready  : in  std_logic;
+            buffer_byte  : in  std_logic_vector(7 downto 0);
+            byte_address : out std_logic_vector(9 downto 0);
+            dac_high     : out std_logic_vector(7 downto 0);
+            dac_low      : out std_logic_vector(7 downto 0));
+   end component Audio_Playback;
 
    component Start_Screen is
       port (video_clock                  : in  std_logic;
@@ -192,8 +205,8 @@ architecture game_behaviour of Top_Level is
             mouse_left_click             : in  std_logic;
             any_key_pressed              : in  std_logic;
             start_screen_active          : out std_logic;
-            selected_mode                : out std_logic_vector(1 downto 0);
-            latched_mode                 : out std_logic_vector(1 downto 0);
+            selected_mode                : out std_logic;
+            latched_mode                 : out std_logic;
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Start_Screen;
 
@@ -202,7 +215,7 @@ architecture game_behaviour of Top_Level is
                SPRITE_HEIGHT : positive := 32;
                ADDR_BITS     : positive := 12;
                SCALE         : positive := 4;
-               MIF_FILE      : string   := "mif/jasper.mif");
+               MIF_FILE      : string   := "Images_To_mif/mif/jasper.mif");
       port (clock                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
@@ -211,7 +224,7 @@ architecture game_behaviour of Top_Level is
 
    component Screen_Compositor is
       port (start_screen_active : in  std_logic;
-            latched_mode        : in  std_logic_vector(1 downto 0);
+            latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
@@ -240,7 +253,7 @@ architecture game_behaviour of Top_Level is
                SPRITE_SIZE            : positive := 64;
                SPRITE_SCALE           : positive := 2;
                WALK_FRAME_DURATION    : positive := 8;
-               JUMP_TOTAL_FRAMES      : positive := 120;
+               JUMP_TOTAL_FRAMES      : positive := 64;
                JUMP_PEAK_HEIGHT       : positive := 60;
                LANE_TRANSITION_FRAMES : positive := 64);
       port (clock, reset, vertical_sync             : in  std_logic;
@@ -260,6 +273,29 @@ architecture game_behaviour of Top_Level is
             objects_red, objects_green, objects_blue : in  std_logic_vector(3 downto 0);
             red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
    end component Player_And_Objects_Manager;
+	
+	component Game_Master is
+		port(clock            	: in  std_logic;
+			  reset					: in  std_logic;
+			  lane_0_gift			: in 	std_logic; -- 0 for no gift in lane, 1 for gift in lane
+			  lane_1_gift			: in 	std_logic;
+			  lane_2_gift			: in 	std_logic;
+			  lane_0_obj_type  	: in  std_logic; -- 0 for short, 1 for tall
+			  lane_1_obj_type  	: in  std_logic;
+			  lane_2_obj_type  	: in  std_logic;
+			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  player_lane			: in	std_logic_vector(1 downto 0);
+			  player_state			: in 	std_logic;
+			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
+			  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
+			  game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
+			  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
+			  speed            	: out std_logic_vector(3 downto 0); -- manages speed
+			  score            	: out std_logic_vector(5 downto 0));
+	end component Game_Master;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -295,8 +331,8 @@ architecture game_behaviour of Top_Level is
    signal start_screen_sprite_green  : std_logic_vector(3 downto 0);
    signal start_screen_sprite_blue   : std_logic_vector(3 downto 0);
    signal start_screen_active        : std_logic;
-   signal selected_mode              : std_logic_vector(1 downto 0);
-   signal latched_mode               : std_logic_vector(1 downto 0);
+   signal selected_mode              : std_logic;
+   signal latched_mode               : std_logic;
    signal any_key_pressed            : std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
@@ -350,16 +386,16 @@ architecture game_behaviour of Top_Level is
    signal init_state_indicator   : std_logic_vector(3 downto 0);
    signal last_response_byte_sig : std_logic_vector(7 downto 0);
 
-   signal sd_serial_clock : std_logic;
-   signal sd_command      : std_logic;
-   signal sd_chip_select  : std_logic;
-   signal sd_data_in      : std_logic;
+   signal sd_serial_clock 	: std_logic;
+   signal sd_command      	: std_logic;
+   signal sd_chip_select  	: std_logic;
+   signal sd_data_in      	: std_logic;
 
-   signal read_done_signal : std_logic;
-   signal read_byte_signal : std_logic_vector(7 downto 0);
-
-   signal audio_dac_data : std_logic_vector(7 downto 0);
-	
+   signal audio_dac_high 		: std_logic_vector(7 downto 0);   -- high byte -> new DAC (GPIO_0[19..12])
+   signal audio_dac_low  		: std_logic_vector(7 downto 0);   -- low byte  -> old DAC (GPIO_0[11..4])
+	signal audio_ready_signal 	: std_logic;
+   signal sd_buffer_byte     	: std_logic_vector(7 downto 0);
+   signal audio_byte_address 	: std_logic_vector(9 downto 0);	
 	
 	-- Spawn control signals 
 	signal lane_0_type : std_logic_vector(1 downto 0);
@@ -380,8 +416,30 @@ architecture game_behaviour of Top_Level is
    signal player_state                                                     : std_logic;
    signal cat_view_position                                                : std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
-
+	
+	-- fsm output signals
+	signal lane_0_enable : std_logic;
+	signal lane_1_enable : std_logic;
+	signal lane_2_enable	: std_logic;
+	
+	signal game_enable		: std_logic;
+	signal endscreen_enable : std_logic;
+	signal endscreen_outcome: std_logic;
+	
+	signal speed	: std_logic_vector(3 downto 0);
+	signal score	: std_logic_vector(5 downto 0);
+	
 begin
+	-- ==================== DO NOT REMOVE ================================
+	-- buffers video clock and fixes all issues to do with vga
+	-- original issue is that clock fanouts was around 1000 
+	-- additional logic pushes too much and breaks it
+	video_clock_buf : GLOBAL
+		port map (
+		  a_in  => video_clock_prebuffered,
+		  a_out => video_clock
+		);
+
 
    -- ---------------------------------------------------------------------------
    -- Video PLL: produces a true 25 MHz pixel clock from 50 MHz input.
@@ -389,7 +447,7 @@ begin
    Pixel_Clock_PLL : Video_PLL
       port map (refclk   => CLOCK_50,
                 rst      => not RESET_N,
-                outclk_0 => video_clock,
+                outclk_0 => video_clock_prebuffered,
                 locked   => pll_locked);
 
    -- ---------------------------------------------------------------------------
@@ -441,7 +499,7 @@ begin
          end if;
       end if;
    end process Input_Gate;
-
+	
    player_shift_left_input  <= player_shift_left_raw  and (not shift_left_gate_closed);
    player_shift_right_input <= player_shift_right_raw and (not shift_right_gate_closed);
    player_jump_input        <= player_jump_raw        and (not jump_gate_closed);
@@ -593,11 +651,23 @@ begin
                 green_out        => background_composite_green,
                 blue_out         => background_composite_blue);
 					 
+	-- =============================================================================
+	-- registering stuff to make it run
+	-- =============================================================================
+	process(video_clock)
+	begin
+		 if rising_edge(video_clock) then
+			  lane_0_enable <= (lane_0_type(1) or lane_0_type(0)) and game_enable;
+			  lane_1_enable <= (lane_1_type(1) or lane_1_type(0)) and game_enable;
+			  lane_2_enable <= (lane_2_type(1) or lane_2_type(0)) and game_enable;
+		 end if;
+	end process;
+	
 	Moving_Object_Lane_Two : Moving_Object
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable            => lane_2_type(1) or lane_2_type(0),
+      port map (enable            => (lane_2_type(1) or lane_2_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -616,12 +686,12 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => lane_1_type(1) or lane_1_type(0),
+      port map (enable            => (lane_1_type(1) or lane_1_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset 			      => not RESET_N,
-					      obj_type 		      => lane_1_type,
-					      arrived			      => arrived_1,
+                reset 			    => not RESET_N,
+					 obj_type 		    => lane_1_type,
+					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
@@ -635,7 +705,7 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable            => lane_0_type(1) or lane_0_type(0),
+      port map (enable            => (lane_0_type(1) or lane_0_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => not RESET_N,
@@ -714,26 +784,33 @@ begin
                 mouse_cursor_row    => mouse_row,
                 mouse_cursor_column => mouse_column);
 
-   SD_Initialiser : SD_Init
+	SD_Initialiser : SD_Init
+      generic map (TOTAL_SECTORS => 30280)
       port map (clock              => CLOCK_50,
                 reset              => not RESET_N,
-                start_init         => left_click,
-                byte_address       => SW(8 downto 0),
+                start_init         => not KEY(2),
+                byte_address       => audio_byte_address,
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
                 spi_miso_in        => sd_data_in,
                 spi_chip_select_n  => sd_chip_select,
                 init_done          => init_done_signal,
-                read_done          => read_done_signal,
+                audio_ready        => audio_ready_signal,
                 init_failed        => init_failed_signal,
                 state_indicator    => init_state_indicator,
                 last_response_byte => last_response_byte_sig,
-                read_byte          => read_byte_signal);
-
-   Audio_Generator : Audio_Test_Generator
-      port map (clock    => CLOCK_50,
-                reset    => not RESET_N,
-                dac_data => audio_dac_data);
+                read_byte          => sd_buffer_byte);
+					 
+	Audio_Generator : Audio_Playback
+      generic map (CLOCK_FREQUENCY => 50_000_000,
+                   SAMPLE_RATE     => 44_100)
+      port map (clock        => CLOCK_50,
+                reset        => not RESET_N,
+                audio_ready  => audio_ready_signal,
+                buffer_byte  => sd_buffer_byte,
+                byte_address => audio_byte_address,
+                dac_high     => audio_dac_high,
+                dac_low      => audio_dac_low);
 
    -- ===========================================================================
    -- START SCREEN + BACKGROUND SPRITE + FINAL COMPOSITOR
@@ -765,7 +842,7 @@ begin
                    SPRITE_HEIGHT => 64,
                    ADDR_BITS     => 12,
                    SCALE         => 2,
-                   MIF_FILE      => "mif/jasper.mif")
+                   MIF_FILE      => "Images_To_mif/mif/jasper.mif")
       port map (clock        => video_clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -846,34 +923,45 @@ begin
 					lane_2_type		=> lane_2_type,
 					debug_vsync_pulse => debug_vsync_pulse,
 					debug_lfsr        => debug_lfsr);
-					
+	
+	
+	-- ===========================================================================
+	-- FSM
+	-- ===========================================================================
+	FSM : Game_Master
+		port map  (clock					=> CLOCK_50,
+					  reset					=> not RESET_N,
+					  lane_0_gift			=> not(lane_0_type(1)),
+					  lane_1_gift			=> not(lane_1_type(1)),
+					  lane_2_gift			=> not(lane_2_type(1)),
+					  lane_0_obj_type		=> lane_0_type(0),
+					  lane_1_obj_type		=> lane_1_type(0),
+					  lane_2_obj_type		=> lane_2_type(0),
+					  lane_0_obj_dist		=> sprite_0_row,
+					  lane_1_obj_dist		=> sprite_1_row,
+					  lane_2_obj_dist		=> sprite_2_row,
+					  player_lane			=> player_lane,
+					  player_state			=> player_state,
+					  startscreen_enable => start_screen_active,
+					  mode_selected		=> latched_mode,
+					  game_enable			=> game_enable,
+					  endscreen_enable	=> endscreen_enable,
+					  endscreen_outcome	=> endscreen_outcome,
+					  speed					=> speed,
+					  score					=> score);
+	
+	
    -- ---------------------------------------------------------------------------
    -- LED assignments
-   --   LEDR(0)   = keyboard left arrow held
-   --   LEDR(1)   = keyboard right arrow held
-   --   LEDR(2)   = keyboard jump (space OR up arrow) held
-   --   LEDR(3)   = keyboard dive (down arrow) held
-   --   LEDR(4)   = SD init done           [temporarily disabled]
-   --   LEDR(5)   = PLL locked
-   --   LEDR(6)   = start screen active
-   --   LEDR(8:7) = latched game mode (00 none, 01 training, 10 single, 11 two)
-   --   LEDR(9)   = SD read done           [temporarily disabled]
-   --
-   -- The four lowest LEDs are temporarily repurposed as keyboard debug
-   -- indicators. The original SD card init_state_indicator / init_done /
-   -- read_done assignments are commented out below; restore them when done
-   -- testing the keyboard.
-   -- ---------------------------------------------------------------------------
-   LEDR(0) <= keyboard_left_key;
-   LEDR(1) <= keyboard_right_key;
-   LEDR(2) <= keyboard_jump_key;
-   LEDR(3) <= keyboard_dive_key;
-   -- LEDR(3 downto 0) <= init_state_indicator;
-   LEDR(4)          <= '0';   -- was init_done_signal
+	-- ---------------------------------------------------------------------------
+	
+	LEDR(3 downto 0) <= init_state_indicator;
+   LEDR(4)          <= init_done_signal;
    LEDR(5)          <= pll_locked;
    LEDR(6)          <= start_screen_active;
-   LEDR(8 downto 7) <= latched_mode;
-   LEDR(9)          <= '0';   -- was read_done_signal
+   LEDR(7)          <= latched_mode;
+   LEDR(8)          <= init_failed_signal;
+   LEDR(9)          <= audio_ready_signal;
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
    GPIO_0(0) <= sd_serial_clock;   -- CLK
@@ -881,17 +969,27 @@ begin
    GPIO_0(2) <= sd_command;        -- MOSI
    GPIO_0(3) <= sd_data_in;        -- MISO
 
-   -- DAC0802LCN data lines (B1 = MSB = audio_dac_data(7), B8 = LSB = audio_dac_data(0))
-   GPIO_0(11) <= audio_dac_data(7);   -- B1 (MSB)
-   GPIO_0(10) <= audio_dac_data(6);   -- B2
-   GPIO_0(9)  <= audio_dac_data(5);   -- B3
-   GPIO_0(8)  <= audio_dac_data(4);   -- B4
-   GPIO_0(7)  <= audio_dac_data(3);   -- B5
-   GPIO_0(6)  <= audio_dac_data(2);   -- B6
-   GPIO_0(5)  <= audio_dac_data(1);   -- B7
-   GPIO_0(4)  <= audio_dac_data(0);   -- B8 (LSB)
+   -- High-byte DAC (new DAC, GPIO_0[19..12]) — B1=MSB, B8=LSB
+   GPIO_0(19) <= audio_dac_high(7);   -- B1 (MSB)
+   GPIO_0(18) <= audio_dac_high(6);   -- B2
+   GPIO_0(17) <= audio_dac_high(5);   -- B3
+   GPIO_0(16) <= audio_dac_high(4);   -- B4
+   GPIO_0(15) <= audio_dac_high(3);   -- B5
+   GPIO_0(14) <= audio_dac_high(2);   -- B6
+   GPIO_0(13) <= audio_dac_high(1);   -- B7
+   GPIO_0(12) <= audio_dac_high(0);   -- B8 (LSB)
 
-   GPIO_0(35 downto 12) <= (others => '0');
+   -- Low-byte DAC (old DAC, GPIO_0[11..4]) — B1=MSB, B8=LSB
+   GPIO_0(11) <= audio_dac_low(7);   -- B1 (MSB)
+   GPIO_0(10) <= audio_dac_low(6);   -- B2
+   GPIO_0(9)  <= audio_dac_low(5);   -- B3
+   GPIO_0(8)  <= audio_dac_low(4);   -- B4
+   GPIO_0(7)  <= audio_dac_low(3);   -- B5
+   GPIO_0(6)  <= audio_dac_low(2);   -- B6
+   GPIO_0(5)  <= audio_dac_low(1);   -- B7
+   GPIO_0(4)  <= audio_dac_low(0);   -- B8 (LSB)
+
+   GPIO_0(35 downto 20) <= (others => '0');
 	
 	-- LFSR testing
 	--	LEDR(8) <= vertical_sync;
@@ -913,11 +1011,11 @@ begin
 	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
    Hex_Buffer_Low : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(3 downto 0),
+      port map (hex_value      => sd_buffer_byte(3 downto 0),
                 seven_segments => HEX0);
 
    Hex_Buffer_High : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(7 downto 4),
+      port map (hex_value      => sd_buffer_byte(7 downto 4),
                 seven_segments => HEX1);
 
    -- HEX4/HEX5 show the last raw SPI response byte (for debugging failures)
