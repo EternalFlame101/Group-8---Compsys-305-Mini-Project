@@ -467,6 +467,9 @@ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -entity D
 
 set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name SIP_FILE Video_PLL.sip
 set_global_assignment -name SOURCE_FILE Video_PLL.cmp
 set_global_assignment -name SDC_FILE TopLevel.sdc
@@ -476,6 +479,7 @@ set_global_assignment -name VHDL_FILE Wave_ROM.vhd
 set_global_assignment -name VHDL_FILE Video_PLL.vhd
 set_global_assignment -name VHDL_FILE VGA_Sync.vhd
 set_global_assignment -name VHDL_FILE Track_Generator.vhd
+set_global_assignment -name VHDL_FILE Top_Level2.vhd
 set_global_assignment -name VHDL_FILE Top_Level.vhd
 set_global_assignment -name VHDL_FILE Start_Screen.vhd
 set_global_assignment -name VHDL_FILE Sprites_ROM.vhd
@@ -495,6 +499,7 @@ set_global_assignment -name VHDL_FILE Moving_Object.vhd
 set_global_assignment -name VHDL_FILE Mouse.vhd
 set_global_assignment -name VHDL_FILE LFSR.vhd
 set_global_assignment -name VHDL_FILE Keyboard.vhd
+set_global_assignment -name VHDL_FILE HUD_Overlay.vhd
 set_global_assignment -name VHDL_FILE Hex_To_Seven_Segment.vhd
 set_global_assignment -name VHDL_FILE Graphics_Manager.vhd
 set_global_assignment -name VHDL_FILE Game_Master.vhd
@@ -504,9 +509,4 @@ set_global_assignment -name VHDL_FILE Ball.vhd
 set_global_assignment -name VHDL_FILE Background_Manager.vhd
 set_global_assignment -name VHDL_FILE Background_Generator.vhd
 set_global_assignment -name VHDL_FILE Audio_Test_Generator.vhd
-set_global_assignment -name VHDL_FILE Top_Level2.vhd
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name VHDL_FILE HUD_Overlay.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

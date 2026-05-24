@@ -8,6 +8,7 @@ entity HUD_Overlay is
 		  reset					 : in std_logic;
 		  pixel_row, pixel_column      : in std_logic_vector(9 downto 0);
 		  score					 : in std_logic_vector(7 downto 0);
+		  score_h, score_t, score_o : out std_logic_vector(3 downto 0);
 		  HUD_enable				 : in std_logic;
 		  HUD_active				 : out std_logic; 
 		  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -181,6 +182,10 @@ begin
 					  else conv_std_logic_vector(320, 10) when conv_integer(score) < 100
 					  else conv_std_logic_vector(336, 10);
 
+					  
+	score_h <= score_hundreds;
+	score_t <= score_tens; 
+	score_o <= score_ones;
 	-- ----------------------------------------------------------------
 	-- Output mux: score digits take priority, then health, then blank
 	-- ----------------------------------------------------------------

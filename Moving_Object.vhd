@@ -9,8 +9,8 @@ entity Moving_Object is
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
          reset  							  : in  std_logic;
-				obj_type                     : in  std_logic_vector(1 downto 0); 
-				arrived 			  				  : out std_logic;
+			obj_type                     : in  std_logic_vector(1 downto 0); 
+			arrived 			  				  : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed                        : in  std_logic_vector(3 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
@@ -202,10 +202,18 @@ architecture moving_object_behaviour of Moving_Object is
 	signal object_active  : std_logic;
 
 	signal effective_height : std_logic_vector(9 downto 0);
+	signal effective_width  : std_logic_vector(9 downto 0);
 	
 	signal enable_latch : std_logic := '0';
 	
 	signal enable_seen_low : std_logic := '1';
+	
+	
+	-- Speed manipulation
+	signal frame_counter : std_logic_vector(7 downto 0) := (others => '0');
+	signal frame_skip    : std_logic_vector(7 downto 0);
+
+	
 begin
 
    -- ROM lookups
@@ -232,57 +240,65 @@ begin
    effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
                        conv_std_logic_vector(60,  10) when obj_type = "10" else
                        conv_std_logic_vector(120, 10);  -- "11" tall
-     
+	
+	effective_width  <= conv_std_logic_vector(30, 10) when obj_type = "01" else
+							  conv_std_logic_vector(80, 10);
+							  
+	frame_skip <= conv_std_logic_vector(20, 8) when object_distance < 20  else
+              conv_std_logic_vector(16, 8) when object_distance < 40  else
+              conv_std_logic_vector(12, 8) when object_distance < 60  else
+              conv_std_logic_vector(8,  8) when object_distance < 80  else
+              conv_std_logic_vector(5,  8) when object_distance < 100 else
+              conv_std_logic_vector(3,  8) when object_distance < 120 else
+              conv_std_logic_vector(2,  8) when object_distance < 140 else
+              conv_std_logic_vector(1,  8);
+   
    Moving : process(clock)
-	 begin
-		 if rising_edge(clock) then
-			  object_arrived     <= '0';
-			  vertical_sync_previous <= vertical_sync;
+begin
+    if rising_edge(clock) then
+        object_arrived       <= '0';
+        vertical_sync_previous <= vertical_sync;
 
-			  if reset = '1' then
-					object_distance <= (others => '1');
-					object_active   <= '0';
-					enable_latch    <= '0';
-					enable_seen_low <= '1';
-			  else
-					-- Update enable latch combinationally each cycle
-					if enable = '0' then
-						 enable_latch    <= '0';
-						 enable_seen_low <= '1';
-					elsif object_active = '0' and enable_seen_low = '1' then
-						 enable_latch    <= enable;
-						 enable_seen_low <= '0';
-					end if;
+        if reset = '1' then
+				 object_distance <= (others => '0');
+				 object_active   <= '0';
+				 enable_latch    <= '0';
+				 enable_seen_low <= '1';
+				 frame_counter   <= (others => '0');
+        else
+            if enable = '0' then
+                enable_latch    <= '0';
+                enable_seen_low <= '1';
+            elsif object_active = '0' and enable_seen_low = '1' then
+                enable_latch    <= enable;
+                enable_seen_low <= '0';
+            end if;
 
-					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
-						 if enable_latch = '1' and object_active = '0' then
-							  object_active   <= '1';
-							  object_distance <= (others => '0');  -- reset NOW: prevents stale 1023 firing instant arrived
-						 end if;
+            if (vertical_sync = '0') and (vertical_sync_previous = '1') then
+					 if enable_latch = '1' and object_active = '0' then
+						  object_active   <= '1';
+						  object_distance <= (others => '0');
+						  frame_counter   <= (others => '0');
+					 end if;
 
-						 if object_active = '1' then
-							  -- Arrival threshold must stay inside the valid ROM
-							  -- range. Object_ROM / Perspective_ROM are 160 entries
-							  -- deep with an 8-bit address (Object_ROM.vhd line 68:
-							  -- rom_address <= track_row(7 downto 0)). If distance
-							  -- runs past 255, the lower 8 bits wrap back through
-							  -- 0..159 and the wave renders a SECOND time at the
-							  -- far position before finally arriving -- visible
-							  -- as pixel-identical "duplicate" wave pairs, with
-							  -- only one arrival event per pair (so Score_Counter
-							  -- increments by 1 per pair, not per wave).
-							  if object_distance >= conv_std_logic_vector(159, 10) then
-									object_arrived  <= '1';
-									object_distance <= (others => '0');
-									object_active   <= '0';
-							  else
-									object_distance <= object_distance + ("000000" & speed);
-							  end if;
-						 end if;
-					end if;
-			  end if;
-		 end if;
-	 end process;
+					 if object_active = '1' then
+						  if frame_counter >= frame_skip then
+								frame_counter <= (others => '0');
+								if object_distance >= conv_std_logic_vector(159, 10) then
+									 object_arrived  <= '1';
+									 object_distance <= (others => '0');
+									 object_active   <= '0';
+								else
+									 object_distance <= object_distance + ("00000" & speed & "0");
+								end if;
+						  else
+								frame_counter <= frame_counter + 1;
+						  end if;
+					 end if;
+				end if;
+        end if;
+    end if;
+end process;
 
    -- ========================================================================
    -- Frame Stage 1 combinational
@@ -297,8 +313,8 @@ begin
    box_is_off_centre_combinational                   <= '1' when box_position_relative_to_cat_combinational /= 0 else '0';
 
    object_height_scaled_product_combinational      <= object_height_rom      * effective_height;
-   object_width_scaled_product_combinational       <= object_width_rom       * conv_std_logic_vector(REAL_WIDTH,  10);
-   object_width_back_scaled_product_combinational  <= object_width_back_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
+   object_width_scaled_product_combinational       <= object_width_rom       * effective_width;
+   object_width_back_scaled_product_combinational  <= object_width_back_rom  * effective_width;
    object_height_back_scaled_product_combinational <= object_height_back_rom * effective_height;
    top_height_scaled_product_combinational         <= top_height_rom         * effective_height;
 
@@ -634,7 +650,7 @@ begin
                           "0000";
    green_combinational <= "0111" when (object_front_on = '1' and obj_type = "01") else
                           "0111" when (object_front_on = '1') else
-                          "0111" when (object_top_on   = '1' and obj_type = "01") else
+                          "1111" when (object_top_on   = '1' and obj_type = "01") else
                           "1111" when (object_top_on   = '1') else
                           "0111" when (object_side_on  = '1' and obj_type = "01") else
                           "0011" when (object_side_on  = '1') else
@@ -643,7 +659,7 @@ begin
                           "0001" when (object_front_on = '1') else
                           "0000" when (object_top_on   = '1' and obj_type = "01") else
                           "0001" when (object_top_on   = '1') else
-                          "0000" when (object_side_on  = '1' and obj_type = "01") else
+                          "0010" when (object_side_on  = '1' and obj_type = "01") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
 

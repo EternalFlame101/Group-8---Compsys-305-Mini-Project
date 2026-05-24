@@ -272,6 +272,7 @@ architecture game_behaviour of Top_Level2 is
 			  reset								 : in std_logic;
 			  pixel_row, pixel_column 		 : in std_logic_vector(9 downto 0);
 			  score								 : in std_logic_vector(7 downto 0);
+			  score_h, score_t, score_o 	 : out std_logic_vector(3 downto 0);
 			  HUD_enable						 : in std_logic; -- in running or nah (in game master)
 			  HUD_active						 : out std_logic; 
 			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -400,8 +401,11 @@ architecture game_behaviour of Top_Level2 is
 	
 	-- HUD
 	signal score 		: std_logic_vector(7 downto 0) := (others => '0');
+	signal score_h, score_t, score_o : std_logic_vector(3 downto 0);
 	signal HUD_active : std_logic;
 	signal wave_scored : std_logic;
+	
+	signal health : std_logic_vector(3 downto 0) := "0101";
 
 begin
 	video_clock_buf : GLOBAL
@@ -646,8 +650,8 @@ begin
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset 			      => not RESET_N,
-					      obj_type 		      => lane_1_type,
-					      arrived			      => arrived_1,
+					 obj_type 		      => lane_1_type,
+					 arrived			      => arrived_1,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
                 speed             => conv_std_logic_vector(2, 4),
@@ -787,6 +791,9 @@ begin
 				 pixel_row           => pixel_row,
 				 pixel_column        => pixel_column,
 				 score					=> score,
+				 score_h 				=> score_h,
+				 score_t 				=> score_t,
+				 score_o 				=> score_o,
 				 HUD_enable				=> not start_screen_active,
 				 HUD_active				=> HUD_active,
 				 red_out					=> HUD_red,
@@ -952,44 +959,46 @@ begin
 
    GPIO_0(35 downto 12) <= (others => '0');
 	
-	-- LFSR testing
-	--	LEDR(8) <= vertical_sync;
-	--	LEDR(7 downto 0) <= debug_lfsr;         -- should change pattern over time
-	--
-	--	LEDR(9) <= pll_locked;
-	--	
-	--	LEDR(1) <= arrived_1;
-	--	LEDR(0) <= arrived_2;
-	--	
-	--	process(video_clock)
-	--	begin
-	--		 if rising_edge(video_clock) then
-	--			  if arrived_0 = '1' then arrived_sticky <= '1'; end if;
-	--		 end if;
-	--	end process;
-	--
-	--	LEDR(2) <= arrived_sticky;
 	
-   -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
-   Hex_Buffer_Low : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(3 downto 0),
+--   -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
+--   Hex_Buffer_Low : Hex_To_Seven_Segment
+--      port map (hex_value      => read_byte_signal(3 downto 0),
+--                seven_segments => HEX0);
+--
+--   Hex_Buffer_High : Hex_To_Seven_Segment
+--      port map (hex_value      => read_byte_signal(7 downto 4),
+--                seven_segments => HEX1);
+--
+--   -- HEX4/HEX5 show the last raw SPI response byte (for debugging failures)
+--   Hex_Response_Low : Hex_To_Seven_Segment
+--      port map (hex_value      => last_response_byte_sig(3 downto 0),
+--                seven_segments => HEX4);
+--
+--   Hex_Response_High : Hex_To_Seven_Segment
+--      port map (hex_value      => last_response_byte_sig(7 downto 4),
+--                seven_segments => HEX5);
+				
+				
+   Score_Digit_Zero : Hex_To_Seven_Segment
+      port map (hex_value      => score_o,
                 seven_segments => HEX0);
 
-   Hex_Buffer_High : Hex_To_Seven_Segment
-      port map (hex_value      => read_byte_signal(7 downto 4),
+   Score_Digit_One : Hex_To_Seven_Segment
+      port map (hex_value      => score_t,
                 seven_segments => HEX1);
 
-   -- HEX4/HEX5 show the last raw SPI response byte (for debugging failures)
-   Hex_Response_Low : Hex_To_Seven_Segment
-      port map (hex_value      => last_response_byte_sig(3 downto 0),
-                seven_segments => HEX4);
+   Score_Digit_Two : Hex_To_Seven_Segment
+      port map (hex_value      => score_h,
+                seven_segments => HEX2);
+	
 
-   Hex_Response_High : Hex_To_Seven_Segment
-      port map (hex_value      => last_response_byte_sig(7 downto 4),
+   Health_Digit : Hex_To_Seven_Segment
+      port map (hex_value      => health,
                 seven_segments => HEX5);
+					 
+	HEX3 <= (others => '1');
+	HEX4 <= (others => '1');
 
-   HEX2 <= "1111111";
-   HEX3 <= "1111111";
 
    -- Physical SD pin connections
    SD_CLK     <= sd_serial_clock;
