@@ -62,13 +62,12 @@ architecture start_screen_behaviour of Start_Screen is
    -- State machine
    -- ---------------------------------------------------------------------------
    type screen_state_type is (title_screen, mode_select, game_running);
-   signal screen_state           : screen_state_type;
-   signal screen_state_previous  : screen_state_type;
+   signal screen_state           : screen_state_type := title_screen;
 
    -- Internal copy of selected_mode so we can both drive an output port and
    -- feed the mode-latch process from it.
-   signal selected_mode_internal : std_logic;
-   signal latched_mode_internal  : std_logic;
+   signal selected_mode_internal : std_logic := '0';
+   signal latched_mode_internal  : std_logic := '0';
 
    -- ---------------------------------------------------------------------------
    -- Input synchronisers and rising-edge detection
@@ -226,15 +225,20 @@ begin
    -- ---------------------------------------------------------------------------
    -- State machine
    -- ---------------------------------------------------------------------------
+   -- latched_mode_internal is set in the same cycle as the screen_state
+   -- transition into game_running so it is valid the moment
+   -- start_screen_active falls. Doing it in a separate process delayed the
+   -- latch by one cycle and caused Game_Master to sample the stale value.
    State_Machine : process(video_clock, reset)
    begin
       if reset = '1' then
          screen_state           <= title_screen;
          selected_mode_internal <= '0';
+         latched_mode_internal  <= '0';
       elsif rising_edge(video_clock) then
          case screen_state is
             when title_screen =>
-               if (mouse_left_click_edge = '1') or (any_key_pressed_edge = '1') then
+               if any_key_pressed_edge = '1' then
                   screen_state <= mode_select;
                end if;
 
@@ -242,9 +246,11 @@ begin
                if mouse_left_click_edge = '1' then
                   if training_hovered = '1' then
                      selected_mode_internal <= '0';
+                     latched_mode_internal  <= '0';
                      screen_state           <= game_running;
                   elsif single_player_hovered = '1' then
                      selected_mode_internal <= '1';
+                     latched_mode_internal  <= '1';
                      screen_state           <= game_running;
                   end if;
                end if;
@@ -254,29 +260,11 @@ begin
          end case;
       end if;
    end process State_Machine;
-
-   -- ---------------------------------------------------------------------------
-   -- Mode latch: captures the selected mode at the moment we transition from
-   -- mode_select into game_running. From then on it cannot change until reset.
-   -- ---------------------------------------------------------------------------
-   Mode_Latch : process(video_clock, reset)
-   begin
-      if reset = '1' then
-         latched_mode_internal <= '0';
-         screen_state_previous <= title_screen;
-      elsif rising_edge(video_clock) then
-         screen_state_previous <= screen_state;
-         -- On the cycle where we just entered game_running for the first time
-         if screen_state = game_running and screen_state_previous /= game_running then
-            latched_mode_internal <= selected_mode_internal;
-         end if;
-      end if;
-   end process Mode_Latch;
-
+	
    start_screen_active <= '0' when screen_state = game_running else '1';
    selected_mode       <= selected_mode_internal;
    latched_mode        <= latched_mode_internal;
-
+	
    -- ---------------------------------------------------------------------------
    -- Title: "PUSHEEN'S PLOY" (SCALE 3)
    -- ---------------------------------------------------------------------------
