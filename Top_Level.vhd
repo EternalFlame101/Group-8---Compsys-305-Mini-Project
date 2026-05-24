@@ -228,6 +228,7 @@ architecture game_behaviour of Top_Level is
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
+            HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
             training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -296,6 +297,16 @@ architecture game_behaviour of Top_Level is
 			  speed            	: out std_logic_vector(3 downto 0); -- manages speed
 			  score            	: out std_logic_vector(5 downto 0));
 	end component Game_Master;
+
+	component HUD_Overlay is
+		port(video_clock				         : in std_logic;
+			  reset						            : in std_logic;
+			  pixel_row, pixel_column      : in std_logic_vector(9 downto 0);
+			  score						            : in std_logic_vector(7 downto 0);
+			  HUD_enable				         : in std_logic;
+			  HUD_active				         : out std_logic;
+			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -428,6 +439,12 @@ architecture game_behaviour of Top_Level is
 	
 	signal speed	: std_logic_vector(3 downto 0);
 	signal score	: std_logic_vector(5 downto 0);
+
+	-- HUD
+	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
+	signal HUD_active                   : std_logic;
+	signal score_hud                    : std_logic_vector(7 downto 0) := (others => '0');
+	signal wave_scored                  : std_logic;
 	
 begin
 	-- ==================== DO NOT REMOVE ================================
@@ -453,7 +470,9 @@ begin
    -- ---------------------------------------------------------------------------
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
-   any_key_pressed <= not (KEY(3) and KEY(2) and KEY(1) and KEY(0));
+	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
+                       or left_click or right_click
+							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
 
    -- ---------------------------------------------------------------------------
    -- Combined player input signals. The various sources work in parallel as
@@ -852,6 +871,18 @@ begin
                 green_out    => start_screen_sprite_green,
                 blue_out     => start_screen_sprite_blue);
 
+	HUD : HUD_Overlay
+	port map (video_clock  => video_clock,
+	          reset        => not RESET_N,
+	          pixel_row    => pixel_row,
+	          pixel_column => pixel_column,
+	          score        => score_hud,
+	          HUD_enable   => not start_screen_active,
+	          HUD_active   => HUD_active,
+	          red_out      => HUD_red,
+	          green_out    => HUD_green,
+	          blue_out     => HUD_blue);
+
    Final_Compositor_Inst : Screen_Compositor
       port map (start_screen_active       => start_screen_active,
                 latched_mode              => latched_mode,
@@ -864,6 +895,9 @@ begin
                 mouse_cursor_red          => mouse_cursor_red,
                 mouse_cursor_green        => mouse_cursor_green,
                 mouse_cursor_blue         => mouse_cursor_blue,
+                HUD_red                   => HUD_red,
+                HUD_green                 => HUD_green,
+                HUD_blue                  => HUD_blue,
                 training_red              => training_red,
                 training_green            => training_green,
                 training_blue             => training_blue,
@@ -949,8 +983,29 @@ begin
 					  endscreen_outcome	=> endscreen_outcome,
 					  speed					=> speed,
 					  score					=> score);
-	
-	
+
+   -- ---------------------------------------------------------------------------
+   -- Score_Counter: mirrors arrived events into the 8-bit HUD score signal.
+   -- Increments once per wave (all three arrived flags pulse high together)
+   -- while the game is running, capped at 255.
+   -- ---------------------------------------------------------------------------
+	Score_Counter : process(video_clock)
+	begin
+		if rising_edge(video_clock) then
+			if not RESET_N = '1' then
+				score_hud   <= (others => '0');
+				wave_scored <= '0';
+			else
+				if arrived_0 = '0' and arrived_1 = '0' and arrived_2 = '0' then
+					wave_scored <= '0';
+				elsif wave_scored = '0' and score_hud /= "11111111" and start_screen_active = '0' then
+					score_hud   <= score_hud + 1;
+					wave_scored <= '1';
+				end if;
+			end if;
+		end if;
+	end process;
+
    -- ---------------------------------------------------------------------------
    -- LED assignments
 	-- ---------------------------------------------------------------------------
