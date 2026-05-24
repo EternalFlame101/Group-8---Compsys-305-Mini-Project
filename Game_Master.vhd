@@ -20,9 +20,11 @@ entity Game_Master is
 		  player_lane			: in	std_logic_vector(1 downto 0);
 		  player_state			: in 	std_logic;
 		  startscreen_enable : in 	std_logic; -- 0 = off, 1 = on, startscreen on/off
+		  startscreen_fsm 	: out std_logic;
 		  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
         game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
-		  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
+		  endscreen_enable	: in  std_logic; -- 0 = off, 1 = on, win/lose screen
+		  endscreen_fsm		: out std_logic;
 		  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
         speed            	: out std_logic_vector(3 downto 0); -- manages speed
         score            	: out std_logic_vector(5 downto 0));
@@ -108,23 +110,40 @@ begin
 		internal_game_enable      <= '0';
 		internal_endscreen_enable <= '0';
 		internal_endscreen_state  <= '0';
+		startscreen_fsm 	<= '0';
+		endscreen_fsm		<= '0';
 		case (current_state) is
 			when INIT_SCREEN =>
+				startscreen_fsm					<= '1';
+				endscreen_fsm						<= '0';
+				
 				internal_game_enable 			<= '0';
 				internal_endscreen_state		<= '1';
 			when TRAINING =>
 				-- do later not sure what to do here
 				null;
 			when NORMAL =>
+				startscreen_fsm					<= '0';
+				endscreen_fsm						<= '0';
+				
 				internal_game_enable 			<= '1';
 				internal_endscreen_state		<= '1';
 			when PAUSE =>
+				startscreen_fsm					<= '0';
+				endscreen_fsm						<= '0';
+				
 				internal_game_enable 			<= '0';
 				internal_endscreen_state		<= '1';
 			when WIN =>
+				startscreen_fsm					<= '0';
+				endscreen_fsm						<= '1';
+				
 				internal_game_enable 			<= '0';
 				internal_endscreen_state		<= '1';
 			when LOSE =>
+				startscreen_fsm					<= '0';
+				endscreen_fsm						<= '1';
+				
 				internal_game_enable 			<= '0';
 				internal_endscreen_state		<= '0';
 		end case;
@@ -145,18 +164,14 @@ begin
 		case (current_state) is
 			when INIT_SCREEN =>
 				if (startscreen_enable = '0') then
-					if (mode_selected = '0') then
-						next_state <= TRAINING;
-					else
-						next_state <= NORMAL;
-					end if;
+					next_state <= NORMAL;
 				end if;
 			when TRAINING =>
 				null;
 			when NORMAL =>
 				if (lane_0_collision or lane_1_collision or lane_2_collision) = '1' then
 					if (obj_or_gift = '0') then
-						null;
+						next_state <= LOSE;
 					else
 						null;
 					end if;

@@ -224,11 +224,13 @@ architecture game_behaviour of Top_Level is
 
    component Screen_Compositor is
       port (start_screen_active : in  std_logic;
+				end_screen_active	  : in  std_logic;
             latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
-            training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
+            end_screen_red,     end_screen_green,     end_screen_blue  : in std_logic_vector(3 downto 0);
+				training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
@@ -274,6 +276,18 @@ architecture game_behaviour of Top_Level is
             red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
    end component Player_And_Objects_Manager;
 	
+	component End_Screen is
+		port (video_clock                  : in  std_logic;
+				reset                        : in  std_logic;
+				pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+				mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
+				mouse_left_click             : in  std_logic;
+				any_key_pressed              : in  std_logic;
+				end_screen_outcome           : in  std_logic;
+				end_screen                   : out std_logic;
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component End_Screen;
+	
 	component Game_Master is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
@@ -289,9 +303,11 @@ architecture game_behaviour of Top_Level is
 			  player_lane			: in	std_logic_vector(1 downto 0);
 			  player_state			: in 	std_logic;
 			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
+			  startscreen_fsm		: out std_logic;
 			  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
 			  game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
-			  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_enable	: in  std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_fsm		: out std_logic;
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
 			  speed            	: out std_logic_vector(3 downto 0); -- manages speed
 			  score            	: out std_logic_vector(5 downto 0));
@@ -334,6 +350,10 @@ architecture game_behaviour of Top_Level is
    signal selected_mode              : std_logic;
    signal latched_mode               : std_logic;
    signal any_key_pressed            : std_logic;
+	
+	signal startup_reset_counter : std_logic_vector(23 downto 0) := (others => '0');
+   signal startup_reset         : std_logic;
+   signal combined_reset        : std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
    signal red_final, green_final, blue_final : std_logic_vector(3 downto 0);
@@ -417,14 +437,22 @@ architecture game_behaviour of Top_Level is
    signal cat_view_position                                                : std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 	
+	-- end screen colours
+	signal end_screen_red	: std_logic_vector(3 downto 0);
+	signal end_screen_green	: std_logic_vector(3 downto 0);
+	signal end_screen_blue	: std_logic_vector(3 downto 0);
+	
 	-- fsm output signals
 	signal lane_0_enable : std_logic;
 	signal lane_1_enable : std_logic;
 	signal lane_2_enable	: std_logic;
 	
 	signal game_enable		: std_logic;
-	signal endscreen_enable : std_logic;
+	signal endscreen_active	: std_logic;
 	signal endscreen_outcome: std_logic;
+	
+	signal endscreen_fsm		: std_logic;
+	signal startscreen_fsm	: std_logic;
 	
 	signal speed	: std_logic_vector(3 downto 0);
 	signal score	: std_logic_vector(5 downto 0);
@@ -504,6 +532,22 @@ begin
    player_shift_right_input <= player_shift_right_raw and (not shift_right_gate_closed);
    player_jump_input        <= player_jump_raw        and (not jump_gate_closed);
    player_dive_input        <= player_dive_raw        and (not dive_gate_closed);
+	
+	-- Long auto-reset: ~670ms at 25 MHz (2^24 cycles). Long enough to outlast
+   -- PLL lock, mouse PS/2 init, and any garbage on the input lines at boot.
+   -- KEY[3] serves as a manual reset since FPGA_RESET (PIN_P22) is not wired
+   -- to a usable pushbutton on this DE0-CV revision.
+   Startup_Reset_Gen : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         if startup_reset_counter(23) = '0' then
+            startup_reset_counter <= startup_reset_counter + 1;
+         end if;
+      end if;
+   end process Startup_Reset_Gen;
+
+   startup_reset  <= not startup_reset_counter(23);
+   combined_reset <= startup_reset or (not RESET_N) or (not KEY(3));
 
    -- ---------------------------------------------------------------------------
    -- VGA sync (true 25 MHz pixel clock)
@@ -670,7 +714,7 @@ begin
       port map (enable            => (lane_2_type(1) or lane_2_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => not RESET_N,
+                reset             => (not RESET_N) or (not game_enable),
                 obj_type          => lane_2_type,
                 arrived           => arrived_2,
                 pixel_column      => pixel_column,
@@ -689,7 +733,7 @@ begin
       port map (enable            => (lane_1_type(1) or lane_1_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset 			    => not RESET_N,
+                reset 			    => (not RESET_N) or (not game_enable),
 					 obj_type 		    => lane_1_type,
 					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
@@ -708,7 +752,7 @@ begin
       port map (enable            => (lane_0_type(1) or lane_0_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => not RESET_N,
+                reset             => (not RESET_N) or (not game_enable),
                 obj_type          => lane_0_type,
                 arrived           => arrived_0,
                 pixel_column      => pixel_column,
@@ -818,7 +862,7 @@ begin
 
    Start_Screen_Inst : Start_Screen
       port map (video_clock         => video_clock,
-                reset               => not RESET_N,
+                reset               => combined_reset,
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column,
                 mouse_row           => mouse_row,
@@ -853,7 +897,8 @@ begin
                 blue_out     => start_screen_sprite_blue);
 
    Final_Compositor_Inst : Screen_Compositor
-      port map (start_screen_active       => start_screen_active,
+      port map (start_screen_active       => startscreen_fsm,
+					 end_screen_active			=> endscreen_fsm,
                 latched_mode              => latched_mode,
                 start_screen_red          => start_screen_red,
                 start_screen_green        => start_screen_green,
@@ -865,6 +910,9 @@ begin
                 mouse_cursor_green        => mouse_cursor_green,
                 mouse_cursor_blue         => mouse_cursor_blue,
                 training_red              => training_red,
+					 end_screen_red				=> end_screen_red,
+					 end_screen_green				=>	end_screen_green,
+					 end_screen_blue				=> end_screen_blue,
                 training_green            => training_green,
                 training_blue             => training_blue,
                 racing_red                => racing_red,
@@ -925,12 +973,31 @@ begin
 					debug_lfsr        => debug_lfsr);
 	
 	
+	-- ====================================================
+	-- End screen
+	-- ====================================================
+	Ending_screen: End_Screen
+		port map(video_clock			=> video_clock,
+					reset					=> not(RESET_N),
+					pixel_row			=> pixel_row,
+					pixel_column		=> pixel_column,
+					mouse_row			=> mouse_row,
+					mouse_column		=> mouse_column,
+					mouse_left_click	=> left_click,
+					any_key_pressed	=> any_key_pressed,
+					end_screen_outcome=> endscreen_outcome,
+					end_screen			=> endscreen_active,
+					red_out				=> end_screen_red,
+					green_out			=> end_screen_green,
+					blue_out				=> end_screen_blue);
+	
+	
 	-- ===========================================================================
 	-- FSM
 	-- ===========================================================================
 	FSM : Game_Master
 		port map  (clock					=> CLOCK_50,
-					  reset					=> not RESET_N,
+					  reset					=> combined_reset,
 					  lane_0_gift			=> not(lane_0_type(1)),
 					  lane_1_gift			=> not(lane_1_type(1)),
 					  lane_2_gift			=> not(lane_2_type(1)),
@@ -943,9 +1010,11 @@ begin
 					  player_lane			=> player_lane,
 					  player_state			=> player_state,
 					  startscreen_enable => start_screen_active,
+					  startscreen_fsm		=> startscreen_fsm,
 					  mode_selected		=> latched_mode,
 					  game_enable			=> game_enable,
-					  endscreen_enable	=> endscreen_enable,
+					  endscreen_enable	=> endscreen_active,
+					  endscreen_fsm		=> endscreen_fsm,
 					  endscreen_outcome	=> endscreen_outcome,
 					  speed					=> speed,
 					  score					=> score);
@@ -973,12 +1042,12 @@ begin
    LEDR(2) <= '0';
    LEDR(3) <= '0';
    -- LEDR(3 downto 0) <= init_state_indicator;
-   LEDR(4)          <= '0';   -- was init_done_signal
-   LEDR(5)          <= pll_locked;
-   LEDR(6)          <= start_screen_active;
-   LEDR(7) 			  <= latched_mode;
-	LEDR(8)			  <= '0';
-   LEDR(9)          <= '0';   -- was read_done_signal
+   LEDR(4)	<= '0';   -- was init_done_signal
+   LEDR(5)  <= pll_locked;
+   LEDR(6)  <= start_screen_active;
+   LEDR(7) 	<= latched_mode;
+   LEDR(8) 	<= startup_reset;
+   LEDR(9)  <= '0'; 
 
    -- Debug mirror to GPIO_0 header for oscilloscope probing
    GPIO_0(0) <= sd_serial_clock;   -- CLK
