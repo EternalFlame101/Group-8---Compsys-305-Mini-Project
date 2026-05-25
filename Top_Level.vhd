@@ -61,7 +61,8 @@ architecture game_behaviour of Top_Level is
    end component Ball;
 
    component Graphics_Manager is
-      port (text_large_red,   text_large_green,   text_large_blue : in  std_logic_vector(3 downto 0);
+      port (clock : in std_logic;
+				text_large_red,   text_large_green,   text_large_blue : in  std_logic_vector(3 downto 0);
             text_small_red,   text_small_green,   text_small_blue : in  std_logic_vector(3 downto 0);
             background_red,   background_green,   background_blue : in  std_logic_vector(3 downto 0);
             sprite_red,       sprite_green,       sprite_blue     : in  std_logic_vector(3 downto 0);
@@ -113,7 +114,8 @@ architecture game_behaviour of Top_Level is
    end component Track_Generator;
 
    component Background_Manager is
-      port (background_red, background_green, background_blue : in  std_logic_vector(3 downto 0);
+      port (clock : in std_logic;
+				background_red, background_green, background_blue : in  std_logic_vector(3 downto 0);
             track_red,      track_green,      track_blue      : in  std_logic_vector(3 downto 0);
             red_out,        green_out,        blue_out        : out std_logic_vector(3 downto 0));
    end component Background_Manager;
@@ -265,7 +267,8 @@ architecture game_behaviour of Top_Level is
    end component Player;
 
    component Player_And_Objects_Manager is
-      port (player_red,  player_green,  player_blue  : in  std_logic_vector(3 downto 0);
+      port (clock	: in std_logic;
+				player_red,  player_green,  player_blue  : in  std_logic_vector(3 downto 0);
             objects_red, objects_green, objects_blue : in  std_logic_vector(3 downto 0);
             red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
    end component Player_And_Objects_Manager;
@@ -617,7 +620,8 @@ begin
                 blue_out       => text_large_blue);
 
    Training_Graphics : Graphics_Manager
-      port map (text_large_red   => text_large_red,
+      port map (clock				=> video_clock,
+					 text_large_red   => text_large_red,
                 text_large_green => text_large_green,
                 text_large_blue  => text_large_blue,
                 text_small_red   => text_small_red,
@@ -661,7 +665,8 @@ begin
                 blue_out          => track_layer_blue);
 
    Background_Compositor : Background_Manager
-      port map (background_red   => background_layer_red,
+      port map (clock 				=> video_clock, 
+					 background_red   => background_layer_red,
                 background_green => background_layer_green,
                 background_blue  => background_layer_blue,
                 track_red        => track_layer_red,
@@ -759,7 +764,8 @@ begin
                 blue_out       => sprite_composite_blue);
 
    Racing_Graphics : Graphics_Manager
-      port map (text_large_red   => "0000",
+      port map (clock				=> video_clock,
+					 text_large_red   => "0000",
                 text_large_green => "0000",
                 text_large_blue  => "0000",
                 text_small_red   => "0000",
@@ -944,7 +950,8 @@ begin
                 cat_view_position => cat_view_position);
 
    Player_Object_Compositor : Player_And_Objects_Manager
-      port map (player_red    => player_red,
+      port map (clock 			=> video_clock,
+					 player_red    => player_red,
                 player_green  => player_green,
                 player_blue   => player_blue,
                 objects_red   => sprite_composite_red,
