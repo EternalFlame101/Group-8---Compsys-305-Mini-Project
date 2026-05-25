@@ -4,16 +4,17 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity SD_Init is
+   generic (TOTAL_SECTORS : positive := 30280);   -- length of the song in sectors
    port (clock              : in  std_logic;
          reset              : in  std_logic;
          start_init         : in  std_logic;
-         byte_address       : in  std_logic_vector(8 downto 0);
+         byte_address       : in  std_logic_vector(9 downto 0);   -- 10 bits: bit 9 = buffer select
          spi_clock_out      : out std_logic;
          spi_mosi_out       : out std_logic;
          spi_miso_in        : in  std_logic;
          spi_chip_select_n  : out std_logic;
          init_done          : out std_logic;
-         read_done          : out std_logic;
+         audio_ready        : out std_logic;
          init_failed        : out std_logic;
          state_indicator    : out std_logic_vector(3 downto 0);
          last_response_byte : out std_logic_vector(7 downto 0);
@@ -23,9 +24,9 @@ end entity SD_Init;
 architecture behavioural of SD_Init is
 
    component SPI_Master is
-      generic (CLOCK_DIVIDER : positive := 128);
       port (clock          : in  std_logic;
             reset          : in  std_logic;
+            use_fast_clock : in  std_logic;
             start_transfer : in  std_logic;
             transmit_byte  : in  std_logic_vector(7 downto 0);
             received_byte  : out std_logic_vector(7 downto 0);
@@ -55,40 +56,47 @@ architecture behavioural of SD_Init is
       s_data_token_poll_request, s_data_token_poll_wait,
       s_data_byte_request,       s_data_byte_wait,
       s_data_crc_request,        s_data_crc_wait,
-      s_read_complete,
+      s_streaming_idle,
       s_init_failed);
    signal current_state      : init_state_type;
    signal next_command_state : init_state_type;
 
-   constant POWER_UP_WAIT_CYCLES   : integer := 100000;
-   constant DUMMY_CLOCK_BYTES      : integer := 10;
-   constant POLL_TIMEOUT_BYTES     : integer := 16;
-   constant ACMD41_MAX_RETRIES     : integer := 1000;
-   constant DATA_TOKEN_TIMEOUT     : integer := 50000;
+   constant POWER_UP_WAIT_CYCLES : integer := 100000;
+   constant DUMMY_CLOCK_BYTES    : integer := 10;
+   constant POLL_TIMEOUT_BYTES   : integer := 16;
+   constant ACMD41_MAX_RETRIES   : integer := 1000;
+   constant DATA_TOKEN_TIMEOUT   : integer := 50000;
 
-   signal power_up_counter         : integer range 0 to POWER_UP_WAIT_CYCLES;
-   signal byte_counter             : integer range 0 to 16;
-   signal poll_counter             : integer range 0 to POLL_TIMEOUT_BYTES;
-   signal acmd41_retry_count       : integer range 0 to ACMD41_MAX_RETRIES;
-   signal data_token_counter       : integer range 0 to DATA_TOKEN_TIMEOUT;
-   signal byte_write_index         : integer range 0 to 512;
+   signal power_up_counter    : integer range 0 to POWER_UP_WAIT_CYCLES;
+   signal byte_counter        : integer range 0 to 16;
+   signal poll_counter        : integer range 0 to POLL_TIMEOUT_BYTES;
+   signal acmd41_retry_count  : integer range 0 to ACMD41_MAX_RETRIES;
+   signal data_token_counter  : integer range 0 to DATA_TOKEN_TIMEOUT;
+   signal byte_write_index    : integer range 0 to 512;
+   signal sector_addr         : std_logic_vector(31 downto 0);
+   signal fills_count         : integer range 0 to 3;
 
-   signal spi_start_transfer       : std_logic;
-   signal spi_transmit_byte        : std_logic_vector(7 downto 0);
-   signal spi_received_byte        : std_logic_vector(7 downto 0);
-   signal spi_transfer_done        : std_logic;
-   signal spi_busy_signal          : std_logic;
-   signal cs_internal              : std_logic;
+   signal spi_start_transfer  : std_logic;
+   signal spi_transmit_byte   : std_logic_vector(7 downto 0);
+   signal spi_received_byte   : std_logic_vector(7 downto 0);
+   signal spi_transfer_done   : std_logic;
+   signal spi_busy_signal     : std_logic;
+   signal spi_use_fast        : std_logic;
+   signal cs_internal         : std_logic;
 
-   signal init_complete_register   : std_logic;
-   signal byte_write_enable        : std_logic;
-   signal read_byte_internal       : std_logic_vector(7 downto 0);
+   signal init_complete_register : std_logic;
+   signal audio_ready_register   : std_logic;
+   signal fill_buffer_target     : std_logic;
+   signal previous_byte_high     : std_logic;
+   signal byte_write_enable      : std_logic;
+   signal read_byte_internal     : std_logic_vector(7 downto 0);
 
-   signal current_state_code       : std_logic_vector(3 downto 0);
-   signal frozen_state_code        : std_logic_vector(3 downto 0);
+   signal current_state_code  : std_logic_vector(3 downto 0);
+   signal frozen_state_code   : std_logic_vector(3 downto 0);
 
    type sector_buffer_type is array (0 to 511) of std_logic_vector(7 downto 0);
-   signal sector_buffer : sector_buffer_type;
+   signal sector_buffer_a : sector_buffer_type;
+   signal sector_buffer_b : sector_buffer_type;
 
    function get_cmd0_byte(index : integer) return std_logic_vector is
    begin
@@ -129,23 +137,12 @@ architecture behavioural of SD_Init is
       end case;
    end function;
 
-   -- CMD17 reads single block. Argument is sector number for SDHC cards.
-   -- This reads sector 0.
-   function get_cmd17_byte(index : integer) return std_logic_vector is
-   begin
-      case index is
-         when 0      => return x"51";
-         when 5      => return x"FF";
-         when others => return x"00";
-      end case;
-   end function;
-
 begin
 
    spi_master_instance : SPI_Master
-      generic map (CLOCK_DIVIDER => 128)
       port map (clock          => clock,
                 reset          => reset,
+                use_fast_clock => spi_use_fast,
                 start_transfer => spi_start_transfer,
                 transmit_byte  => spi_transmit_byte,
                 received_byte  => spi_received_byte,
@@ -156,13 +153,13 @@ begin
                 spi_miso_in    => spi_miso_in);
 
    spi_chip_select_n  <= cs_internal;
+   spi_use_fast       <= init_complete_register;
    last_response_byte <= spi_received_byte;
    read_byte          <= read_byte_internal;
    init_done          <= init_complete_register;
-   read_done          <= '1' when current_state = s_read_complete else '0';
-   init_failed        <= '1' when current_state = s_init_failed   else '0';
+   audio_ready        <= audio_ready_register;
+   init_failed        <= '1' when current_state = s_init_failed else '0';
 
-   -- Combinational: write to buffer one cycle after each data byte transfer completes
    byte_write_enable <= '1' when (current_state = s_data_byte_wait and spi_transfer_done = '1') else '0';
 
    current_state_code <= "0000" when current_state = s_idle
@@ -183,7 +180,7 @@ begin
                     else "1001" when current_state = s_data_token_poll_request or current_state = s_data_token_poll_wait
                     else "1010" when current_state = s_data_byte_request       or current_state = s_data_byte_wait
                     else "1011" when current_state = s_data_crc_request        or current_state = s_data_crc_wait
-                    else "1100" when current_state = s_read_complete
+                    else "1100" when current_state = s_streaming_idle
                     else "1110";
 
    failure_latch_process : process(clock, reset)
@@ -199,14 +196,21 @@ begin
 
    state_indicator <= frozen_state_code;
 
-   -- Sector buffer: synchronous write, registered read. Quartus infers block RAM.
    sector_buffer_process : process(clock)
    begin
       if rising_edge(clock) then
          if byte_write_enable = '1' then
-            sector_buffer(byte_write_index) <= spi_received_byte;
+            if fill_buffer_target = '0' then
+               sector_buffer_a(byte_write_index) <= spi_received_byte;
+            else
+               sector_buffer_b(byte_write_index) <= spi_received_byte;
+            end if;
          end if;
-         read_byte_internal <= sector_buffer(conv_integer(byte_address));
+         if byte_address(9) = '0' then
+            read_byte_internal <= sector_buffer_a(conv_integer(byte_address(8 downto 0)));
+         else
+            read_byte_internal <= sector_buffer_b(conv_integer(byte_address(8 downto 0)));
+         end if;
       end if;
    end process sector_buffer_process;
 
@@ -224,7 +228,12 @@ begin
          acmd41_retry_count     <= 0;
          data_token_counter     <= 0;
          byte_write_index       <= 0;
+         sector_addr            <= (others => '0');
+         fills_count            <= 0;
          init_complete_register <= '0';
+         audio_ready_register   <= '0';
+         fill_buffer_target     <= '0';
+         previous_byte_high     <= '0';
 
       elsif rising_edge(clock) then
          spi_start_transfer <= '0';
@@ -455,11 +464,12 @@ begin
                cs_internal <= '0';
                if spi_transfer_done = '1' then
                   if spi_received_byte = x"00" then
-                     -- Init done! Latch the flag and proceed to read sector 0
                      init_complete_register <= '1';
+                     fill_buffer_target     <= '0';
+                     sector_addr            <= (others => '0');
+                     fills_count            <= 0;
                      next_command_state     <= s_cmd17_request;
                      byte_counter           <= 0;
-                     data_token_counter     <= 0;
                      current_state          <= s_inter_command_request;
                   elsif spi_received_byte = x"01" then
                      if acmd41_retry_count = ACMD41_MAX_RETRIES - 1 then
@@ -492,11 +502,18 @@ begin
                   current_state <= next_command_state;
                end if;
 
-            -- CMD17 reads single block at the address in the argument (sector 0 here)
             when s_cmd17_request =>
                cs_internal <= '0';
                if spi_busy_signal = '0' then
-                  spi_transmit_byte  <= get_cmd17_byte(byte_counter);
+                  case byte_counter is
+                     when 0 => spi_transmit_byte <= x"51";
+                     when 1 => spi_transmit_byte <= sector_addr(31 downto 24);
+                     when 2 => spi_transmit_byte <= sector_addr(23 downto 16);
+                     when 3 => spi_transmit_byte <= sector_addr(15 downto 8);
+                     when 4 => spi_transmit_byte <= sector_addr(7 downto 0);
+                     when 5 => spi_transmit_byte <= x"FF";
+                     when others => spi_transmit_byte <= x"FF";
+                  end case;
                   spi_start_transfer <= '1';
                   current_state      <= s_cmd17_wait;
                end if;
@@ -536,8 +553,6 @@ begin
                   end if;
                end if;
 
-            -- Card prepares the data, then sends 0xFE to signal the data block is coming.
-            -- Can take a while, so the timeout is much larger than other polls.
             when s_data_token_poll_request =>
                cs_internal <= '0';
                if spi_busy_signal = '0' then
@@ -560,7 +575,6 @@ begin
                   end if;
                end if;
 
-            -- Read 512 data bytes into sector_buffer
             when s_data_byte_request =>
                cs_internal <= '0';
                if spi_busy_signal = '0' then
@@ -582,7 +596,6 @@ begin
                   end if;
                end if;
 
-            -- Read and discard the 2 CRC bytes that follow the data block
             when s_data_crc_request =>
                cs_internal <= '0';
                if spi_busy_signal = '0' then
@@ -595,15 +608,45 @@ begin
                cs_internal <= '0';
                if spi_transfer_done = '1' then
                   if byte_counter = 1 then
-                     current_state <= s_read_complete;
+                     -- A sector finished. Decide what next.
+                     if sector_addr = conv_std_logic_vector(TOTAL_SECTORS - 1, 32) then
+                        sector_addr <= (others => '0');
+                     else
+                        sector_addr <= sector_addr + 1;
+                     end if;
+                     if fills_count = 0 then
+                        -- Just filled buffer A. Now fill buffer B with sector 1.
+                        fills_count        <= 1;
+                        fill_buffer_target <= '1';
+                        next_command_state <= s_cmd17_request;
+                        byte_counter       <= 0;
+                        current_state      <= s_inter_command_request;
+                     elsif fills_count = 1 then
+                        -- Just filled buffer B. Both buffers ready. Start audio.
+                        fills_count          <= 2;
+                        audio_ready_register <= '1';
+                        previous_byte_high   <= '0';
+                        current_state        <= s_streaming_idle;
+                     else
+                        -- Streaming refill done. Back to idle.
+                        current_state <= s_streaming_idle;
+                     end if;
                   else
                      byte_counter  <= byte_counter + 1;
                      current_state <= s_data_crc_request;
                   end if;
                end if;
 
-            when s_read_complete =>
-               cs_internal <= '1';
+            when s_streaming_idle =>
+               cs_internal <= '0';
+               if byte_address(9) /= previous_byte_high then
+                  -- Playback just moved to the other buffer. Refill the one it left.
+                  fill_buffer_target <= previous_byte_high;
+                  previous_byte_high <= byte_address(9);
+                  next_command_state <= s_cmd17_request;
+                  byte_counter       <= 0;
+                  current_state      <= s_inter_command_request;
+               end if;
 
             when s_init_failed =>
                cs_internal <= '1';

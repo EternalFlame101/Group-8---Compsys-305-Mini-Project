@@ -170,7 +170,7 @@ CONTENT BEGIN
     5C : 000100;   -- l2=off   l1=gift  l0=off
     5D : 101101;   -- l2=short l1=tall  l0=gift
     5E : 110011;   -- l2=tall  l1=off   l0=tall
-    5F : 111111;   -- l2=tall  l1=tall  l0=tall
+    5F : 111110;   -- l2=tall  l1=tall  l0=tall
     60 : 111100;   -- l2=tall  l1=tall  l0=off
     61 : 000101;   -- l2=off   l1=gift  l0=gift
     62 : 100110;   -- l2=short l1=gift  l0=short

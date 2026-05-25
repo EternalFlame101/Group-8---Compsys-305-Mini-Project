@@ -41,7 +41,7 @@ begin
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "perspective2.mif",
+						 init_file              => "Images_To_mif/mif/perspective.mif",
 						 intended_device_family => "cyclone V",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",

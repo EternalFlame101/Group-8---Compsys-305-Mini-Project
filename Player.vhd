@@ -9,7 +9,7 @@ entity Player is
             SPRITE_SIZE            : positive := 64;
             SPRITE_SCALE           : positive := 2;
             WALK_FRAME_DURATION    : positive := 8;
-            JUMP_TOTAL_FRAMES      : positive := 120;
+            JUMP_TOTAL_FRAMES      : positive := 64;
             JUMP_PEAK_HEIGHT       : positive := 60;
             LANE_TRANSITION_FRAMES : positive := 64);
    port (clock, reset, vertical_sync             : in  std_logic;
@@ -31,12 +31,20 @@ architecture player_behaviour of Player is
                SPRITE_HEIGHT : positive := 64;
                ADDR_BITS     : positive := 12;
                SCALE         : positive := 2;
-               MIF_FILE      : string   := "mif/jasper.mif");
+               MIF_FILE      : string   := "Images_To_mif/mif/jasper.mif");
       port (clock                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Sprites_Display;
+
+   component Jump_Offset_LUT is
+      generic (JUMP_TOTAL_FRAMES : positive := 120;
+               JUMP_PEAK_HEIGHT  : positive := 60);
+      port (clock             : in  std_logic;
+            jump_frame_count  : in  integer range 0 to JUMP_TOTAL_FRAMES;
+            jump_pixel_offset : out integer range 0 to JUMP_PEAK_HEIGHT);
+   end component Jump_Offset_LUT;
 
    constant SCALED_SPRITE_SIZE : positive := SPRITE_SIZE * SPRITE_SCALE;
    constant LANE_1_CENTRE_X    : positive := SCREEN_WIDTH / 2;
@@ -60,6 +68,15 @@ architecture player_behaviour of Player is
    constant DIVE_FRAME_DURATION   : integer  := 6;
    constant FAST_DROP_TAIL_FRAMES : integer  := 10;
 
+   -- Jump animation:
+   --   16 frames each held for JUMP_FRAME_DURATION vsyncs.
+   --   16 * 4 = 64 vsyncs = JUMP_TOTAL_FRAMES, so anim index = jump_frame_count / 4.
+   --   Sequence:
+   --     0,4  -> 1.mif      1,3  -> 2.mif      2    -> 3.mif
+   --     5,15 -> neutral    6,14 -> 4.mif      7,13 -> 5.mif
+   --     8,12 -> 6.mif      9,11 -> 7.mif      10   -> 8.mif
+   constant JUMP_FRAME_DURATION : integer := 4;
+
    -- Logical state
    signal current_lane_int : integer range 0 to 2 := 1;
    signal current_state    : std_logic            := '0';
@@ -74,13 +91,14 @@ architecture player_behaviour of Player is
    signal dive_frame_count      : integer range 0 to DIVE_TOTAL_FRAMES := 0;
    signal dive_input_previous   : std_logic := '0';
 
-   -- Jump-height math (now pipelined)
-   signal jump_distance_from_apex    : integer range 0 to JUMP_TOTAL_FRAMES                       := 0;
-   signal jump_distance_squared_comb : integer range 0 to JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES   := 0;
-   signal jump_distance_squared_reg  : integer range 0 to JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES   := 0;
-   signal jump_pixel_offset          : integer range 0 to JUMP_TOTAL_FRAMES                       := 0;
-   signal sprite_y_position_comb     : std_logic_vector(9 downto 0);
-   signal sprite_y_position_reg      : std_logic_vector(9 downto 0) := (others => '0');
+   -- Jump-height math: a precomputed LUT (Jump_Offset_LUT) takes
+   -- jump_frame_count and returns the parabolic pixel offset directly,
+   -- replacing the old multiply+divide-by-14400 chain that was the critical
+   -- path. The LUT registers its output, so the index-to-offset hop is one
+   -- clock; sprite_y_position_reg adds one more stage before the sprite ROMs.
+   signal jump_pixel_offset      : integer range 0 to JUMP_PEAK_HEIGHT := 0;
+   signal sprite_y_position_comb : std_logic_vector(9 downto 0);
+   signal sprite_y_position_reg  : std_logic_vector(9 downto 0) := (others => '0');
 
    -- View transition
    signal view_pos_int      : integer range -LANE_RESOLUTION to LANE_RESOLUTION := 0;
@@ -105,6 +123,18 @@ architecture player_behaviour of Player is
    signal right_click_previous : std_logic := '0';
    signal jump_input_previous  : std_logic := '0';
 
+   -- 2-FF synchronizers for the 4 player inputs. shift_left_input,
+   -- shift_right_input, jump_input, and dive_input arrive from Keyboard
+   -- (CLOCK_50 domain), Mouse (CLOCK_50 domain), and KEY pushbuttons
+   -- (completely async). Without these, Quartus times the entire
+   -- Keyboard/Mouse logic chain into the video_clock domain and the pixel
+   -- clock collapses to ~46 MHz. The synchronizer breaks the path: only the
+   -- flop-to-flop hop between _meta and _sync is timed locally.
+   signal shift_left_input_meta,  shift_left_input_sync  : std_logic := '0';
+   signal shift_right_input_meta, shift_right_input_sync : std_logic := '0';
+   signal jump_input_meta,        jump_input_sync        : std_logic := '0';
+   signal dive_input_meta,        dive_input_sync        : std_logic := '0';
+	
    signal sprite_x_position : std_logic_vector(9 downto 0);
 
    -- Walk-cycle frame outputs (5 distinct frames; neutral_set2 is reused as
@@ -134,38 +164,58 @@ architecture player_behaviour of Player is
    signal squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue : std_logic_vector(3 downto 0);
    signal squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue : std_logic_vector(3 downto 0);
 
+   -- Jump-frame outputs (8 distinct sprites from 1.mif..8.mif; neutral is
+   -- reused from the existing neutral_frame_* outputs).
+   signal jump_1_frame_red, jump_1_frame_green, jump_1_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_2_frame_red, jump_2_frame_green, jump_2_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_3_frame_red, jump_3_frame_green, jump_3_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_4_frame_red, jump_4_frame_green, jump_4_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_5_frame_red, jump_5_frame_green, jump_5_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_6_frame_red, jump_6_frame_green, jump_6_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_7_frame_red, jump_7_frame_green, jump_7_frame_blue : std_logic_vector(3 downto 0);
+   signal jump_8_frame_red, jump_8_frame_green, jump_8_frame_blue : std_logic_vector(3 downto 0);
+
 begin
+
+   -- Cross-domain synchronizer. Runs in the video_clock domain (this
+   -- entity's clock). Single point where async/CLOCK_50 signals enter the
+   -- video pipeline; nothing downstream sees the raw inputs.
+   Input_Synchronizer : process(clock)
+   begin
+      if rising_edge(clock) then
+         shift_left_input_meta  <= shift_left_input;
+         shift_left_input_sync  <= shift_left_input_meta;
+         shift_right_input_meta <= shift_right_input;
+         shift_right_input_sync <= shift_right_input_meta;
+         jump_input_meta        <= jump_input;
+         jump_input_sync        <= jump_input_meta;
+         dive_input_meta        <= dive_input;
+         dive_input_sync        <= dive_input_meta;
+      end if;
+   end process Input_Synchronizer;
 
    -- ---------------------------------------------------------------------------
    -- Sprite x is a compile-time constant (cat is permanently centred).
-   -- Sprite y goes through a 2-stage pipeline so the long chain
-   --   jump_frame_count -> parabola math -> Sprites_Display ROM address
-   -- splits into short hops. jump_frame_count only updates once per vsync, so
-   -- the 2 cycles of added latency are invisible.
+   -- Sprite y is driven by the Jump_Offset_LUT (1-cycle registered output)
+   -- plus sprite_y_position_reg, giving a 2-stage path from jump_frame_count
+   -- to the sprite ROM address inputs. jump_frame_count only updates once per
+   -- vsync, so the latency is invisible.
+   --
+   -- jump_frame_count is forced to 0 whenever the cat is grounded (see the
+   -- state machine below), so OFFSET_TABLE(0) = 0 keeps the cat planted
+   -- without needing a separate combinational gate on current_state.
    -- ---------------------------------------------------------------------------
    sprite_x_position <= conv_std_logic_vector(LANE_1_CENTRE_X - (SCALED_SPRITE_SIZE / 2), 10);
 
-   -- Stage 1 combinational: distance-from-apex and its square
-   jump_distance_from_apex    <= abs(JUMP_TOTAL_FRAMES - 2 * jump_frame_count);
-   jump_distance_squared_comb <= jump_distance_from_apex * jump_distance_from_apex;
-
-   -- Stage 1 register
-   Jump_Pipeline_Stage_1 : process(clock)
-   begin
-      if rising_edge(clock) then
-         jump_distance_squared_reg <= jump_distance_squared_comb;
-      end if;
-   end process Jump_Pipeline_Stage_1;
-
-   -- Stage 2 combinational: parabolic offset and final y-position
-   jump_pixel_offset <= 0 when current_state = '0' else
-                        JUMP_PEAK_HEIGHT
-                        - (JUMP_PEAK_HEIGHT * jump_distance_squared_reg)
-                          / (JUMP_TOTAL_FRAMES * JUMP_TOTAL_FRAMES);
+   Jump_Offset_Lookup : Jump_Offset_LUT
+      generic map (JUMP_TOTAL_FRAMES => JUMP_TOTAL_FRAMES,
+                   JUMP_PEAK_HEIGHT  => JUMP_PEAK_HEIGHT)
+      port map (clock             => clock,
+                jump_frame_count  => jump_frame_count,
+                jump_pixel_offset => jump_pixel_offset);
 
    sprite_y_position_comb <= conv_std_logic_vector(BASE_SPRITE_Y - jump_pixel_offset, 10);
 
-   -- Stage 2 register
    Sprite_Y_Pipeline : process(clock)
    begin
       if rising_edge(clock) then
@@ -181,7 +231,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/neutral_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/neutral.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -196,7 +246,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/left_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -211,7 +261,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/left_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/left_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -226,7 +276,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/right_1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -241,7 +291,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/right_2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/right_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -259,7 +309,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-45_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-45.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -274,7 +324,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-90_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-90.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -289,7 +339,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-135_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-135.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -304,7 +354,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-180_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-180.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -319,7 +369,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-225_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-225.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -334,7 +384,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-270_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-270.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -349,7 +399,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/-315_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/-315.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -367,7 +417,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish1_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -382,7 +432,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish2_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -397,7 +447,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "py_files/img_to_mif/mif/squish3_set2_mif.mif")
+                   MIF_FILE      => "Images_To_mif/mif/squish3.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row,
                 pixel_column => pixel_column,
@@ -406,6 +456,130 @@ begin
                 red_out      => squish_3_frame_red,
                 green_out    => squish_3_frame_green,
                 blue_out     => squish_3_frame_blue);
+
+   -- ---------------------------------------------------------------------------
+   -- Jump sprite ROMs (8 jump frames; neutral slot reuses the existing
+   -- neutral sprite ROM).
+   -- ---------------------------------------------------------------------------
+   Jump_1_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/1.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_1_frame_red,
+                green_out    => jump_1_frame_green,
+                blue_out     => jump_1_frame_blue);
+
+   Jump_2_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/2.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_2_frame_red,
+                green_out    => jump_2_frame_green,
+                blue_out     => jump_2_frame_blue);
+
+   Jump_3_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/3.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_3_frame_red,
+                green_out    => jump_3_frame_green,
+                blue_out     => jump_3_frame_blue);
+
+   Jump_4_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/4.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_4_frame_red,
+                green_out    => jump_4_frame_green,
+                blue_out     => jump_4_frame_blue);
+
+   Jump_5_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/5.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_5_frame_red,
+                green_out    => jump_5_frame_green,
+                blue_out     => jump_5_frame_blue);
+
+   Jump_6_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/6.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_6_frame_red,
+                green_out    => jump_6_frame_green,
+                blue_out     => jump_6_frame_blue);
+
+   Jump_7_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/7.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_7_frame_red,
+                green_out    => jump_7_frame_green,
+                blue_out     => jump_7_frame_blue);
+
+   Jump_8_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/8.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => jump_8_frame_red,
+                green_out    => jump_8_frame_green,
+                blue_out     => jump_8_frame_blue);
 
    -- ---------------------------------------------------------------------------
    -- State machine
@@ -478,7 +652,7 @@ begin
             -- dive_edge = dive_input  rising edge
             -- (Computed in-line below via the *_previous registers.)
 
-            if (dive_input = '1') and (dive_input_previous = '0') and (dive_active = '0') then
+            if (dive_input_sync = '1') and (dive_input_previous = '0') and (dive_active = '0') then
                -- Dive edge AND not already diving: start dive. Cancel jump
                -- and snap to the parabola tail so the cat falls fast if
                -- airborne. Pressing dive while already diving does nothing
@@ -493,7 +667,7 @@ begin
                   -- completes normally below.
                   jump_frame_count <= JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES;
                end if;
-            elsif (jump_input = '1') and (jump_input_previous = '0') and (current_state = '0') then
+            elsif (jump_input_sync = '1') and (jump_input_previous = '0') and (current_state = '0') then
                -- Jump edge AND not already jumping: start jump. Cancel any
                -- active dive. Pressing jump while already jumping does
                -- nothing (no double-jump).
@@ -552,7 +726,7 @@ begin
                   end if;
                end if;
             else
-               if (shift_right_input = '1') and (right_click_previous = '0') then
+               if (shift_right_input_sync = '1') and (right_click_previous = '0') then
                   if current_lane_int = 0 then
                      view_pos_target   <= 0;
                      transition_step   <= TRANSITION_SPEED;
@@ -566,7 +740,7 @@ begin
                      roll_direction    <= '1';
                      roll_frame_index  <= 0;
                   end if;
-               elsif (shift_left_input = '1') and (click_previous = '0') then
+               elsif (shift_left_input_sync = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
                      view_pos_target   <= 0;
                      transition_step   <= -TRANSITION_SPEED;
@@ -583,24 +757,24 @@ begin
                end if;
             end if;
 
-            click_previous       <= shift_left_input;
-            right_click_previous <= shift_right_input;
-            jump_input_previous  <= jump_input;
-            dive_input_previous  <= dive_input;
+            click_previous       <= shift_left_input_sync;
+            right_click_previous <= shift_right_input_sync;
+            jump_input_previous  <= jump_input_sync;
+            dive_input_previous  <= dive_input_sync;
          end if;
       end if;
    end process Animation_Process;
 
    -- ---------------------------------------------------------------------------
    -- Frame mux.
-   -- Priority: rolling (lane transition) > dive (squish) > walking.
-   -- Jumping does NOT enter the mux -- it only shifts the sprite up vertically
-   -- via jump_pixel_offset; the underlying frame (walk or roll) keeps playing.
-   -- Dive DOES enter the mux because the cat changes shape (squish frames).
+   -- Priority: rolling (lane transition) > dive (squish) > jumping > walking.
+   -- Jumping now drives both vertical offset AND its own 16-frame sprite
+   -- sequence. Roll still wins over jump (cat keeps showing the spin while
+   -- airborne) and dive still wins over jump (squish + fast-drop).
    -- ---------------------------------------------------------------------------
    Frame_Selector : process(transition_active, roll_direction, roll_frame_index,
                             dive_active, dive_frame_count,
-                            current_state, walk_frame_index,
+                            current_state, jump_frame_count, walk_frame_index,
                             neutral_frame_red,  neutral_frame_green,  neutral_frame_blue,
                             left_1_frame_red,   left_1_frame_green,   left_1_frame_blue,
                             left_2_frame_red,   left_2_frame_green,   left_2_frame_blue,
@@ -615,8 +789,17 @@ begin
                             roll_315_frame_red, roll_315_frame_green, roll_315_frame_blue,
                             squish_1_frame_red, squish_1_frame_green, squish_1_frame_blue,
                             squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue,
-                            squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue)
-      variable dive_step : integer range 0 to 5;
+                            squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue,
+                            jump_1_frame_red,   jump_1_frame_green,   jump_1_frame_blue,
+                            jump_2_frame_red,   jump_2_frame_green,   jump_2_frame_blue,
+                            jump_3_frame_red,   jump_3_frame_green,   jump_3_frame_blue,
+                            jump_4_frame_red,   jump_4_frame_green,   jump_4_frame_blue,
+                            jump_5_frame_red,   jump_5_frame_green,   jump_5_frame_blue,
+                            jump_6_frame_red,   jump_6_frame_green,   jump_6_frame_blue,
+                            jump_7_frame_red,   jump_7_frame_green,   jump_7_frame_blue,
+                            jump_8_frame_red,   jump_8_frame_green,   jump_8_frame_blue)
+      variable dive_step      : integer range 0 to 5;
+      variable jump_anim_step : integer range 0 to 16;
    begin
       if transition_active = '1' then
          -- Rolling. Left roll plays  -45, -90, -135, -180, -225, -270, -315, 0.
@@ -679,6 +862,32 @@ begin
                player_red <= squish_1_frame_red; player_green <= squish_1_frame_green; player_blue <= squish_1_frame_blue;
             when others =>
                player_red <= neutral_frame_red;  player_green <= neutral_frame_green;  player_blue <= neutral_frame_blue;
+         end case;
+      elsif current_state = '1' then
+         -- Jump. 16-step sprite animation, JUMP_FRAME_DURATION (=4) vsyncs per
+         -- step, total 64 vsyncs. Sequence (anim index -> sprite):
+         --   0,4 -> 1   1,3 -> 2   2 -> 3   5,15 -> neutral
+         --   6,14 -> 4  7,13 -> 5  8,12 -> 6  9,11 -> 7  10 -> 8
+         jump_anim_step := jump_frame_count / JUMP_FRAME_DURATION;
+         case jump_anim_step is
+            when 0 | 4 =>
+               player_red <= jump_1_frame_red; player_green <= jump_1_frame_green; player_blue <= jump_1_frame_blue;
+            when 1 | 3 =>
+               player_red <= jump_2_frame_red; player_green <= jump_2_frame_green; player_blue <= jump_2_frame_blue;
+            when 2 =>
+               player_red <= jump_3_frame_red; player_green <= jump_3_frame_green; player_blue <= jump_3_frame_blue;
+            when 6 | 14 =>
+               player_red <= jump_4_frame_red; player_green <= jump_4_frame_green; player_blue <= jump_4_frame_blue;
+            when 7 | 13 =>
+               player_red <= jump_5_frame_red; player_green <= jump_5_frame_green; player_blue <= jump_5_frame_blue;
+            when 8 | 12 =>
+               player_red <= jump_6_frame_red; player_green <= jump_6_frame_green; player_blue <= jump_6_frame_blue;
+            when 9 | 11 =>
+               player_red <= jump_7_frame_red; player_green <= jump_7_frame_green; player_blue <= jump_7_frame_blue;
+            when 10 =>
+               player_red <= jump_8_frame_red; player_green <= jump_8_frame_green; player_blue <= jump_8_frame_blue;
+            when others =>  -- anim steps 5, 15, plus 16 safety
+               player_red <= neutral_frame_red; player_green <= neutral_frame_green; player_blue <= neutral_frame_blue;
          end case;
       else
          -- Walking. 8-frame cycle:

@@ -4,9 +4,9 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity SPI_Master is
-   generic (CLOCK_DIVIDER : positive := 128);  -- 50 MHz / 128 = ~390 kHz, safe for SD init
    port (clock          : in  std_logic;
          reset          : in  std_logic;
+         use_fast_clock : in  std_logic;
          start_transfer : in  std_logic;
          transmit_byte  : in  std_logic_vector(7 downto 0);
          received_byte  : out std_logic_vector(7 downto 0);
@@ -22,15 +22,19 @@ architecture behavioural of SPI_Master is
    type spi_state_type is (state_idle, state_transferring, state_completed);
    signal current_state : spi_state_type;
 
-   constant HALF_PERIOD_MAX : integer := CLOCK_DIVIDER / 2 - 1;
+   constant SLOW_HALF_PERIOD : integer := 63;   -- 50 MHz / 128 ≈ 390 kHz (init)
+   constant FAST_HALF_PERIOD : integer := 7;    -- 50 MHz / 16  ≈ 3.125 MHz (data)
 
-   signal divider_counter   : integer range 0 to CLOCK_DIVIDER;
+   signal half_period_max   : integer range 0 to 63;
+   signal divider_counter   : integer range 0 to 63;
    signal bit_counter       : integer range 0 to 8;
    signal sclk_internal     : std_logic;
    signal transmit_register : std_logic_vector(7 downto 0);
    signal receive_register  : std_logic_vector(7 downto 0);
 
 begin
+
+   half_period_max <= FAST_HALF_PERIOD when use_fast_clock = '1' else SLOW_HALF_PERIOD;
 
    spi_clock_out <= sclk_internal;
    spi_mosi_out  <= transmit_register(7) when current_state = state_transferring else '1';
@@ -67,15 +71,13 @@ begin
             when state_transferring =>
                busy <= '1';
 
-               if divider_counter = HALF_PERIOD_MAX then
+               if divider_counter >= half_period_max then
                   divider_counter <= 0;
 
                   if sclk_internal = '0' then
-                     -- Rising edge of SCLK: sample MISO
                      sclk_internal    <= '1';
                      receive_register <= receive_register(6 downto 0) & spi_miso_in;
                   else
-                     -- Falling edge of SCLK: shift MOSI to next bit, check completion
                      sclk_internal <= '0';
                      if bit_counter = 7 then
                         current_state <= state_completed;
@@ -84,7 +86,6 @@ begin
                         bit_counter       <= bit_counter + 1;
                      end if;
                   end if;
-
                else
                   divider_counter <= divider_counter + 1;
                end if;
