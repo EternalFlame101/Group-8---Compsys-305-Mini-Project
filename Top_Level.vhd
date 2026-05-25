@@ -361,6 +361,8 @@ architecture game_behaviour of Top_Level is
    signal selected_mode              : std_logic;
    signal latched_mode               : std_logic;
    signal any_key_pressed            : std_logic;
+	signal any_key_pressed_prev		 : std_logic;
+	signal any_key_pressed_rising		 : std_logic;
 	
 	signal startup_reset_counter : std_logic_vector(23 downto 0) := (others => '0');
    signal startup_reset         : std_logic;
@@ -374,10 +376,10 @@ architecture game_behaviour of Top_Level is
    signal ball_x_out, ball_y_out  : std_logic_vector(9 downto 0);
 
    -- Mouse signals (single mouse, now on PS/2 port 2)
-   signal left_click   : std_logic;
-   signal right_click  : std_logic;
-   signal mouse_row    : std_logic_vector(9 downto 0);
-   signal mouse_column : std_logic_vector(9 downto 0);
+   signal left_click   			: std_logic;
+   signal right_click  			: std_logic;
+   signal mouse_row    			: std_logic_vector(9 downto 0);
+   signal mouse_column 			: std_logic_vector(9 downto 0);
 
    -- Keyboard signals (on PS/2 port 1).
    --   keyboard_left_key, keyboard_right_key: arrow keys for lane shifts
@@ -505,6 +507,25 @@ begin
    -- ---------------------------------------------------------------------------
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
+	-- futher rising edge press detection, so that it cannot be held down
+	Rising_edge_key_press : process(video_clock)
+	begin
+		if rising_edge(video_clock) then
+			if (not(RESET_N) = '1') then
+				any_key_pressed_prev <= '0';
+			else
+				any_key_pressed_prev <= any_key_pressed;
+				
+				-- rising edge only
+				if (any_key_pressed <= '1' and any_key_pressed_prev = '0') then
+					any_key_pressed_rising <= '1';
+				else 
+					any_key_pressed_rising <= '0';
+				end if;
+			end if;
+		end if;
+	end process Rising_edge_key_press;
+	
 	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
                        or left_click or right_click
 							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
@@ -862,7 +883,7 @@ begin
                 mouse_row           => mouse_row,
                 mouse_column        => mouse_column,
                 mouse_left_click    => left_click,
-                any_key_pressed     => any_key_pressed,
+                any_key_pressed     => any_key_pressed_rising,
                 start_screen_active => start_screen_active,
 					 start_screen_fsm		=> startscreen_fsm,
                 selected_mode       => selected_mode,
@@ -1001,7 +1022,7 @@ begin
 					mouse_row			=> mouse_row,
 					mouse_column		=> mouse_column,
 					mouse_left_click	=> left_click,
-					any_key_pressed	=> any_key_pressed,
+					any_key_pressed	=> any_key_pressed_rising,
 					end_screen_outcome=> endscreen_outcome,
 					end_screen			=> endscreen_active,
 					end_screen_active => endscreen_fsm,

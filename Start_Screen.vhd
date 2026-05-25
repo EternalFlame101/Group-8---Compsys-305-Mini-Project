@@ -100,12 +100,9 @@ architecture start_screen_behaviour of Start_Screen is
    signal training_large_red,      training_large_green,      training_large_blue      : std_logic_vector(3 downto 0);
    signal single_player_small_red, single_player_small_green, single_player_small_blue : std_logic_vector(3 downto 0);
    signal single_player_large_red, single_player_large_green, single_player_large_blue : std_logic_vector(3 downto 0);
-   signal two_player_small_red,    two_player_small_green,    two_player_small_blue    : std_logic_vector(3 downto 0);
-   signal two_player_large_red,    two_player_large_green,    two_player_large_blue    : std_logic_vector(3 downto 0);
 
    signal training_red,      training_green,      training_blue      : std_logic_vector(3 downto 0);
    signal single_player_red, single_player_green, single_player_blue : std_logic_vector(3 downto 0);
-   signal two_player_red,    two_player_green,    two_player_blue    : std_logic_vector(3 downto 0);
 
    -- ---------------------------------------------------------------------------
    -- Layout constants
@@ -165,16 +162,6 @@ architecture start_screen_behaviour of Start_Screen is
    constant SINGLE_PLAYER_HIT_X_MAX : integer := 424;
    constant SINGLE_PLAYER_HIT_Y_MAX : integer := 288;
 
-   -- TWO PLAYER: 10 chars
-   --   small: 10 * 16 = 160 wide, 16 tall, top-left (240, 352)
-   --   large: 10 * 24 = 240 wide, 24 tall, top-left (200, 330)
-   constant TWO_PLAYER_SMALL_X   : integer := 240;
-   constant TWO_PLAYER_SMALL_Y   : integer := 352;
-   constant TWO_PLAYER_LARGE_X   : integer := 200;
-   constant TWO_PLAYER_LARGE_Y   : integer := 330;
-   constant TWO_PLAYER_HIT_X_MAX : integer := 400;
-   constant TWO_PLAYER_HIT_Y_MAX : integer := 368;
-
 begin
 
    -- ---------------------------------------------------------------------------
@@ -215,12 +202,6 @@ begin
                                       mouse_column <  conv_std_logic_vector(SINGLE_PLAYER_HIT_X_MAX, 10) and
                                       mouse_row    >= conv_std_logic_vector(SINGLE_PLAYER_SMALL_Y,   10) and
                                       mouse_row    <  conv_std_logic_vector(SINGLE_PLAYER_HIT_Y_MAX, 10))
-                                else '0';
-
-   two_player_hovered    <= '1' when (mouse_column >= conv_std_logic_vector(TWO_PLAYER_SMALL_X,   10) and
-                                      mouse_column <  conv_std_logic_vector(TWO_PLAYER_HIT_X_MAX, 10) and
-                                      mouse_row    >= conv_std_logic_vector(TWO_PLAYER_SMALL_Y,   10) and
-                                      mouse_row    <  conv_std_logic_vector(TWO_PLAYER_HIT_Y_MAX, 10))
                                 else '0';
 
    -- ---------------------------------------------------------------------------
