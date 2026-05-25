@@ -12,6 +12,7 @@ entity Game_Master is
         lane_0_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_1_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_2_obj_dist   : in  std_logic_vector(9 downto 0);
+		  lanes_arrived	  : in  std_logic;
         player_lane       : in  std_logic_vector(1 downto 0);
         player_state      : in  std_logic;
         startscreen_enable: in  std_logic;
@@ -49,6 +50,7 @@ architecture game_master_behaviour of Game_Master is
    signal internal_game_enable       : std_logic;
    signal internal_endscreen_state   : std_logic;
    signal internal_score             : std_logic_vector(7 downto 0) := (others => '0');
+	signal wave_scored 					 : std_logic;
 
    signal collision_guard            : std_logic := '0';
    signal guard_previous_game_enable : std_logic := '0';
@@ -71,6 +73,8 @@ architecture game_master_behaviour of Game_Master is
 	signal lane_0_active					 : std_logic;
 	signal lane_1_active					 : std_logic;
 	signal lane_2_active					 : std_logic;
+	
+
 begin
   
   -- Speed escalation: freeze when game is not active; otherwise ramp by score.
@@ -129,6 +133,14 @@ begin
             guard_previous_game_enable <= internal_game_enable;
             prev_collision             <= gift_collision;
 
+				if lanes_arrived = '0' then
+					wave_scored <= '0';
+				elsif wave_scored = '0' and internal_score /= "1111111" and startscreen_enable = '0' then
+					internal_score <= internal_score + 1;
+					wave_scored    <=	'1';
+				end if;
+				
+				
             -- Arm start_seen_high once start screen confirmed active
             if current_state = INIT_SCREEN then
                if startscreen_enable = '1' then

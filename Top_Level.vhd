@@ -131,9 +131,9 @@ architecture game_behaviour of Top_Level is
                REAL_WIDTH  : positive             := 80;
                LANE        : integer range 0 to 2 := 1);
       port (enable, clock, vertical_sync : in  std_logic;
-            reset						 	 		       : in  std_logic;
-				    obj_type								     : in  std_logic_vector(1 downto 0);
-				    arrived				 				       : out std_logic;
+            reset						 	 	  : in  std_logic;
+				obj_type							  : in  std_logic_vector(1 downto 0);
+				arrived				 			  : out std_logic;
             pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
             speed_select                 : in  std_logic_vector(1 downto 0);
             cat_view_position            : in  std_logic_vector(7 downto 0);
@@ -299,6 +299,7 @@ architecture game_behaviour of Top_Level is
 			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
+			  lanes_arrived	  : in  std_logic;
 			  player_lane			: in	std_logic_vector(1 downto 0);
 			  player_state			: in 	std_logic;
 			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
@@ -466,8 +467,6 @@ architecture game_behaviour of Top_Level is
 	signal endscreen_fsm		: std_logic;
 	signal startscreen_fsm	: std_logic;
 	
-	signal score	: std_logic_vector(5 downto 0);
-
 	-- HUD
 	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
 	signal HUD_active                   : std_logic;
@@ -503,6 +502,7 @@ begin
 	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
                       or left_click or right_click
 							        or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
+									  
 
    -- ---------------------------------------------------------------------------
    -- Combined player input signals. The various sources work in parallel as
@@ -1029,6 +1029,7 @@ begin
 					  lane_0_obj_dist		=> sprite_0_row,
 					  lane_1_obj_dist		=> sprite_1_row,
 					  lane_2_obj_dist		=> sprite_2_row,
+					  lanes_arrived	   => arrived_0 or arrived_1 or arrived_2,
 					  player_lane			=> player_lane,
 					  player_state			=> player_state,
 					  startscreen_enable => start_screen_active,
