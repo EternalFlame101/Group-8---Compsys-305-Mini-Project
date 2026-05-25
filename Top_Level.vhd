@@ -1091,13 +1091,18 @@ begin
       port map (hex_value      => score_h,
                 seven_segments => HEX2);
 
+	-- HEX4/HEX5 show the last raw SPI response byte (SD Error Codes)
+   Hex_Response_Low : Hex_To_Seven_Segment
+      port map (hex_value      => last_response_byte_sig(3 downto 0),
+                seven_segments => HEX3);
+
+   Hex_Response_High : Hex_To_Seven_Segment
+      port map (hex_value      => last_response_byte_sig(7 downto 4),
+                seven_segments => HEX4);
 
    Health_Digit : Hex_To_Seven_Segment
       port map (hex_value      => "00" & health,
                 seven_segments => HEX5);
-
-   HEX3 <= (others => '1');
-   HEX4 <= (others => '1');
 
    -- Physical SD pin connections
    SD_CLK     <= sd_serial_clock;

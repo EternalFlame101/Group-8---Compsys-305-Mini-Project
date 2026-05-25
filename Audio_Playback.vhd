@@ -83,10 +83,11 @@ begin
                current_state <= s_high_wait_2;
 
 				when s_high_wait_2 =>
-               -- Swapped Byte Order: low_byte treated as High Byte, buffer_byte as Low Byte
-               -- Convert to unsigned for DAC by flipping the MSB of the new High Byte
-               dac_high_reg <= not(low_byte(7)) & low_byte(6 downto 0);
-               dac_low_reg  <= buffer_byte;
+               -- buffer_byte is the MSB (high byte) of the 16-bit sample.
+               -- Inverting bit 7 converts signed 2's-complement to unsigned offset-binary for the DAC.
+               dac_low_reg  <= not(buffer_byte(7)) & buffer_byte(6 downto 0);
+               dac_high_reg <= low_byte;
+               
                byte_index   <= byte_index + 2;
                current_state <= s_idle;
 
