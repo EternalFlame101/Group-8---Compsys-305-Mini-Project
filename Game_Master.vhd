@@ -6,12 +6,9 @@ use IEEE.std_logic_unsigned.all;
 entity Game_Master is
    port(clock             : in  std_logic;
         reset             : in  std_logic;
-        lane_0_gift       : in  std_logic;
-        lane_1_gift       : in  std_logic;
-        lane_2_gift       : in  std_logic;
-        lane_0_obj_type   : in  std_logic;
-        lane_1_obj_type   : in  std_logic;
-        lane_2_obj_type   : in  std_logic;
+        lane_0_obj_type   : in  std_logic_vector(1 downto 0);
+        lane_1_obj_type   : in  std_logic_vector(1 downto 0);
+        lane_2_obj_type   : in  std_logic_vector(1 downto 0);
         lane_0_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_1_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_2_obj_dist   : in  std_logic_vector(9 downto 0);
@@ -33,15 +30,18 @@ architecture game_master_behaviour of Game_Master is
    type game_state_type is (INIT_SCREEN, TRAINING, NORMAL, PAUSE, WIN, LOSE);
 
    component Collision_Detector is
-      port (lane_0_row, lane_1_row, lane_2_row          : in  std_logic_vector(9 downto 0);
-            lane_0_obj, lane_1_obj, lane_2_obj          : in  std_logic;
-            lane_0_active, lane_1_active, lane_2_active : in  std_logic;
-            player_lane                                 : in  std_logic_vector(1 downto 0);
-            player_state                                : in  std_logic;
-            lane_0_collision                            : out std_logic;
-            lane_1_collision                            : out std_logic;
-            lane_2_collision                            : out std_logic);
-   end component Collision_Detector;
+		port (lane_0_row, lane_1_row, lane_2_row 	: in std_logic_vector(9 downto 0);
+				lane_0_obj_type, lane_1_obj_type, lane_2_obj_type 	: in std_logic_vector(1 downto 0);
+				lane_0_active, lane_1_active, lane_2_active : in std_logic;
+				player_lane									: in std_logic_vector(1 downto 0);
+				player_state								: in std_logic;
+				lane_0_object_collision					: out std_logic;
+				lane_1_object_collision					: out std_logic;
+				lane_2_object_collision					: out std_logic;
+				lane_0_gift_collision					: out std_logic;
+				lane_1_gift_collision					: out std_logic;
+				lane_2_gift_collision					: out std_logic);
+	end component Collision_Detector;
 
    signal current_state              : game_state_type := INIT_SCREEN;
    signal next_state                 : game_state_type;
@@ -55,36 +55,52 @@ architecture game_master_behaviour of Game_Master is
    signal prev_collision             : std_logic := '0';
    signal start_seen_high            : std_logic := '0';
 
-   signal lane_0_collision           : std_logic;
-   signal lane_1_collision           : std_logic;
-   signal lane_2_collision           : std_logic;
-   signal any_collision              : std_logic;
-   signal obj_or_gift                : std_logic;
-
+   signal lane_0_object_collision    : std_logic;
+   signal lane_1_object_collision    : std_logic;
+   signal lane_2_object_collision    : std_logic;
+	
+	signal lane_0_gift_collision    	 : std_logic;
+   signal lane_1_gift_collision      : std_logic;
+   signal lane_2_gift_collision      : std_logic;
+	
+	signal object_collision				 : std_logic;
+	signal gift_collision				 : std_logic;
+	
+	signal any_collision					 : std_logic;
+	
+	signal lane_0_active					 : std_logic;
+	signal lane_1_active					 : std_logic;
+	signal lane_2_active					 : std_logic;
 begin
 
-   Object_Collision : Collision_Detector
+	-- object collision
+	lane_0_active <= '0' when (lane_0_obj_type = "00") else '1';
+	lane_1_active <= '0' when (lane_1_obj_type = "00") else '1';
+	lane_2_active <= '0' when (lane_2_obj_type = "00") else '1';
+
+   Object_Collision_Detection : Collision_Detector
       port map (lane_0_row       => lane_0_obj_dist,
                 lane_1_row       => lane_1_obj_dist,
                 lane_2_row       => lane_2_obj_dist,
-                lane_0_obj       => lane_0_obj_type,
-                lane_1_obj       => lane_1_obj_type,
-                lane_2_obj       => lane_2_obj_type,
-                lane_0_active    => lane_0_gift or lane_0_obj_type,
-                lane_1_active    => lane_1_gift or lane_1_obj_type,
-                lane_2_active    => lane_2_gift or lane_2_obj_type,
+                lane_0_obj_type  => lane_0_obj_type,
+                lane_1_obj_type  => lane_1_obj_type,
+                lane_2_obj_type  => lane_2_obj_type,
+                lane_0_active    => lane_0_active,
+                lane_1_active    => lane_1_active,
+                lane_2_active    => lane_2_active,
                 player_lane      => player_lane,
                 player_state     => player_state,
-                lane_0_collision => lane_0_collision,
-                lane_1_collision => lane_1_collision,
-                lane_2_collision => lane_2_collision);
-
-   any_collision <= lane_0_collision or lane_1_collision or lane_2_collision;
-
-   obj_or_gift <= '1' when ((lane_0_collision = '1' and lane_0_gift = '1') or
-                             (lane_1_collision = '1' and lane_1_gift = '1') or
-                             (lane_2_collision = '1' and lane_2_gift = '1'))
-                  else '0';
+                lane_0_object_collision => lane_0_object_collision,
+                lane_1_object_collision => lane_1_object_collision,
+                lane_2_object_collision => lane_2_object_collision,
+					 lane_0_gift_collision => lane_0_gift_collision,
+                lane_1_gift_collision => lane_1_gift_collision,
+                lane_2_gift_collision => lane_2_gift_collision);
+					 
+	object_collision <= lane_0_object_collision or lane_1_object_collision or lane_2_object_collision;
+	gift_collision <= lane_0_gift_collision or lane_1_gift_collision or lane_2_gift_collision;
+	
+	any_collision <= gift_collision or object_collision;
 
    score <= internal_score;
    speed <= "0010";
@@ -105,7 +121,7 @@ begin
          else
             current_state              <= next_state;
             guard_previous_game_enable <= internal_game_enable;
-            prev_collision             <= any_collision;
+            prev_collision             <= gift_collision;
 
             -- Arm start_seen_high once start screen confirmed active
             if current_state = INIT_SCREEN then
@@ -121,18 +137,16 @@ begin
                collision_guard <= '0';
             elsif internal_game_enable = '0' then
                collision_guard <= '0';
-            elsif any_collision = '0' then
+            elsif object_collision = '0' then
                collision_guard <= '1';
             end if;
 
             -- Score: increment on rising edge of collision only
             if current_state = NORMAL then
-               if collision_guard = '1' and
-                  any_collision = '1' and prev_collision = '0' then
+               if collision_guard = '1' and gift_collision = '1' and prev_collision = '0' then
                   internal_score <= internal_score + 1;
                end if;
             end if;
-
          end if;
       end if;
    end process SYNC_PROCESS;
@@ -175,13 +189,12 @@ begin
    -- Next state
    -- =========================================================================
    FSM_NEXT_STATE : process(current_state,
-                             startscreen_enable,
-                             start_seen_high,
-                             any_collision,
-                             collision_guard,
-                             obj_or_gift,
-                             endscreen_enable,
-                             mode_selected)
+                            startscreen_enable,
+                            start_seen_high,
+                            collision_guard,
+                            object_collision,
+                            endscreen_enable,
+                            mode_selected)
    begin
       next_state <= current_state;
 
@@ -193,10 +206,8 @@ begin
          when TRAINING =>
             null;
          when NORMAL =>
-            if collision_guard = '1' and any_collision = '1' then
-               if obj_or_gift = '0' then
-                  next_state <= LOSE;
-               end if;
+            if (collision_guard = '1' and object_collision = '1') then
+					next_state <= LOSE;
             end if;
          when PAUSE =>
             null;

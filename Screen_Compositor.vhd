@@ -4,7 +4,8 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity Screen_Compositor is
-   port (start_screen_active : in  std_logic;
+   port (clock					  : in  std_logic;
+			start_screen_active : in  std_logic;
          end_screen_active   : in  std_logic;
          latched_mode        : in  std_logic;
 
@@ -36,6 +37,8 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
    signal end_screen_text_active     : std_logic;
+	
+	signal red_next, green_next, blue_next : std_logic_vector(3 downto 0);
 
 begin
 
@@ -64,52 +67,61 @@ begin
       if start_screen_active = '1' then
          -- Start screen: mouse on top, then text, then sprite, then black
          if mouse_cursor_active = '1' then
-            red_out   <= mouse_cursor_red;
-            green_out <= mouse_cursor_green;
-            blue_out  <= mouse_cursor_blue;
+            red_next   <= mouse_cursor_red;
+            green_next <= mouse_cursor_green;
+            blue_next  <= mouse_cursor_blue;
          elsif start_screen_text_active = '1' then
-            red_out   <= start_screen_red;
-            green_out <= start_screen_green;
-            blue_out  <= start_screen_blue;
+            red_next   <= start_screen_red;
+            green_next <= start_screen_green;
+            blue_next  <= start_screen_blue;
          elsif start_screen_sprite_active = '1' then
-            red_out   <= start_screen_sprite_red;
-            green_out <= start_screen_sprite_green;
-            blue_out  <= start_screen_sprite_blue;
+            red_next   <= start_screen_sprite_red;
+            green_next <= start_screen_sprite_green;
+            blue_next  <= start_screen_sprite_blue;
          else
-            red_out   <= (others => '0');
-            green_out <= (others => '0');
-            blue_out  <= (others => '0');
+            red_next   <= (others => '0');
+            green_next <= (others => '0');
+            blue_next  <= (others => '0');
          end if;
 
       elsif end_screen_active = '1' then
          -- End screen: mouse cursor on top, then end screen text, then black
          if mouse_cursor_active = '1' then
-            red_out   <= mouse_cursor_red;
-            green_out <= mouse_cursor_green;
-            blue_out  <= mouse_cursor_blue;
+            red_next   <= mouse_cursor_red;
+            green_next <= mouse_cursor_green;
+            blue_next  <= mouse_cursor_blue;
          elsif end_screen_text_active = '1' then
-            red_out   <= end_screen_red;
-            green_out <= end_screen_green;
-            blue_out  <= end_screen_blue;
+            red_next   <= end_screen_red;
+            green_next <= end_screen_green;
+            blue_next  <= end_screen_blue;
          else
-            red_out   <= (others => '0');
-            green_out <= (others => '0');
-            blue_out  <= (others => '0');
+            red_next   <= (others => '0');
+            green_next <= (others => '0');
+            blue_next  <= (others => '0');
          end if;
 
       else
          -- Game running: racing or training based on latched_mode
          case latched_mode is
             when '1' =>
-               red_out   <= racing_red;
-               green_out <= racing_green;
-               blue_out  <= racing_blue;
+               red_next   <= racing_red;
+               green_next <= racing_green;
+               blue_next  <= racing_blue;
             when others =>
-               red_out   <= training_red;
-               green_out <= training_green;
-               blue_out  <= training_blue;
+               red_next   <= training_red;
+               green_next <= training_green;
+               blue_next  <= training_blue;
          end case;
       end if;
    end process Final_Mux;
+	
+	Output_Reg : process(clock)
+   begin
+      if rising_edge(clock) then
+         red_out   <= red_next;
+         green_out <= green_next;
+         blue_out  <= blue_next;
+      end if;
+   end process;
 
 end architecture screen_compositor_behaviour;

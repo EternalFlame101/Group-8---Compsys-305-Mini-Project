@@ -223,7 +223,8 @@ architecture game_behaviour of Top_Level is
    end component Sprites_Display;
 
    component Screen_Compositor is
-      port (start_screen_active : in  std_logic;
+      port (clock					  : in  std_logic;
+				start_screen_active : in  std_logic;
 				end_screen_active	  : in  std_logic;
             latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
@@ -291,12 +292,9 @@ architecture game_behaviour of Top_Level is
 	component Game_Master is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
-			  lane_0_gift			: in 	std_logic; -- 0 for no gift in lane, 1 for gift in lane
-			  lane_1_gift			: in 	std_logic;
-			  lane_2_gift			: in 	std_logic;
-			  lane_0_obj_type  	: in  std_logic; -- 0 for short, 1 for tall
-			  lane_1_obj_type  	: in  std_logic;
-			  lane_2_obj_type  	: in  std_logic;
+			  lane_0_obj_type   	: in  std_logic_vector(1 downto 0);
+			  lane_1_obj_type   	: in  std_logic_vector(1 downto 0);
+			  lane_2_obj_type   	: in  std_logic_vector(1 downto 0);
 			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
@@ -883,7 +881,8 @@ begin
                 blue_out     => start_screen_sprite_blue);
 
    Final_Compositor_Inst : Screen_Compositor
-      port map (start_screen_active       => startscreen_fsm,
+      port map (clock							=> video_clock,
+					 start_screen_active       => startscreen_fsm,
 					 end_screen_active			=> endscreen_fsm,
                 latched_mode              => latched_mode,
                 start_screen_red          => start_screen_red,
@@ -984,12 +983,9 @@ begin
 	FSM : Game_Master
 		port map  (clock					=> video_clock,
 					  reset					=> not(RESET_N),
-					  lane_0_gift			=> not(lane_0_type(1)),
-					  lane_1_gift			=> not(lane_1_type(1)),
-					  lane_2_gift			=> not(lane_2_type(1)),
-					  lane_0_obj_type		=> lane_0_type(0),
-					  lane_1_obj_type		=> lane_1_type(0),
-					  lane_2_obj_type		=> lane_2_type(0),
+					  lane_0_obj_type		=> lane_0_type,
+					  lane_1_obj_type		=> lane_1_type,
+					  lane_2_obj_type		=> lane_2_type,
 					  lane_0_obj_dist		=> sprite_0_row,
 					  lane_1_obj_dist		=> sprite_1_row,
 					  lane_2_obj_dist		=> sprite_2_row,
