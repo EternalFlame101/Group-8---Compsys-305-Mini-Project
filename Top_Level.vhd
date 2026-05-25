@@ -126,7 +126,7 @@ architecture game_behaviour of Top_Level is
                LANE        : integer range 0 to 2 := 1);
       port (enable, clock, vertical_sync : in  std_logic;
             reset						 	 	  : in  std_logic;
-				obj_type							  : in  std_logic_vector(1 downto 0);
+				obj_type							  : in  std_logic_vector(2 downto 0);
 				arrived				 			  : out std_logic;
             pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
             speed_select                 : in  std_logic_vector(1 downto 0);
@@ -239,9 +239,9 @@ architecture game_behaviour of Top_Level is
 			  arrived_0     : in  std_logic;
 			  arrived_1     : in  std_logic;
 			  arrived_2     : in  std_logic;
-			  lane_0_type   : out std_logic_vector(1 downto 0);
-			  lane_1_type   : out std_logic_vector(1 downto 0);
-			  lane_2_type   : out std_logic_vector(1 downto 0);
+			  lane_0_type   : out std_logic_vector(2 downto 0);
+			  lane_1_type   : out std_logic_vector(2 downto 0);
+			  lane_2_type   : out std_logic_vector(2 downto 0);
 			  debug_vsync_pulse : out std_logic;
 			  debug_lfsr        : out std_logic_vector(7 downto 0));
 	end component Spawn_Control;
@@ -264,6 +264,7 @@ architecture game_behaviour of Top_Level is
             player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
             player_lane                             : out std_logic_vector(1 downto 0);
             player_state                            : out std_logic;
+            player_dive                             : out std_logic;
             cat_view_position                       : out std_logic_vector(7 downto 0));
    end component Player;
 
@@ -290,15 +291,16 @@ architecture game_behaviour of Top_Level is
 	component Game_Master is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
-			  lane_0_obj_type   	: in  std_logic_vector(1 downto 0);
-			  lane_1_obj_type   	: in  std_logic_vector(1 downto 0);
-			  lane_2_obj_type   	: in  std_logic_vector(1 downto 0);
+			  lane_0_obj_type   	: in  std_logic_vector(2 downto 0);
+			  lane_1_obj_type   	: in  std_logic_vector(2 downto 0);
+			  lane_2_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lanes_arrived	  : in  std_logic;
 			  player_lane			: in	std_logic_vector(1 downto 0);
 			  player_state			: in 	std_logic;
+			  player_dive			: in	std_logic;
 			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
 			  startscreen_fsm		: out std_logic;
 			  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
@@ -427,9 +429,9 @@ architecture game_behaviour of Top_Level is
    signal audio_byte_address 	: std_logic_vector(9 downto 0);	
 	
 	-- Spawn control signals 
-	signal lane_0_type : std_logic_vector(1 downto 0);
-	signal lane_1_type : std_logic_vector(1 downto 0);
-	signal lane_2_type : std_logic_vector(1 downto 0);
+	signal lane_0_type : std_logic_vector(2 downto 0);
+	signal lane_1_type : std_logic_vector(2 downto 0);
+	signal lane_2_type : std_logic_vector(2 downto 0);
 	
 	
 	signal arrived_0, arrived_1, arrived_2 : std_logic;
@@ -443,6 +445,7 @@ architecture game_behaviour of Top_Level is
    signal player_red, player_green, player_blue                            : std_logic_vector(3 downto 0);
    signal player_lane                                                      : std_logic_vector(1 downto 0);
    signal player_state                                                     : std_logic;
+   signal player_dive                                                      : std_logic;
    signal cat_view_position                                                : std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 	
@@ -691,9 +694,9 @@ begin
 	process(video_clock)
 	begin
 		 if rising_edge(video_clock) then
-			  lane_0_enable <= (lane_0_type(1) or lane_0_type(0)) and game_enable;
-			  lane_1_enable <= (lane_1_type(1) or lane_1_type(0)) and game_enable;
-			  lane_2_enable <= (lane_2_type(1) or lane_2_type(0)) and game_enable;
+			  lane_0_enable <= (lane_0_type(2) or lane_0_type(1) or lane_0_type(0)) and game_enable;
+			  lane_1_enable <= (lane_1_type(2) or lane_1_type(1) or lane_1_type(0)) and game_enable;
+			  lane_2_enable <= (lane_2_type(2) or lane_2_type(1) or lane_2_type(0)) and game_enable;
 		 end if;
 	end process;
 	
@@ -701,7 +704,7 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable            => (lane_2_type(1) or lane_2_type(0)) and game_enable,
+      port map (enable            => (lane_2_type(2) or lane_2_type(1) or lane_2_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => (not RESET_N) or (not game_enable),
@@ -720,7 +723,7 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => (lane_1_type(1) or lane_1_type(0)) and game_enable,
+      port map (enable            => (lane_1_type(2) or lane_1_type(1) or lane_1_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset 			    => (not RESET_N) or (not game_enable),
@@ -739,7 +742,7 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable            => (lane_0_type(1) or lane_0_type(0)) and game_enable,
+      port map (enable            => (lane_0_type(2) or lane_0_type(1) or lane_0_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
                 reset             => (not RESET_N) or (not game_enable),
@@ -957,6 +960,7 @@ begin
                 player_blue       => player_blue,
                 player_lane       => player_lane,
                 player_state      => player_state,
+                player_dive       => player_dive,
                 cat_view_position => cat_view_position);
 
    Player_Object_Compositor : Player_And_Objects_Manager
@@ -1021,6 +1025,7 @@ begin
 					  lanes_arrived	   => arrived_0 or arrived_1 or arrived_2,
 					  player_lane			=> player_lane,
 					  player_state			=> player_state,
+					  player_dive			=> player_dive,
 					  startscreen_enable => start_screen_active,
 					  startscreen_fsm		=> startscreen_fsm,
 					  mode_selected		=> latched_mode,

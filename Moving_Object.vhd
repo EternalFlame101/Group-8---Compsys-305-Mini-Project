@@ -9,7 +9,7 @@ entity Moving_Object is
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
          reset  							  : in  std_logic;
-			obj_type                     : in  std_logic_vector(1 downto 0); 
+			obj_type                     : in  std_logic_vector(2 downto 0);
 			arrived 			  				  : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed_select                  : in  std_logic_vector(1 downto 0);
@@ -117,6 +117,11 @@ architecture moving_object_behaviour of Moving_Object is
    signal top_max_extension_stage_2                : std_logic_vector(9 downto 0);
    signal top_taper_stage_2                        : std_logic_vector(9 downto 0);
    signal box_off_screen_stage_2                   : std_logic;
+   -- Registered obj_type flags. obj_type is a port driven by external registers;
+   -- capturing it here places a register adjacent to the per-pixel pipeline so
+   -- the color-mux comparisons see a short register-to-register hop instead of
+   -- a long cross-chip routing path.
+   signal obj_type_stage_2                         : std_logic_vector(2 downto 0);
 
    -- Per-vsync precomputed constants. These are stable for every pixel within
    -- a frame, so we compute them once in Frame_Stage_2 instead of redoing the
@@ -313,15 +318,12 @@ begin
                 track_row          => object_distance,
                 perspective_output => lane_spread_rom);
 
-   -- Per-spawn height selection based on obj_type:
-   --   "01" = gift (short),  "10" = short obstacle,  "11" = tall obstacle
-   -- Width is not type-dependent; it stays driven by the REAL_WIDTH generic below.
-   effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
-                       conv_std_logic_vector(60,  10) when obj_type = "10" else
-                       conv_std_logic_vector(120, 10);  -- "11" tall
-							  
-	effective_width  <= conv_std_logic_vector(30, 10) when obj_type = "01" else
-							  conv_std_logic_vector(80, 10);
+   -- "011" large obstacle is 120 px tall; all others are 60 px.
+   -- "001" gift is 30 px wide; all obstacles are 70 px wide.
+   effective_height <= conv_std_logic_vector(120, 10) when obj_type = "011" else
+                       conv_std_logic_vector(60, 10);
+   effective_width  <= conv_std_logic_vector(30, 10) when obj_type = "001" else
+                       conv_std_logic_vector(70, 10);
      
    Moving : process(clock)
 	 begin
@@ -434,7 +436,13 @@ begin
          lane_offset_stage_1                      <= lane_offset_combinational;
          top_taper_stage_1                        <= top_taper_rom;
          side_taper_stage_1                       <= side_taper_rom;
-         object_y_stage_1                         <= object_y_rom;
+         -- Air box ("100"): shift up by one scaled box-height so it floats
+         -- exactly above where a short box would sit on the ground.
+         if obj_type = "100" then
+            object_y_stage_1 <= object_y_rom - object_height_combinational;
+         else
+            object_y_stage_1 <= object_y_rom;
+         end if;
       end if;
    end process Frame_Stage_1;
 
@@ -499,6 +507,10 @@ begin
          -- (Stage 1A reads these as plain registers, no chained subtracts).
          top_face_top_y_stage_2  <= object_y_stage_1 - object_height_stage_1 - top_height_stage_1;
          side_face_top_y_stage_2 <= object_y_stage_1 - object_height_stage_1;
+
+         -- Capture obj_type into a register local to the pipeline so the
+         -- per-pixel color mux sees a short register-to-register hop.
+         obj_type_stage_2 <= obj_type;
       end if;
    end process Frame_Stage_2;
 
@@ -758,9 +770,15 @@ begin
    -- is forced true (i.e. every visible pixel is "inside" relative to that
    -- boundary). This fixes the unsigned-wraparound bug that caused faces to
    -- vanish when the box was partially off-screen.
+   -- Use the Frame_Stage_2 precomputed constants (top_face_top_y_stage_2,
+   -- side_face_top_y_stage_2) instead of recomputing the two-subtract chain
+   -- inline. Both are algebraically identical to their respective
+   -- object_y_stage_2 - object_height_stage_2 [- top_height_stage_2] forms,
+   -- but read from a single register rather than requiring two adders in the
+   -- per-pixel critical path (saves ~10 ns at 25 MHz).
    object_front_on <= '1' when (box_off_screen_pixel_stage_1 = '0' and
-                                (pixel_row_pixel_stage_1    >= object_y_stage_2 - object_height_stage_2) and
-                                (pixel_row_pixel_stage_1    <= object_y_stage_2)                         and
+                                (pixel_row_pixel_stage_1    >= side_face_top_y_stage_2) and
+                                (pixel_row_pixel_stage_1    <= object_y_stage_2)        and
                                 (front_face_left_underflow_pixel_stage_1 = '1' or
                                  pixel_column_pixel_stage_1 >= front_face_left_boundary_pixel_stage_1)  and
                                 (front_face_right_overflow_pixel_stage_1 = '1' or
@@ -768,28 +786,28 @@ begin
                       else '0';
 
    object_top_on <= '1' when (box_off_screen_pixel_stage_1 = '0' and
-                              (pixel_row_pixel_stage_1    >= object_y_stage_2 - object_height_stage_2 - top_height_stage_2) and
-                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - object_height_stage_2)                      and
+                              (pixel_row_pixel_stage_1    >= top_face_top_y_stage_2)    and
+                              (pixel_row_pixel_stage_1    <= side_face_top_y_stage_2)   and
                               (top_left_underflow_pixel_stage_1 = '1' or
-                               pixel_column_pixel_stage_1 >= top_left_pixel_stage_1)                                        and
+                               pixel_column_pixel_stage_1 >= top_left_pixel_stage_1)   and
                               (top_right_overflow_pixel_stage_1 = '1' or
                                pixel_column_pixel_stage_1 <= top_right_pixel_stage_1))
                     else '0';
 
    left_side_on  <= '1' when (box_off_screen_pixel_stage_1 = '0' and
-                              (pixel_row_pixel_stage_1    >= object_y_stage_2 - object_height_stage_2 - top_height_stage_2) and
-                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1)            and
+                              (pixel_row_pixel_stage_1    >= top_face_top_y_stage_2)                 and
+                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1) and
                               (side_face_left_underflow_pixel_stage_1 = '1' or
-                               pixel_column_pixel_stage_1 >= side_face_left_boundary_pixel_stage_1)                         and
+                               pixel_column_pixel_stage_1 >= side_face_left_boundary_pixel_stage_1) and
                               (front_face_left_underflow_pixel_stage_1 = '1' or
                                pixel_column_pixel_stage_1 <= front_face_left_boundary_pixel_stage_1))
                     else '0';
 
    right_side_on <= '1' when (box_off_screen_pixel_stage_1 = '0' and
-                              (pixel_row_pixel_stage_1    >= object_y_stage_2 - object_height_stage_2 - top_height_stage_2) and
-                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1)            and
+                              (pixel_row_pixel_stage_1    >= top_face_top_y_stage_2)                  and
+                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1) and
                               (side_face_right_overflow_pixel_stage_1 = '1' or
-                               pixel_column_pixel_stage_1 <= side_face_right_boundary_pixel_stage_1)                        and
+                               pixel_column_pixel_stage_1 <= side_face_right_boundary_pixel_stage_1) and
                               (front_face_right_overflow_pixel_stage_1 = '1' or
                                pixel_column_pixel_stage_1 >= front_face_right_boundary_pixel_stage_1))
                     else '0';
@@ -799,27 +817,49 @@ begin
                      '0';
 
    -- Priority mux: front > top > side
-   -- For each face: gifts (obj_type = "01") render yellow (R+G, no B);
-   --                obstacles keep the original face-specific green palette.
-   red_combinational   <= "0111" when (object_front_on = '1' and obj_type = "01") else
+   -- "001" gift:    yellow  (R+G high, no B)
+   -- "010" small:   green   (G high, R/B low)
+   -- "011" large:   blue    (B high, no R/G) -- tall ground box, must switch lanes
+   -- "100" air box: red     (R high, G/B low) -- floating, must dive
+   -- obj_type_stage_2 is a Frame_Stage_2 register of the obj_type port; using
+   -- it here keeps obj_type out of the per-pixel critical path.
+   red_combinational   <= "0111" when (object_front_on = '1' and obj_type_stage_2 = "001") else
+                          "0111" when (object_front_on = '1' and obj_type_stage_2 = "100") else
+                          "0000" when (object_front_on = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_front_on = '1') else
-                          "1111" when (object_top_on   = '1' and obj_type = "01") else
+                          "1111" when (object_top_on   = '1' and obj_type_stage_2 = "001") else
+                          "1111" when (object_top_on   = '1' and obj_type_stage_2 = "100") else
+                          "0000" when (object_top_on   = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_top_on   = '1') else
-                          "0111" when (object_side_on  = '1' and obj_type = "01") else
+                          "0111" when (object_side_on  = '1' and obj_type_stage_2 = "001") else
+                          "0011" when (object_side_on  = '1' and obj_type_stage_2 = "100") else
+                          "0000" when (object_side_on  = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
-   green_combinational <= "0111" when (object_front_on = '1' and obj_type = "01") else
+   green_combinational <= "0111" when (object_front_on = '1' and obj_type_stage_2 = "001") else
+                          "0001" when (object_front_on = '1' and obj_type_stage_2 = "100") else
+                          "0000" when (object_front_on = '1' and obj_type_stage_2 = "011") else
                           "0111" when (object_front_on = '1') else
-                          "1111" when (object_top_on   = '1' and obj_type = "01") else
+                          "1111" when (object_top_on   = '1' and obj_type_stage_2 = "001") else
+                          "0001" when (object_top_on   = '1' and obj_type_stage_2 = "100") else
+                          "0001" when (object_top_on   = '1' and obj_type_stage_2 = "011") else
                           "1111" when (object_top_on   = '1') else
-                          "0111" when (object_side_on  = '1' and obj_type = "01") else
+                          "0111" when (object_side_on  = '1' and obj_type_stage_2 = "001") else
+                          "0001" when (object_side_on  = '1' and obj_type_stage_2 = "100") else
+                          "0000" when (object_side_on  = '1' and obj_type_stage_2 = "011") else
                           "0011" when (object_side_on  = '1') else
                           "0000";
-   blue_combinational  <= "0000" when (object_front_on = '1' and obj_type = "01") else
+   blue_combinational  <= "0000" when (object_front_on = '1' and obj_type_stage_2 = "001") else
+                          "0000" when (object_front_on = '1' and obj_type_stage_2 = "100") else
+                          "0111" when (object_front_on = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_front_on = '1') else
-                          "0000" when (object_top_on   = '1' and obj_type = "01") else
+                          "0000" when (object_top_on   = '1' and obj_type_stage_2 = "001") else
+                          "0000" when (object_top_on   = '1' and obj_type_stage_2 = "100") else
+                          "1111" when (object_top_on   = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_top_on   = '1') else
-                          "0000" when (object_side_on  = '1' and obj_type = "01") else
+                          "0000" when (object_side_on  = '1' and obj_type_stage_2 = "001") else
+                          "0000" when (object_side_on  = '1' and obj_type_stage_2 = "100") else
+                          "0011" when (object_side_on  = '1' and obj_type_stage_2 = "011") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
 

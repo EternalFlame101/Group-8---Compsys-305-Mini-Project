@@ -21,6 +21,7 @@ entity Player is
          player_red, player_green, player_blue   : out std_logic_vector(3 downto 0);
          player_lane                             : out std_logic_vector(1 downto 0);
          player_state                            : out std_logic;
+         player_dive                             : out std_logic;
          cat_view_position                       : out std_logic_vector(7 downto 0));
 end entity Player;
 
@@ -54,18 +55,17 @@ architecture player_behaviour of Player is
    constant TRANSITION_SPEED   : integer  := 2;
 
    -- Dive animation:
-   --   6 frames (squish1, squish2, squish3, squish2, squish1, neutral),
+   --   8 frames (squish1, squish2, squish3, squish4, squish3, squish2, squish1, neutral),
    --   each held for DIVE_FRAME_DURATION vsyncs.
-   --   Total = 6 * 6 = 36 vsyncs ~ 0.6 s at 60 Hz (close to the requested 0.5 s
-   --   while keeping divisible integer math).
+   --   Total = 8 * 4 = 32 vsyncs ~ 0.53 s at 60 Hz.
    --
    -- Fast-drop on dive-while-airborne:
    --   When dive is triggered mid-jump, jump_frame_count is snapped to
    --   (JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES) so the parabola plays its
    --   final tail rapidly. With FAST_DROP_TAIL_FRAMES = 10, the cat lands in
    --   10 vsyncs (~166 ms) regardless of how high it was.
-   constant DIVE_TOTAL_FRAMES     : integer  := 36;
-   constant DIVE_FRAME_DURATION   : integer  := 6;
+   constant DIVE_TOTAL_FRAMES     : integer  := 32;
+   constant DIVE_FRAME_DURATION   : integer  := 4;
    constant FAST_DROP_TAIL_FRAMES : integer  := 10;
 
    -- Jump animation:
@@ -138,6 +138,14 @@ architecture player_behaviour of Player is
 	
    signal sprite_x_position : std_logic_vector(9 downto 0);
 
+   -- Registered pixel coordinates for the 24 Sprites_Display ROMs.
+   -- One local register here reduces the fan-out on VGA_Sync's pixel_row/
+   -- pixel_column outputs by ~120 loads. Quartus can place this register
+   -- adjacent to the M9K blocks, solving the routing-congestion "no signal"
+   -- issue. The 1-pixel display offset is imperceptible at 640x480.
+   signal pixel_row_reg    : std_logic_vector(9 downto 0);
+   signal pixel_column_reg : std_logic_vector(9 downto 0);
+
    -- Walk-cycle frame outputs (5 distinct frames; neutral_set2 is reused as
    -- both the standing pose and the 0-degree roll frame).
    signal neutral_frame_red,  neutral_frame_green,  neutral_frame_blue  : std_logic_vector(3 downto 0);
@@ -164,6 +172,7 @@ architecture player_behaviour of Player is
    signal squish_1_frame_red, squish_1_frame_green, squish_1_frame_blue : std_logic_vector(3 downto 0);
    signal squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue : std_logic_vector(3 downto 0);
    signal squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue : std_logic_vector(3 downto 0);
+   signal squish_4_frame_red, squish_4_frame_green, squish_4_frame_blue : std_logic_vector(3 downto 0);
 
    -- Jump-frame outputs (8 distinct sprites from 1.mif..8.mif; neutral is
    -- reused from the existing neutral_frame_* outputs).
@@ -194,6 +203,16 @@ begin
          dive_input_sync        <= dive_input_meta;
       end if;
    end process Input_Synchronizer;
+
+   -- Register pixel_row/column once so all 24 Sprites_Display ROM instances
+   -- read from a local register rather than the high-fanout VGA_Sync outputs.
+   Pixel_Coord_Buffer : process(clock)
+   begin
+      if rising_edge(clock) then
+         pixel_row_reg    <= pixel_row;
+         pixel_column_reg <= pixel_column;
+      end if;
+   end process Pixel_Coord_Buffer;
 
    -- ---------------------------------------------------------------------------
    -- Sprite x is a compile-time constant (cat is permanently centred).
@@ -234,8 +253,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/neutral.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => neutral_frame_red,
@@ -249,8 +268,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/left_1.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => left_1_frame_red,
@@ -264,8 +283,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/left_2.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => left_2_frame_red,
@@ -279,8 +298,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/right_1.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => right_1_frame_red,
@@ -294,8 +313,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/right_2.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => right_2_frame_red,
@@ -312,8 +331,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-45.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_045_frame_red,
@@ -327,8 +346,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-90.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_090_frame_red,
@@ -342,8 +361,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-135.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_135_frame_red,
@@ -357,8 +376,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-180.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_180_frame_red,
@@ -372,8 +391,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-225.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_225_frame_red,
@@ -387,8 +406,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-270.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_270_frame_red,
@@ -402,8 +421,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/-315.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => roll_315_frame_red,
@@ -420,8 +439,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/squish1.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => squish_1_frame_red,
@@ -435,8 +454,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/squish2.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => squish_2_frame_red,
@@ -450,13 +469,28 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/squish3.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => squish_3_frame_red,
                 green_out    => squish_3_frame_green,
                 blue_out     => squish_3_frame_blue);
+
+   Squish_4_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => SPRITE_SIZE,
+                   SPRITE_HEIGHT => SPRITE_SIZE,
+                   ADDR_BITS     => 12,
+                   SCALE         => SPRITE_SCALE,
+                   MIF_FILE      => "Images_To_mif/mif/squish4.mif")
+      port map (clock        => clock,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
+                sprite_x     => sprite_x_position,
+                sprite_y     => sprite_y_position_reg,
+                red_out      => squish_4_frame_red,
+                green_out    => squish_4_frame_green,
+                blue_out     => squish_4_frame_blue);
 
    -- ---------------------------------------------------------------------------
    -- Jump sprite ROMs (8 jump frames; neutral slot reuses the existing
@@ -469,8 +503,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/1.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_1_frame_red,
@@ -484,8 +518,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/2.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_2_frame_red,
@@ -499,8 +533,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/3.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_3_frame_red,
@@ -514,8 +548,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/4.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_4_frame_red,
@@ -529,8 +563,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/5.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_5_frame_red,
@@ -544,8 +578,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/6.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_6_frame_red,
@@ -559,8 +593,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/7.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_7_frame_red,
@@ -574,8 +608,8 @@ begin
                    SCALE         => SPRITE_SCALE,
                    MIF_FILE      => "Images_To_mif/mif/8.mif")
       port map (clock        => clock,
-                pixel_row    => pixel_row,
-                pixel_column => pixel_column,
+                pixel_row    => pixel_row_reg,
+                pixel_column => pixel_column_reg,
                 sprite_x     => sprite_x_position,
                 sprite_y     => sprite_y_position_reg,
                 red_out      => jump_8_frame_red,
@@ -653,11 +687,10 @@ begin
             -- dive_edge = dive_input  rising edge
             -- (Computed in-line below via the *_previous registers.)
 
-            if (dive_input_sync = '1') and (dive_input_previous = '0') and (dive_active = '0') then
-               -- Dive edge AND not already diving: start dive. Cancel jump
-               -- and snap to the parabola tail so the cat falls fast if
-               -- airborne. Pressing dive while already diving does nothing
-               -- (no re-dive / dive cancel).
+            if (dive_input_sync = '1') and (dive_input_previous = '0') then
+               -- Dive edge: start or restart dive. Resets the frame counter so
+               -- the player stays crouched while holding the button rapidly,
+               -- which is needed to pass under a floating air-box obstacle.
                dive_active      <= '1';
                dive_frame_count <= 0;
                if current_state = '1' then
@@ -811,6 +844,7 @@ begin
                             squish_1_frame_red, squish_1_frame_green, squish_1_frame_blue,
                             squish_2_frame_red, squish_2_frame_green, squish_2_frame_blue,
                             squish_3_frame_red, squish_3_frame_green, squish_3_frame_blue,
+                            squish_4_frame_red, squish_4_frame_green, squish_4_frame_blue,
                             jump_1_frame_red,   jump_1_frame_green,   jump_1_frame_blue,
                             jump_2_frame_red,   jump_2_frame_green,   jump_2_frame_blue,
                             jump_3_frame_red,   jump_3_frame_green,   jump_3_frame_blue,
@@ -819,7 +853,7 @@ begin
                             jump_6_frame_red,   jump_6_frame_green,   jump_6_frame_blue,
                             jump_7_frame_red,   jump_7_frame_green,   jump_7_frame_blue,
                             jump_8_frame_red,   jump_8_frame_green,   jump_8_frame_blue)
-      variable dive_step      : integer range 0 to 5;
+      variable dive_step      : integer range 0 to 7;
       variable jump_anim_step : integer range 0 to 16;
    begin
       if transition_active = '1' then
@@ -865,10 +899,10 @@ begin
             end case;
          end if;
       elsif dive_active = '1' then
-         -- Dive. 6-step squish animation, DIVE_FRAME_DURATION (=6) vsyncs per
-         -- step, total 36 vsyncs. Step sequence:
-         --   0 -> squish1   1 -> squish2   2 -> squish3
-         --   3 -> squish2   4 -> squish1   5 -> neutral
+         -- Dive. 8-step squish animation, DIVE_FRAME_DURATION (=6) vsyncs per
+         -- step, total 48 vsyncs. Step sequence:
+         --   0 -> squish1   1 -> squish2   2 -> squish3   3 -> squish4
+         --   4 -> squish3   5 -> squish2   6 -> squish1   7 -> neutral
          dive_step := dive_frame_count / DIVE_FRAME_DURATION;
          case dive_step is
             when 0 =>
@@ -878,8 +912,12 @@ begin
             when 2 =>
                player_red <= squish_3_frame_red; player_green <= squish_3_frame_green; player_blue <= squish_3_frame_blue;
             when 3 =>
-               player_red <= squish_2_frame_red; player_green <= squish_2_frame_green; player_blue <= squish_2_frame_blue;
+               player_red <= squish_4_frame_red; player_green <= squish_4_frame_green; player_blue <= squish_4_frame_blue;
             when 4 =>
+               player_red <= squish_3_frame_red; player_green <= squish_3_frame_green; player_blue <= squish_3_frame_blue;
+            when 5 =>
+               player_red <= squish_2_frame_red; player_green <= squish_2_frame_green; player_blue <= squish_2_frame_blue;
+            when 6 =>
                player_red <= squish_1_frame_red; player_green <= squish_1_frame_green; player_blue <= squish_1_frame_blue;
             when others =>
                player_red <= neutral_frame_red;  player_green <= neutral_frame_green;  player_blue <= neutral_frame_blue;
@@ -946,6 +984,7 @@ begin
 
    player_lane       <= conv_std_logic_vector(current_lane_int, 2);
    player_state      <= current_state;
+   player_dive       <= dive_active;
    cat_view_position <= conv_std_logic_vector(view_pos_int, 8);
 
 end architecture player_behaviour;

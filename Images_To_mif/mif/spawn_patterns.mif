@@ -1,334 +1,272 @@
 -- spawn_patterns.mif
--- 6-bit pattern: [5:4]=lane2  [3:2]=lane1  [1:0]=lane0
--- 00=nothing  01=gift  10=short  11=tall
+-- 9-bit pattern: [8:6]=lane2  [5:3]=lane1  [2:0]=lane0
+-- 000=nothing  001=gift  010=small  011=large  100=airbox
 --
--- All 64 combinations and their weights:
---   000000  l2=off   l1=off   l0=off   weight=8
---   000001  l2=off   l1=off   l0=gift  weight=4
---   000010  l2=off   l1=off   l0=short weight=10
---   000011  l2=off   l1=off   l0=tall  weight=7
---   000100  l2=off   l1=gift  l0=off   weight=4
---   000101  l2=off   l1=gift  l0=gift  weight=2
---   000110  l2=off   l1=gift  l0=short weight=2
---   000111  l2=off   l1=gift  l0=tall  weight=2
---   001000  l2=off   l1=short l0=off   weight=10
---   001001  l2=off   l1=short l0=gift  weight=2
---   001010  l2=off   l1=short l0=short weight=7
---   001011  l2=off   l1=short l0=tall  weight=5
---   001100  l2=off   l1=tall  l0=off   weight=7
---   001101  l2=off   l1=tall  l0=gift  weight=2
---   001110  l2=off   l1=tall  l0=short weight=5
---   001111  l2=off   l1=tall  l0=tall  weight=3
---   010000  l2=gift  l1=off   l0=off   weight=4
---   010001  l2=gift  l1=off   l0=gift  weight=2
---   010010  l2=gift  l1=off   l0=short weight=2
---   010011  l2=gift  l1=off   l0=tall  weight=2
---   010100  l2=gift  l1=gift  l0=off   weight=2
---   010101  l2=gift  l1=gift  l0=gift  weight=1
---   010110  l2=gift  l1=gift  l0=short weight=1
---   010111  l2=gift  l1=gift  l0=tall  weight=1
---   011000  l2=gift  l1=short l0=off   weight=2
---   011001  l2=gift  l1=short l0=gift  weight=1
---   011010  l2=gift  l1=short l0=short weight=1
---   011011  l2=gift  l1=short l0=tall  weight=1
---   011100  l2=gift  l1=tall  l0=off   weight=2
---   011101  l2=gift  l1=tall  l0=gift  weight=1
---   011110  l2=gift  l1=tall  l0=short weight=1
---   011111  l2=gift  l1=tall  l0=tall  weight=1
---   100000  l2=short l1=off   l0=off   weight=10
---   100001  l2=short l1=off   l0=gift  weight=2
---   100010  l2=short l1=off   l0=short weight=7
---   100011  l2=short l1=off   l0=tall  weight=5
---   100100  l2=short l1=gift  l0=off   weight=2
---   100101  l2=short l1=gift  l0=gift  weight=1
---   100110  l2=short l1=gift  l0=short weight=1
---   100111  l2=short l1=gift  l0=tall  weight=1
---   101000  l2=short l1=short l0=off   weight=7
---   101001  l2=short l1=short l0=gift  weight=1
---   101010  l2=short l1=short l0=short weight=3
---   101011  l2=short l1=short l0=tall  weight=2
---   101100  l2=short l1=tall  l0=off   weight=5
---   101101  l2=short l1=tall  l0=gift  weight=1
---   101110  l2=short l1=tall  l0=short weight=2
---   101111  l2=short l1=tall  l0=tall  weight=2
---   110000  l2=tall  l1=off   l0=off   weight=7
---   110001  l2=tall  l1=off   l0=gift  weight=2
---   110010  l2=tall  l1=off   l0=short weight=5
---   110011  l2=tall  l1=off   l0=tall  weight=3
---   110100  l2=tall  l1=gift  l0=off   weight=2
---   110101  l2=tall  l1=gift  l0=gift  weight=1
---   110110  l2=tall  l1=gift  l0=short weight=1
---   110111  l2=tall  l1=gift  l0=tall  weight=1
---   111000  l2=tall  l1=short l0=off   weight=5
---   111001  l2=tall  l1=short l0=gift  weight=1
---   111010  l2=tall  l1=short l0=short weight=2
---   111011  l2=tall  l1=short l0=tall  weight=2
---   111100  l2=tall  l1=tall  l0=off   weight=3
---   111101  l2=tall  l1=tall  l0=gift  weight=1
---   111110  l2=tall  l1=tall  l0=short weight=2
---   111111  l2=tall  l1=tall  l0=tall  weight=1
+-- Addresses 0x00-0x7F: old "short" (10) -> small (010)
+-- Addresses 0x80-0xFF: old "short" (10) -> large (011)
+-- Old "tall/airbox" (11) -> airbox (100) throughout
 --
 
 DEPTH = 256;
-WIDTH = 6;
+WIDTH = 9;
 ADDRESS_RADIX = HEX;
 DATA_RADIX = BIN;
 
 CONTENT BEGIN
-    00 : 000000;   -- l2=off   l1=off   l0=off
-    01 : 000001;   -- l2=off   l1=off   l0=gift
-    02 : 100000;   -- l2=short l1=off   l0=off
-    03 : 010001;   -- l2=gift  l1=off   l0=gift
-    04 : 000010;   -- l2=off   l1=off   l0=short
-    05 : 110000;   -- l2=tall  l1=off   l0=off
-    06 : 010110;   -- l2=gift  l1=gift  l0=short
-    07 : 101011;   -- l2=short l1=short l0=tall
-    08 : 101010;   -- l2=short l1=short l0=short
-    09 : 001110;   -- l2=off   l1=tall  l0=short
-    0A : 000001;   -- l2=off   l1=off   l0=gift
-    0B : 001000;   -- l2=off   l1=short l0=off
-    0C : 011100;   -- l2=gift  l1=tall  l0=off
-    0D : 100000;   -- l2=short l1=off   l0=off
-    0E : 111011;   -- l2=tall  l1=short l0=tall
-    0F : 101100;   -- l2=short l1=tall  l0=off
-    10 : 100010;   -- l2=short l1=off   l0=short
-    11 : 101100;   -- l2=short l1=tall  l0=off
-    12 : 111100;   -- l2=tall  l1=tall  l0=off
-    13 : 001110;   -- l2=off   l1=tall  l0=short
-    14 : 101000;   -- l2=short l1=short l0=off
-    15 : 100000;   -- l2=short l1=off   l0=off
-    16 : 010000;   -- l2=gift  l1=off   l0=off
-    17 : 001010;   -- l2=off   l1=short l0=short
-    18 : 000000;   -- l2=off   l1=off   l0=off
-    19 : 000100;   -- l2=off   l1=gift  l0=off
-    1A : 101011;   -- l2=short l1=short l0=tall
-    1B : 000010;   -- l2=off   l1=off   l0=short
-    1C : 100000;   -- l2=short l1=off   l0=off
-    1D : 101110;   -- l2=short l1=tall  l0=short
-    1E : 111110;   -- l2=tall  l1=tall  l0=short
-    1F : 001100;   -- l2=off   l1=tall  l0=off
-    20 : 000011;   -- l2=off   l1=off   l0=tall
-    21 : 000011;   -- l2=off   l1=off   l0=tall
-    22 : 001001;   -- l2=off   l1=short l0=gift
-    23 : 111010;   -- l2=tall  l1=short l0=short
-    24 : 000011;   -- l2=off   l1=off   l0=tall
-    25 : 001011;   -- l2=off   l1=short l0=tall
-    26 : 000101;   -- l2=off   l1=gift  l0=gift
-    27 : 110010;   -- l2=tall  l1=off   l0=short
-    28 : 000010;   -- l2=off   l1=off   l0=short
-    29 : 000010;   -- l2=off   l1=off   l0=short
-    2A : 001100;   -- l2=off   l1=tall  l0=off
-    2B : 110110;   -- l2=tall  l1=gift  l0=short
-    2C : 011110;   -- l2=gift  l1=tall  l0=short
-    2D : 000000;   -- l2=off   l1=off   l0=off
-    2E : 010101;   -- l2=gift  l1=gift  l0=gift
-    2F : 000001;   -- l2=off   l1=off   l0=gift
-    30 : 001111;   -- l2=off   l1=tall  l0=tall
-    31 : 101111;   -- l2=short l1=tall  l0=tall
-    32 : 000011;   -- l2=off   l1=off   l0=tall
-    33 : 110001;   -- l2=tall  l1=off   l0=gift
-    34 : 110000;   -- l2=tall  l1=off   l0=off
-    35 : 111000;   -- l2=tall  l1=short l0=off
-    36 : 000100;   -- l2=off   l1=gift  l0=off
-    37 : 100000;   -- l2=short l1=off   l0=off
-    38 : 100010;   -- l2=short l1=off   l0=short
-    39 : 001011;   -- l2=off   l1=short l0=tall
-    3A : 110010;   -- l2=tall  l1=off   l0=short
-    3B : 101100;   -- l2=short l1=tall  l0=off
-    3C : 000000;   -- l2=off   l1=off   l0=off
-    3D : 101100;   -- l2=short l1=tall  l0=off
-    3E : 101000;   -- l2=short l1=short l0=off
-    3F : 110000;   -- l2=tall  l1=off   l0=off
-    40 : 000111;   -- l2=off   l1=gift  l0=tall
-    41 : 001000;   -- l2=off   l1=short l0=off
-    42 : 010011;   -- l2=gift  l1=off   l0=tall
-    43 : 111000;   -- l2=tall  l1=short l0=off
-    44 : 000010;   -- l2=off   l1=off   l0=short
-    45 : 111101;   -- l2=tall  l1=tall  l0=gift
-    46 : 101000;   -- l2=short l1=short l0=off
-    47 : 111000;   -- l2=tall  l1=short l0=off
-    48 : 000001;   -- l2=off   l1=off   l0=gift
-    49 : 101000;   -- l2=short l1=short l0=off
-    4A : 000000;   -- l2=off   l1=off   l0=off
-    4B : 000000;   -- l2=off   l1=off   l0=off
-    4C : 001000;   -- l2=off   l1=short l0=off
-    4D : 100000;   -- l2=short l1=off   l0=off
-    4E : 011001;   -- l2=gift  l1=short l0=gift
-    4F : 001011;   -- l2=off   l1=short l0=tall
-    50 : 101000;   -- l2=short l1=short l0=off
-    51 : 001010;   -- l2=off   l1=short l0=short
-    52 : 001010;   -- l2=off   l1=short l0=short
-    53 : 001011;   -- l2=off   l1=short l0=tall
-    54 : 010001;   -- l2=gift  l1=off   l0=gift
-    55 : 011100;   -- l2=gift  l1=tall  l0=off
-    56 : 110100;   -- l2=tall  l1=gift  l0=off
-    57 : 001000;   -- l2=off   l1=short l0=off
-    58 : 111110;   -- l2=tall  l1=tall  l0=short
-    59 : 111011;   -- l2=tall  l1=short l0=tall
-    5A : 100111;   -- l2=short l1=gift  l0=tall
-    5B : 010100;   -- l2=gift  l1=gift  l0=off
-    5C : 000100;   -- l2=off   l1=gift  l0=off
-    5D : 101101;   -- l2=short l1=tall  l0=gift
-    5E : 110011;   -- l2=tall  l1=off   l0=tall
-    5F : 111110;   -- l2=tall  l1=tall  l0=tall
-    60 : 111100;   -- l2=tall  l1=tall  l0=off
-    61 : 000101;   -- l2=off   l1=gift  l0=gift
-    62 : 100110;   -- l2=short l1=gift  l0=short
-    63 : 011000;   -- l2=gift  l1=short l0=off
-    64 : 101000;   -- l2=short l1=short l0=off
-    65 : 001010;   -- l2=off   l1=short l0=short
-    66 : 001111;   -- l2=off   l1=tall  l0=tall
-    67 : 101100;   -- l2=short l1=tall  l0=off
-    68 : 000010;   -- l2=off   l1=off   l0=short
-    69 : 001010;   -- l2=off   l1=short l0=short
-    6A : 001100;   -- l2=off   l1=tall  l0=off
-    6B : 001000;   -- l2=off   l1=short l0=off
-    6C : 110011;   -- l2=tall  l1=off   l0=tall
-    6D : 100000;   -- l2=short l1=off   l0=off
-    6E : 011111;   -- l2=gift  l1=tall  l0=tall
-    6F : 100100;   -- l2=short l1=gift  l0=off
-    70 : 101110;   -- l2=short l1=tall  l0=short
-    71 : 001100;   -- l2=off   l1=tall  l0=off
-    72 : 110000;   -- l2=tall  l1=off   l0=off
-    73 : 000000;   -- l2=off   l1=off   l0=off
-    74 : 100010;   -- l2=short l1=off   l0=short
-    75 : 011011;   -- l2=gift  l1=short l0=tall
-    76 : 001100;   -- l2=off   l1=tall  l0=off
-    77 : 100001;   -- l2=short l1=off   l0=gift
-    78 : 001110;   -- l2=off   l1=tall  l0=short
-    79 : 010100;   -- l2=gift  l1=gift  l0=off
-    7A : 100010;   -- l2=short l1=off   l0=short
-    7B : 001110;   -- l2=off   l1=tall  l0=short
-    7C : 001100;   -- l2=off   l1=tall  l0=off
-    7D : 011000;   -- l2=gift  l1=short l0=off
-    7E : 100001;   -- l2=short l1=off   l0=gift
-    7F : 000011;   -- l2=off   l1=off   l0=tall
-    80 : 110011;   -- l2=tall  l1=off   l0=tall
-    81 : 101111;   -- l2=short l1=tall  l0=tall
-    82 : 110001;   -- l2=tall  l1=off   l0=gift
-    83 : 000011;   -- l2=off   l1=off   l0=tall
-    84 : 000011;   -- l2=off   l1=off   l0=tall
-    85 : 100011;   -- l2=short l1=off   l0=tall
-    86 : 100100;   -- l2=short l1=gift  l0=off
-    87 : 101000;   -- l2=short l1=short l0=off
-    88 : 100000;   -- l2=short l1=off   l0=off
-    89 : 111000;   -- l2=tall  l1=short l0=off
-    8A : 100010;   -- l2=short l1=off   l0=short
-    8B : 000110;   -- l2=off   l1=gift  l0=short
-    8C : 111100;   -- l2=tall  l1=tall  l0=off
-    8D : 010011;   -- l2=gift  l1=off   l0=tall
-    8E : 110010;   -- l2=tall  l1=off   l0=short
-    8F : 000110;   -- l2=off   l1=gift  l0=short
-    90 : 100000;   -- l2=short l1=off   l0=off
-    91 : 001010;   -- l2=off   l1=short l0=short
-    92 : 001000;   -- l2=off   l1=short l0=off
-    93 : 010000;   -- l2=gift  l1=off   l0=off
-    94 : 100101;   -- l2=short l1=gift  l0=gift
-    95 : 011101;   -- l2=gift  l1=tall  l0=gift
-    96 : 001001;   -- l2=off   l1=short l0=gift
-    97 : 101010;   -- l2=short l1=short l0=short
-    98 : 010010;   -- l2=gift  l1=off   l0=short
-    99 : 000010;   -- l2=off   l1=off   l0=short
-    9A : 100000;   -- l2=short l1=off   l0=off
-    9B : 000100;   -- l2=off   l1=gift  l0=off
-    9C : 010010;   -- l2=gift  l1=off   l0=short
-    9D : 001000;   -- l2=off   l1=short l0=off
-    9E : 100011;   -- l2=short l1=off   l0=tall
-    9F : 100011;   -- l2=short l1=off   l0=tall
-    A0 : 110111;   -- l2=tall  l1=gift  l0=tall
-    A1 : 001000;   -- l2=off   l1=short l0=off
-    A2 : 100011;   -- l2=short l1=off   l0=tall
-    A3 : 110000;   -- l2=tall  l1=off   l0=off
-    A4 : 110000;   -- l2=tall  l1=off   l0=off
-    A5 : 000010;   -- l2=off   l1=off   l0=short
-    A6 : 010111;   -- l2=gift  l1=gift  l0=tall
-    A7 : 111000;   -- l2=tall  l1=short l0=off
-    A8 : 111010;   -- l2=tall  l1=short l0=short
-    A9 : 000000;   -- l2=off   l1=off   l0=off
-    AA : 001011;   -- l2=off   l1=short l0=tall
-    AB : 001110;   -- l2=off   l1=tall  l0=short
-    AC : 001101;   -- l2=off   l1=tall  l0=gift
-    AD : 100011;   -- l2=short l1=off   l0=tall
-    AE : 010000;   -- l2=gift  l1=off   l0=off
-    AF : 100010;   -- l2=short l1=off   l0=short
-    B0 : 001100;   -- l2=off   l1=tall  l0=off
-    B1 : 001111;   -- l2=off   l1=tall  l0=tall
-    B2 : 010000;   -- l2=gift  l1=off   l0=off
-    B3 : 110000;   -- l2=tall  l1=off   l0=off
-    B4 : 001000;   -- l2=off   l1=short l0=off
-    B5 : 000111;   -- l2=off   l1=gift  l0=tall
-    B6 : 011010;   -- l2=gift  l1=short l0=short
-    B7 : 110010;   -- l2=tall  l1=off   l0=short
-    B8 : 110101;   -- l2=tall  l1=gift  l0=gift
-    B9 : 111001;   -- l2=tall  l1=short l0=gift
-    BA : 000010;   -- l2=off   l1=off   l0=short
-    BB : 001000;   -- l2=off   l1=short l0=off
-    BC : 001101;   -- l2=off   l1=tall  l0=gift
-    BD : 101010;   -- l2=short l1=short l0=short
-    BE : 000010;   -- l2=off   l1=off   l0=short
-    BF : 101001;   -- l2=short l1=short l0=gift
-    C0 : 110100;   -- l2=tall  l1=gift  l0=off
-    C1 : 001010;   -- l2=off   l1=short l0=short
-    C2 : 110010;   -- l2=tall  l1=off   l0=short
-    C3 : 100010;   -- l2=short l1=off   l0=short
-    C4 : 100011;   -- l2=short l1=off   l0=tall
-    C5 : 001010;   -- l2=off   l1=short l0=short
-    C6 : 011110;   -- l2=gift  l1=tall  l0=short
-    C7 : 111000;   -- l2=tall  l1=short l0=off
-    C8 : 011100;   -- l2=gift  l1=tall  l0=off
-    C9 : 010001;   -- l2=gift  l1=off   l0=gift
-    CA : 011000;   -- l2=gift  l1=short l0=off
-    CB : 000001;   -- l2=off   l1=off   l0=gift
-    CC : 000010;   -- l2=off   l1=off   l0=short
-    CD : 100011;   -- l2=short l1=off   l0=tall
-    CE : 010111;   -- l2=gift  l1=gift  l0=tall
-    CF : 111110;   -- l2=tall  l1=tall  l0=short
-    D0 : 001111;   -- l2=off   l1=tall  l0=tall
-    D1 : 000000;   -- l2=off   l1=off   l0=off
-    D2 : 100010;   -- l2=short l1=off   l0=short
-    D3 : 111100;   -- l2=tall  l1=tall  l0=off
-    D4 : 001011;   -- l2=off   l1=short l0=tall
-    D5 : 110000;   -- l2=tall  l1=off   l0=off
-    D6 : 000000;   -- l2=off   l1=off   l0=off
-    D7 : 100011;   -- l2=short l1=off   l0=tall
-    D8 : 100000;   -- l2=short l1=off   l0=off
-    D9 : 000001;   -- l2=off   l1=off   l0=gift
-    DA : 101100;   -- l2=short l1=tall  l0=off
-    DB : 110000;   -- l2=tall  l1=off   l0=off
-    DC : 110011;   -- l2=tall  l1=off   l0=tall
-    DD : 001000;   -- l2=off   l1=short l0=off
-    DE : 010001;   -- l2=gift  l1=off   l0=gift
-    DF : 110000;   -- l2=tall  l1=off   l0=off
-    E0 : 001111;   -- l2=off   l1=tall  l0=tall
-    E1 : 000010;   -- l2=off   l1=off   l0=short
-    E2 : 000011;   -- l2=off   l1=off   l0=tall
-    E3 : 000011;   -- l2=off   l1=off   l0=tall
-    E4 : 001010;   -- l2=off   l1=short l0=short
-    E5 : 000000;   -- l2=off   l1=off   l0=off
-    E6 : 100010;   -- l2=short l1=off   l0=short
-    E7 : 100011;   -- l2=short l1=off   l0=tall
-    E8 : 001010;   -- l2=off   l1=short l0=short
-    E9 : 101011;   -- l2=short l1=short l0=tall
-    EA : 111110;   -- l2=tall  l1=tall  l0=short
-    EB : 001010;   -- l2=off   l1=short l0=short
-    EC : 111001;   -- l2=tall  l1=short l0=gift
-    ED : 110101;   -- l2=tall  l1=gift  l0=gift
-    EE : 001111;   -- l2=off   l1=tall  l0=tall
-    EF : 001101;   -- l2=off   l1=tall  l0=gift
-    F0 : 001100;   -- l2=off   l1=tall  l0=off
-    F1 : 000101;   -- l2=off   l1=gift  l0=gift
-    F2 : 000000;   -- l2=off   l1=off   l0=off
-    F3 : 001000;   -- l2=off   l1=short l0=off
-    F4 : 100010;   -- l2=short l1=off   l0=short
-    F5 : 001011;   -- l2=off   l1=short l0=tall
-    F6 : 001101;   -- l2=off   l1=tall  l0=gift
-    F7 : 101010;   -- l2=short l1=short l0=short
-    F8 : 101100;   -- l2=short l1=tall  l0=off
-    F9 : 100000;   -- l2=short l1=off   l0=off
-    FA : 100011;   -- l2=short l1=off   l0=tall
-    FB : 000011;   -- l2=off   l1=off   l0=tall
-    FC : 100011;   -- l2=short l1=off   l0=tall
-    FD : 100000;   -- l2=short l1=off   l0=off
-    FE : 101101;   -- l2=short l1=tall  l0=gift
-    FF : 111001;   -- l2=tall  l1=short l0=gift
+    00 : 000000000;   -- l2=off    l1=off    l0=off
+    01 : 000000001;   -- l2=off    l1=off    l0=gift
+    02 : 010000000;   -- l2=small  l1=off    l0=off
+    03 : 001000001;   -- l2=gift   l1=off    l0=gift
+    04 : 000000010;   -- l2=off    l1=off    l0=small
+    05 : 100000000;   -- l2=airbox l1=off    l0=off
+    06 : 001001010;   -- l2=gift   l1=gift   l0=small
+    07 : 010010100;   -- l2=small  l1=small  l0=airbox
+    08 : 010010010;   -- l2=small  l1=small  l0=small
+    09 : 000100010;   -- l2=off    l1=airbox l0=small
+    0A : 000000001;   -- l2=off    l1=off    l0=gift
+    0B : 000010000;   -- l2=off    l1=small  l0=off
+    0C : 001100000;   -- l2=gift   l1=airbox l0=off
+    0D : 010000000;   -- l2=small  l1=off    l0=off
+    0E : 100010100;   -- l2=airbox l1=small  l0=airbox
+    0F : 010100000;   -- l2=small  l1=airbox l0=off
+    10 : 010000010;   -- l2=small  l1=off    l0=small
+    11 : 010100000;   -- l2=small  l1=airbox l0=off
+    12 : 100100000;   -- l2=airbox l1=airbox l0=off
+    13 : 000100010;   -- l2=off    l1=airbox l0=small
+    14 : 010010000;   -- l2=small  l1=small  l0=off
+    15 : 010000000;   -- l2=small  l1=off    l0=off
+    16 : 001000000;   -- l2=gift   l1=off    l0=off
+    17 : 000010010;   -- l2=off    l1=small  l0=small
+    18 : 000000000;   -- l2=off    l1=off    l0=off
+    19 : 000001000;   -- l2=off    l1=gift   l0=off
+    1A : 010010100;   -- l2=small  l1=small  l0=airbox
+    1B : 000000010;   -- l2=off    l1=off    l0=small
+    1C : 010000000;   -- l2=small  l1=off    l0=off
+    1D : 010100010;   -- l2=small  l1=airbox l0=small
+    1E : 100100010;   -- l2=airbox l1=airbox l0=small
+    1F : 000100000;   -- l2=off    l1=airbox l0=off
+    20 : 000000100;   -- l2=off    l1=off    l0=airbox
+    21 : 000000100;   -- l2=off    l1=off    l0=airbox
+    22 : 000010001;   -- l2=off    l1=small  l0=gift
+    23 : 100010010;   -- l2=airbox l1=small  l0=small
+    24 : 000000100;   -- l2=off    l1=off    l0=airbox
+    25 : 000010100;   -- l2=off    l1=small  l0=airbox
+    26 : 000001001;   -- l2=off    l1=gift   l0=gift
+    27 : 100000010;   -- l2=airbox l1=off    l0=small
+    28 : 000000010;   -- l2=off    l1=off    l0=small
+    29 : 000000010;   -- l2=off    l1=off    l0=small
+    2A : 000100000;   -- l2=off    l1=airbox l0=off
+    2B : 100001010;   -- l2=airbox l1=gift   l0=small
+    2C : 001100010;   -- l2=gift   l1=airbox l0=small
+    2D : 000000000;   -- l2=off    l1=off    l0=off
+    2E : 001001001;   -- l2=gift   l1=gift   l0=gift
+    2F : 000000001;   -- l2=off    l1=off    l0=gift
+    30 : 000100100;   -- l2=off    l1=airbox l0=airbox
+    31 : 010100100;   -- l2=small  l1=airbox l0=airbox
+    32 : 000000100;   -- l2=off    l1=off    l0=airbox
+    33 : 100000001;   -- l2=airbox l1=off    l0=gift
+    34 : 100000000;   -- l2=airbox l1=off    l0=off
+    35 : 100010000;   -- l2=airbox l1=small  l0=off
+    36 : 000001000;   -- l2=off    l1=gift   l0=off
+    37 : 010000000;   -- l2=small  l1=off    l0=off
+    38 : 010000010;   -- l2=small  l1=off    l0=small
+    39 : 000010100;   -- l2=off    l1=small  l0=airbox
+    3A : 100000010;   -- l2=airbox l1=off    l0=small
+    3B : 010100000;   -- l2=small  l1=airbox l0=off
+    3C : 000000000;   -- l2=off    l1=off    l0=off
+    3D : 010100000;   -- l2=small  l1=airbox l0=off
+    3E : 010010000;   -- l2=small  l1=small  l0=off
+    3F : 100000000;   -- l2=airbox l1=off    l0=off
+    40 : 000001100;   -- l2=off    l1=gift   l0=airbox
+    41 : 000010000;   -- l2=off    l1=small  l0=off
+    42 : 001000100;   -- l2=gift   l1=off    l0=airbox
+    43 : 100010000;   -- l2=airbox l1=small  l0=off
+    44 : 000000010;   -- l2=off    l1=off    l0=small
+    45 : 100100001;   -- l2=airbox l1=airbox l0=gift
+    46 : 010010000;   -- l2=small  l1=small  l0=off
+    47 : 100010000;   -- l2=airbox l1=small  l0=off
+    48 : 000000001;   -- l2=off    l1=off    l0=gift
+    49 : 010010000;   -- l2=small  l1=small  l0=off
+    4A : 000000000;   -- l2=off    l1=off    l0=off
+    4B : 000000000;   -- l2=off    l1=off    l0=off
+    4C : 000010000;   -- l2=off    l1=small  l0=off
+    4D : 010000000;   -- l2=small  l1=off    l0=off
+    4E : 001010001;   -- l2=gift   l1=small  l0=gift
+    4F : 000010100;   -- l2=off    l1=small  l0=airbox
+    50 : 010010000;   -- l2=small  l1=small  l0=off
+    51 : 000010010;   -- l2=off    l1=small  l0=small
+    52 : 000010010;   -- l2=off    l1=small  l0=small
+    53 : 000010100;   -- l2=off    l1=small  l0=airbox
+    54 : 001000001;   -- l2=gift   l1=off    l0=gift
+    55 : 001100000;   -- l2=gift   l1=airbox l0=off
+    56 : 100001000;   -- l2=airbox l1=gift   l0=off
+    57 : 000010000;   -- l2=off    l1=small  l0=off
+    58 : 100100010;   -- l2=airbox l1=airbox l0=small
+    59 : 100010100;   -- l2=airbox l1=small  l0=airbox
+    5A : 010001100;   -- l2=small  l1=gift   l0=airbox
+    5B : 001001000;   -- l2=gift   l1=gift   l0=off
+    5C : 000001000;   -- l2=off    l1=gift   l0=off
+    5D : 010100001;   -- l2=small  l1=airbox l0=gift
+    5E : 100000100;   -- l2=airbox l1=off    l0=airbox
+    5F : 100100010;   -- l2=airbox l1=airbox l0=small
+    60 : 100100000;   -- l2=airbox l1=airbox l0=off
+    61 : 000001001;   -- l2=off    l1=gift   l0=gift
+    62 : 010001010;   -- l2=small  l1=gift   l0=small
+    63 : 001010000;   -- l2=gift   l1=small  l0=off
+    64 : 010010000;   -- l2=small  l1=small  l0=off
+    65 : 000010010;   -- l2=off    l1=small  l0=small
+    66 : 000100100;   -- l2=off    l1=airbox l0=airbox
+    67 : 010100000;   -- l2=small  l1=airbox l0=off
+    68 : 000000010;   -- l2=off    l1=off    l0=small
+    69 : 000010010;   -- l2=off    l1=small  l0=small
+    6A : 000100000;   -- l2=off    l1=airbox l0=off
+    6B : 000010000;   -- l2=off    l1=small  l0=off
+    6C : 100000100;   -- l2=airbox l1=off    l0=airbox
+    6D : 010000000;   -- l2=small  l1=off    l0=off
+    6E : 001100100;   -- l2=gift   l1=airbox l0=airbox
+    6F : 010001000;   -- l2=small  l1=gift   l0=off
+    70 : 010100010;   -- l2=small  l1=airbox l0=small
+    71 : 000100000;   -- l2=off    l1=airbox l0=off
+    72 : 100000000;   -- l2=airbox l1=off    l0=off
+    73 : 000000000;   -- l2=off    l1=off    l0=off
+    74 : 010000010;   -- l2=small  l1=off    l0=small
+    75 : 001010100;   -- l2=gift   l1=small  l0=airbox
+    76 : 000100000;   -- l2=off    l1=airbox l0=off
+    77 : 010000001;   -- l2=small  l1=off    l0=gift
+    78 : 000100010;   -- l2=off    l1=airbox l0=small
+    79 : 001001000;   -- l2=gift   l1=gift   l0=off
+    7A : 010000010;   -- l2=small  l1=off    l0=small
+    7B : 000100010;   -- l2=off    l1=airbox l0=small
+    7C : 000100000;   -- l2=off    l1=airbox l0=off
+    7D : 001010000;   -- l2=gift   l1=small  l0=off
+    7E : 010000001;   -- l2=small  l1=off    l0=gift
+    7F : 000000100;   -- l2=off    l1=off    l0=airbox
+    80 : 100000100;   -- l2=airbox l1=off    l0=airbox
+    81 : 011100100;   -- l2=large  l1=airbox l0=airbox
+    82 : 100000001;   -- l2=airbox l1=off    l0=gift
+    83 : 000000100;   -- l2=off    l1=off    l0=airbox
+    84 : 000000100;   -- l2=off    l1=off    l0=airbox
+    85 : 011000100;   -- l2=large  l1=off    l0=airbox
+    86 : 011001000;   -- l2=large  l1=gift   l0=off
+    87 : 011011000;   -- l2=large  l1=large  l0=off
+    88 : 011000000;   -- l2=large  l1=off    l0=off
+    89 : 100011000;   -- l2=airbox l1=large  l0=off
+    8A : 011000011;   -- l2=large  l1=off    l0=large
+    8B : 000001011;   -- l2=off    l1=gift   l0=large
+    8C : 100100000;   -- l2=airbox l1=airbox l0=off
+    8D : 001000100;   -- l2=gift   l1=off    l0=airbox
+    8E : 100000011;   -- l2=airbox l1=off    l0=large
+    8F : 000001011;   -- l2=off    l1=gift   l0=large
+    90 : 011000000;   -- l2=large  l1=off    l0=off
+    91 : 000011011;   -- l2=off    l1=large  l0=large
+    92 : 000011000;   -- l2=off    l1=large  l0=off
+    93 : 001000000;   -- l2=gift   l1=off    l0=off
+    94 : 011001001;   -- l2=large  l1=gift   l0=gift
+    95 : 001100001;   -- l2=gift   l1=airbox l0=gift
+    96 : 000011001;   -- l2=off    l1=large  l0=gift
+    97 : 011011011;   -- l2=large  l1=large  l0=large
+    98 : 001000011;   -- l2=gift   l1=off    l0=large
+    99 : 000000011;   -- l2=off    l1=off    l0=large
+    9A : 011000000;   -- l2=large  l1=off    l0=off
+    9B : 000001000;   -- l2=off    l1=gift   l0=off
+    9C : 001000011;   -- l2=gift   l1=off    l0=large
+    9D : 000011000;   -- l2=off    l1=large  l0=off
+    9E : 011000100;   -- l2=large  l1=off    l0=airbox
+    9F : 011000100;   -- l2=large  l1=off    l0=airbox
+    A0 : 100001100;   -- l2=airbox l1=gift   l0=airbox
+    A1 : 000011000;   -- l2=off    l1=large  l0=off
+    A2 : 011000100;   -- l2=large  l1=off    l0=airbox
+    A3 : 100000000;   -- l2=airbox l1=off    l0=off
+    A4 : 100000000;   -- l2=airbox l1=off    l0=off
+    A5 : 000000011;   -- l2=off    l1=off    l0=large
+    A6 : 001001100;   -- l2=gift   l1=gift   l0=airbox
+    A7 : 100011000;   -- l2=airbox l1=large  l0=off
+    A8 : 100011011;   -- l2=airbox l1=large  l0=large
+    A9 : 000000000;   -- l2=off    l1=off    l0=off
+    AA : 000011100;   -- l2=off    l1=large  l0=airbox
+    AB : 000100011;   -- l2=off    l1=airbox l0=large
+    AC : 000100001;   -- l2=off    l1=airbox l0=gift
+    AD : 011000100;   -- l2=large  l1=off    l0=airbox
+    AE : 001000000;   -- l2=gift   l1=off    l0=off
+    AF : 011000011;   -- l2=large  l1=off    l0=large
+    B0 : 000100000;   -- l2=off    l1=airbox l0=off
+    B1 : 000100100;   -- l2=off    l1=airbox l0=airbox
+    B2 : 001000000;   -- l2=gift   l1=off    l0=off
+    B3 : 100000000;   -- l2=airbox l1=off    l0=off
+    B4 : 000011000;   -- l2=off    l1=large  l0=off
+    B5 : 000001100;   -- l2=off    l1=gift   l0=airbox
+    B6 : 001011011;   -- l2=gift   l1=large  l0=large
+    B7 : 100000011;   -- l2=airbox l1=off    l0=large
+    B8 : 100001001;   -- l2=airbox l1=gift   l0=gift
+    B9 : 100011001;   -- l2=airbox l1=large  l0=gift
+    BA : 000000011;   -- l2=off    l1=off    l0=large
+    BB : 000011000;   -- l2=off    l1=large  l0=off
+    BC : 000100001;   -- l2=off    l1=airbox l0=gift
+    BD : 011011011;   -- l2=large  l1=large  l0=large
+    BE : 000000011;   -- l2=off    l1=off    l0=large
+    BF : 011011001;   -- l2=large  l1=large  l0=gift
+    C0 : 100001000;   -- l2=airbox l1=gift   l0=off
+    C1 : 000011011;   -- l2=off    l1=large  l0=large
+    C2 : 100000011;   -- l2=airbox l1=off    l0=large
+    C3 : 011000011;   -- l2=large  l1=off    l0=large
+    C4 : 011000100;   -- l2=large  l1=off    l0=airbox
+    C5 : 000011011;   -- l2=off    l1=large  l0=large
+    C6 : 001100011;   -- l2=gift   l1=airbox l0=large
+    C7 : 100011000;   -- l2=airbox l1=large  l0=off
+    C8 : 001100000;   -- l2=gift   l1=airbox l0=off
+    C9 : 001000001;   -- l2=gift   l1=off    l0=gift
+    CA : 001011000;   -- l2=gift   l1=large  l0=off
+    CB : 000000001;   -- l2=off    l1=off    l0=gift
+    CC : 000000011;   -- l2=off    l1=off    l0=large
+    CD : 011000100;   -- l2=large  l1=off    l0=airbox
+    CE : 001001100;   -- l2=gift   l1=gift   l0=airbox
+    CF : 100100011;   -- l2=airbox l1=airbox l0=large
+    D0 : 000100100;   -- l2=off    l1=airbox l0=airbox
+    D1 : 000000000;   -- l2=off    l1=off    l0=off
+    D2 : 011000011;   -- l2=large  l1=off    l0=large
+    D3 : 100100000;   -- l2=airbox l1=airbox l0=off
+    D4 : 000011100;   -- l2=off    l1=large  l0=airbox
+    D5 : 100000000;   -- l2=airbox l1=off    l0=off
+    D6 : 000000000;   -- l2=off    l1=off    l0=off
+    D7 : 011000100;   -- l2=large  l1=off    l0=airbox
+    D8 : 011000000;   -- l2=large  l1=off    l0=off
+    D9 : 000000001;   -- l2=off    l1=off    l0=gift
+    DA : 011100000;   -- l2=large  l1=airbox l0=off
+    DB : 100000000;   -- l2=airbox l1=off    l0=off
+    DC : 100000100;   -- l2=airbox l1=off    l0=airbox
+    DD : 000011000;   -- l2=off    l1=large  l0=off
+    DE : 001000001;   -- l2=gift   l1=off    l0=gift
+    DF : 100000000;   -- l2=airbox l1=off    l0=off
+    E0 : 000100100;   -- l2=off    l1=airbox l0=airbox
+    E1 : 000000011;   -- l2=off    l1=off    l0=large
+    E2 : 000000100;   -- l2=off    l1=off    l0=airbox
+    E3 : 000000100;   -- l2=off    l1=off    l0=airbox
+    E4 : 000011011;   -- l2=off    l1=large  l0=large
+    E5 : 000000000;   -- l2=off    l1=off    l0=off
+    E6 : 011000011;   -- l2=large  l1=off    l0=large
+    E7 : 011000100;   -- l2=large  l1=off    l0=airbox
+    E8 : 000011011;   -- l2=off    l1=large  l0=large
+    E9 : 011011100;   -- l2=large  l1=large  l0=airbox
+    EA : 100100011;   -- l2=airbox l1=airbox l0=large
+    EB : 000011011;   -- l2=off    l1=large  l0=large
+    EC : 100011001;   -- l2=airbox l1=large  l0=gift
+    ED : 100001001;   -- l2=airbox l1=gift   l0=gift
+    EE : 000100100;   -- l2=off    l1=airbox l0=airbox
+    EF : 000100001;   -- l2=off    l1=airbox l0=gift
+    F0 : 000100000;   -- l2=off    l1=airbox l0=off
+    F1 : 000001001;   -- l2=off    l1=gift   l0=gift
+    F2 : 000000000;   -- l2=off    l1=off    l0=off
+    F3 : 000011000;   -- l2=off    l1=large  l0=off
+    F4 : 011000011;   -- l2=large  l1=off    l0=large
+    F5 : 000011100;   -- l2=off    l1=large  l0=airbox
+    F6 : 000100001;   -- l2=off    l1=airbox l0=gift
+    F7 : 011011011;   -- l2=large  l1=large  l0=large
+    F8 : 011100000;   -- l2=large  l1=airbox l0=off
+    F9 : 011000000;   -- l2=large  l1=off    l0=off
+    FA : 011000100;   -- l2=large  l1=off    l0=airbox
+    FB : 000000100;   -- l2=off    l1=off    l0=airbox
+    FC : 011000100;   -- l2=large  l1=off    l0=airbox
+    FD : 011000000;   -- l2=large  l1=off    l0=off
+    FE : 011100001;   -- l2=large  l1=airbox l0=gift
+    FF : 100011001;   -- l2=airbox l1=large  l0=gift
 END;

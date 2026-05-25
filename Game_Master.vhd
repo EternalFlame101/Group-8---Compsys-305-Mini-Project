@@ -6,15 +6,16 @@ use IEEE.std_logic_unsigned.all;
 entity Game_Master is
    port(clock             : in  std_logic;
         reset             : in  std_logic;
-        lane_0_obj_type   : in  std_logic_vector(1 downto 0);
-        lane_1_obj_type   : in  std_logic_vector(1 downto 0);
-        lane_2_obj_type   : in  std_logic_vector(1 downto 0);
+        lane_0_obj_type   : in  std_logic_vector(2 downto 0);
+        lane_1_obj_type   : in  std_logic_vector(2 downto 0);
+        lane_2_obj_type   : in  std_logic_vector(2 downto 0);
         lane_0_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_1_obj_dist   : in  std_logic_vector(9 downto 0);
         lane_2_obj_dist   : in  std_logic_vector(9 downto 0);
 		  lanes_arrived	  : in  std_logic;
         player_lane       : in  std_logic_vector(1 downto 0);
         player_state      : in  std_logic;
+        player_dive       : in  std_logic;
         startscreen_enable: in  std_logic;
         startscreen_fsm   : out std_logic;
         mode_selected     : in  std_logic;
@@ -33,10 +34,11 @@ architecture game_master_behaviour of Game_Master is
 
    component Collision_Detector is
 		port (lane_0_row, lane_1_row, lane_2_row 	: in std_logic_vector(9 downto 0);
-				lane_0_obj_type, lane_1_obj_type, lane_2_obj_type 	: in std_logic_vector(1 downto 0);
+				lane_0_obj_type, lane_1_obj_type, lane_2_obj_type 	: in std_logic_vector(2 downto 0);
 				lane_0_active, lane_1_active, lane_2_active : in std_logic;
 				player_lane									: in std_logic_vector(1 downto 0);
 				player_state								: in std_logic;
+				player_dive									: in std_logic;
 				lane_0_object_collision					: out std_logic;
 				lane_1_object_collision					: out std_logic;
 				lane_2_object_collision					: out std_logic;
@@ -87,9 +89,9 @@ begin
 						 "11";
                     
 	-- object collision
-	lane_0_active <= '0' when (lane_0_obj_type = "00") else '1';
-	lane_1_active <= '0' when (lane_1_obj_type = "00") else '1';
-	lane_2_active <= '0' when (lane_2_obj_type = "00") else '1';
+	lane_0_active <= '0' when (lane_0_obj_type = "000") else '1';
+	lane_1_active <= '0' when (lane_1_obj_type = "000") else '1';
+	lane_2_active <= '0' when (lane_2_obj_type = "000") else '1';
 
    Object_Collision_Detection : Collision_Detector
       port map (lane_0_row       => lane_0_obj_dist,
@@ -103,6 +105,7 @@ begin
                 lane_2_active    => lane_2_active,
                 player_lane      => player_lane,
                 player_state     => player_state,
+                player_dive      => player_dive,
                 lane_0_object_collision => lane_0_object_collision,
                 lane_1_object_collision => lane_1_object_collision,
                 lane_2_object_collision => lane_2_object_collision,

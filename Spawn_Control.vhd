@@ -9,9 +9,9 @@ entity Spawn_Control is
         arrived_0     : in  std_logic;
         arrived_1     : in  std_logic;
         arrived_2     : in  std_logic;
-        lane_0_type   : out std_logic_vector(1 downto 0);
-        lane_1_type   : out std_logic_vector(1 downto 0);
-        lane_2_type   : out std_logic_vector(1 downto 0);
+        lane_0_type   : out std_logic_vector(2 downto 0);
+        lane_1_type   : out std_logic_vector(2 downto 0);
+        lane_2_type   : out std_logic_vector(2 downto 0);
         debug_vsync_pulse : out std_logic;
         debug_lfsr        : out std_logic_vector(7 downto 0)
     );
@@ -33,16 +33,16 @@ architecture beh of Spawn_Control is
         port(
             clock      : in  std_logic;
             address    : in  std_logic_vector(7 downto 0);
-            lane_0_out : out std_logic_vector(1 downto 0);
-            lane_1_out : out std_logic_vector(1 downto 0);
-            lane_2_out : out std_logic_vector(1 downto 0)
+            lane_0_out : out std_logic_vector(2 downto 0);
+            lane_1_out : out std_logic_vector(2 downto 0);
+            lane_2_out : out std_logic_vector(2 downto 0)
         );
     end component;
 
     signal lfsr_address   : std_logic_vector(7 downto 0);
-    signal rom_lane_0     : std_logic_vector(1 downto 0);
-    signal rom_lane_1     : std_logic_vector(1 downto 0);
-    signal rom_lane_2     : std_logic_vector(1 downto 0);
+    signal rom_lane_0     : std_logic_vector(2 downto 0);
+    signal rom_lane_1     : std_logic_vector(2 downto 0);
+    signal rom_lane_2     : std_logic_vector(2 downto 0);
     signal lfsr_enable    : std_logic := '0';
 
     -- Arrived edge detector: fire exactly one spawn per arrival pulse
@@ -94,9 +94,9 @@ begin
             if reset = '1' then
                 state             <= PULSE;  -- spawn wave 1 fresh after reset
                 any_arrived_prev  <= '0';
-                lane_0_type       <= "00";
-                lane_1_type       <= "00";
-                lane_2_type       <= "00";
+                lane_0_type       <= "000";
+                lane_1_type       <= "000";
+                lane_2_type       <= "000";
             else
                 case state is
                     when IDLE =>
@@ -119,7 +119,7 @@ begin
                         -- but would leave every lane empty, so the player would
                         -- never see a wave and arrived would never re-fire -- the
                         -- FSM would stall forever in IDLE).
-                        if rom_lane_0 = "00" and rom_lane_1 = "00" and rom_lane_2 = "00" then
+                        if rom_lane_0 = "000" and rom_lane_1 = "000" and rom_lane_2 = "000" then
                             state <= PULSE;
                         else
                             lane_0_type <= rom_lane_0;
@@ -133,9 +133,9 @@ begin
                 -- Placed AFTER the LATCH assignment so an arrival on the same cycle
                 -- as a latch still wins and zeroes the lane (re-arms enable_seen_low
                 -- in Moving_Object).
-                if arrived_0 = '1' then lane_0_type <= "00"; end if;
-                if arrived_1 = '1' then lane_1_type <= "00"; end if;
-                if arrived_2 = '1' then lane_2_type <= "00"; end if;
+                if arrived_0 = '1' then lane_0_type <= "000"; end if;
+                if arrived_1 = '1' then lane_1_type <= "000"; end if;
+                if arrived_2 = '1' then lane_2_type <= "000"; end if;
             end if;
         end if;
     end process;

@@ -63,12 +63,14 @@ begin
 	end_screen_text_active   	<= '1' when (end_screen_red    or end_screen_green    or end_screen_blue)    /= "0000" else '0';
 	
    Final_Mux : process(start_screen_active, end_screen_active, latched_mode,
-                       mouse_cursor_active, start_screen_text_active, start_screen_sprite_active, HUD_active,
+                       mouse_cursor_active, start_screen_text_active, start_screen_sprite_active,
+                       HUD_active, end_screen_text_active,
                        start_screen_red,        start_screen_green,        start_screen_blue,
                        start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
                        mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
                        HUD_red,                 HUD_green,                 HUD_blue,
-                       racing_red,              racing_green,              racing_blue)
+                       racing_red,              racing_green,              racing_blue,
+                       end_screen_red,          end_screen_green,          end_screen_blue)
    begin
       if start_screen_active = '1' then
          if mouse_cursor_active = '1' then
