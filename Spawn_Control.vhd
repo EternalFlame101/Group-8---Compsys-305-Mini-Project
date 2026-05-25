@@ -82,53 +82,63 @@ begin
     arrived_rising <= any_arrived and (not any_arrived_prev);
 
     -- Spawn FSM + lane register
-	process(clock)
-	begin
-		 if rising_edge(clock) then
-			  any_arrived_prev <= any_arrived;
-			  lfsr_enable      <= '0';
+    process(clock)
+    begin
+        if rising_edge(clock) then
+            -- Edge detector latch
+            any_arrived_prev <= any_arrived;
 
-			  if reset = '1' then
-					state            <= PULSE;
-					any_arrived_prev <= '0';
-					lane_0_type      <= "00";
-					lane_1_type      <= "00";
-					lane_2_type      <= "00";
-			  else
-					case state is
-						 when IDLE =>
-							  -- Clear lanes on arrival and trigger next wave
-							  if arrived_rising = '1' then
-									lane_0_type <= "00";
-									lane_1_type <= "00";
-									lane_2_type <= "00";
-									state       <= PULSE;
-							  end if;
+            -- Default: don't advance the LFSR
+            lfsr_enable <= '0';
 
-						 when PULSE =>
-							  lfsr_enable <= '1';
-							  state       <= ROM_SETTLE;
+            if reset = '1' then
+                state             <= PULSE;  -- spawn wave 1 fresh after reset
+                any_arrived_prev  <= '0';
+                lane_0_type       <= "00";
+                lane_1_type       <= "00";
+                lane_2_type       <= "00";
+            else
+                case state is
+                    when IDLE =>
+                        if arrived_rising = '1' then
+                            state <= PULSE;
+                        end if;
 
-						 when ROM_SETTLE =>
-							  state <= LATCH;
+                    when PULSE =>
+                        -- This cycle's edge: LFSR advances, ROM samples OLD addr
+                        lfsr_enable <= '1';
+                        state       <= ROM_SETTLE;
 
-						 when LATCH =>
-							  -- Wait for arrivals to clear so Moving_Object resets
-							  -- row_out to 1023 before new lane types go active
-							  if arrived_0 = '1' or arrived_1 = '1' or arrived_2 = '1' then
-									null;
-							  elsif rom_lane_0 = "00" and rom_lane_1 = "00" and rom_lane_2 = "00" then
-									state <= PULSE;
-							  else
-									lane_0_type <= rom_lane_0;
-									lane_1_type <= rom_lane_1;
-									lane_2_type <= rom_lane_2;
-									state       <= IDLE;
-							  end if;
-					end case;
-			  end if;
-		 end if;
-	end process;
+                    when ROM_SETTLE =>
+                        -- This cycle's edge: ROM samples NEW addr, output settles
+                        state <= LATCH;
+
+                    when LATCH =>
+                        -- ROM output now reflects the post-advance LFSR value.
+                        -- Skip all-zero patterns (those entries exist in the MIF
+                        -- but would leave every lane empty, so the player would
+                        -- never see a wave and arrived would never re-fire -- the
+                        -- FSM would stall forever in IDLE).
+                        if rom_lane_0 = "00" and rom_lane_1 = "00" and rom_lane_2 = "00" then
+                            state <= PULSE;
+                        else
+                            lane_0_type <= rom_lane_0;
+                            lane_1_type <= rom_lane_1;
+                            lane_2_type <= rom_lane_2;
+                            state       <= IDLE;
+                        end if;
+                end case;
+
+                -- Clear lanes the instant they report arrival, regardless of state.
+                -- Placed AFTER the LATCH assignment so an arrival on the same cycle
+                -- as a latch still wins and zeroes the lane (re-arms enable_seen_low
+                -- in Moving_Object).
+                if arrived_0 = '1' then lane_0_type <= "00"; end if;
+                if arrived_1 = '1' then lane_1_type <= "00"; end if;
+                if arrived_2 = '1' then lane_2_type <= "00"; end if;
+            end if;
+        end if;
+    end process;
 
     debug_vsync_pulse <= lfsr_enable;
     debug_lfsr        <= lfsr_address;

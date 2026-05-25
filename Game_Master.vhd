@@ -21,8 +21,8 @@ entity Game_Master is
         endscreen_enable  : in  std_logic;
         endscreen_fsm     : out std_logic;
         endscreen_outcome : out std_logic;
-        speed             : out std_logic_vector(3 downto 0);
-        score             : out std_logic_vector(5 downto 0));
+        speed_select      : out std_logic_vector(1 downto 0);
+        score             : inout std_logic_vector(7 downto 0));
 end entity Game_Master;
 
 architecture game_master_behaviour of Game_Master is
@@ -72,7 +72,14 @@ architecture game_master_behaviour of Game_Master is
 	signal lane_1_active					 : std_logic;
 	signal lane_2_active					 : std_logic;
 begin
-
+  
+  -- Speed escalation: freeze when game is not active; otherwise ramp by score.
+	-- Thresholds: 0-9 -> easy, 10-19 -> medium, >=20 -> hard.
+	speed_select <= "00" when internal_game_enable = '0' else
+	                "01" when conv_integer(score) < 10 else
+	                "10" when conv_integer(score) < 20 else
+	                "11";
+                    
 	-- object collision
 	lane_0_active <= '0' when (lane_0_obj_type = "00") else '1';
 	lane_1_active <= '0' when (lane_1_obj_type = "00") else '1';

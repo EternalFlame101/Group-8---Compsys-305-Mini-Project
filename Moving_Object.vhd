@@ -3,7 +3,6 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
-
 entity Moving_Object is
    generic (REAL_HEIGHT : positive             := 60;
             REAL_WIDTH  : positive             := 80;
@@ -13,12 +12,11 @@ entity Moving_Object is
 			obj_type                     : in  std_logic_vector(1 downto 0); 
 			arrived 			  				  : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
-         speed                        : in  std_logic_vector(3 downto 0);
+         speed_select                  : in  std_logic_vector(1 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
          row_out                      : out std_logic_vector(9 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Moving_Object;
-
 
 architecture moving_object_behaviour of Moving_Object is
 
@@ -270,8 +268,18 @@ architecture moving_object_behaviour of Moving_Object is
 	signal effective_height : std_logic_vector(9 downto 0);
 	
 	signal enable_latch : std_logic := '0';
-	
+
+	signal enable_seen_low : std_logic := '1';
+
+	signal frame_div_counter : std_logic_vector(1 downto 0) := "00";
+
+	-- Perspective correction: step by 2 once past the midpoint so the object
+	-- visually accelerates toward the player, counteracting ROM-perspective slowdown.
+	signal dist_step : std_logic_vector(9 downto 0);
 begin
+
+	dist_step <= conv_std_logic_vector(2, 10) when object_distance >= conv_std_logic_vector(80, 10)
+	             else conv_std_logic_vector(1, 10);
 
    -- ROM lookups
    Object_Geometry_Lookup : Object_ROM
@@ -305,29 +313,57 @@ begin
 			  vertical_sync_previous <= vertical_sync;
 
 			  if reset = '1' then
-					object_distance <= (others => '0');
-					object_active   <= '0';
-					enable_latch    <= '0';
+					object_distance   <= (others => '1');
+					object_active     <= '0';
+					enable_latch      <= '0';
+					enable_seen_low   <= '1';
+					frame_div_counter <= "00";
 			  else
 					-- Update enable latch combinationally each cycle
 					if enable = '0' then
-						 enable_latch <= '0';
-					elsif object_active = '0' then
-						 enable_latch <= enable;
+						 enable_latch    <= '0';
+						 enable_seen_low <= '1';
+					elsif object_active = '0' and enable_seen_low = '1' then
+						 enable_latch    <= enable;
+						 enable_seen_low <= '0';
 					end if;
 
 					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
+						 -- Tick the frame divider on every vsync (free-running, used below)
+						 frame_div_counter <= frame_div_counter + 1;
+
 						 if enable_latch = '1' and object_active = '0' then
-							  object_active <= '1';
+							  object_active   <= '1';
+							  object_distance <= (others => '0');
 						 end if;
 
 						 if object_active = '1' then
+							  -- Arrival threshold kept inside ROM depth (160 entries,
+							  -- 8-bit address). See Object_ROM.vhd line 68.
 							  if object_distance >= conv_std_logic_vector(159, 10) then
 									object_arrived  <= '1';
 									object_distance <= (others => '0');
 									object_active   <= '0';
 							  else
-									object_distance <= object_distance + ("000000" & speed);
+									-- speed_select: "00"=freeze
+									--               "01"=easy   (1 step / 2 vsyncs, ~5.3 s/wave)
+									--               "10"=medium (3 steps / 4 vsyncs, ~3.5 s/wave)
+									--               "11"=hard   (1 step / vsync,     ~2.6 s/wave)
+									-- dist_step adds perspective correction: step doubles past distance 80
+									-- so the object visually accelerates toward the player.
+									case speed_select is
+										when "00" => null;
+										when "01" =>
+											if frame_div_counter(0) = '1' then
+												object_distance <= object_distance + dist_step;
+											end if;
+										when "10" =>
+											if frame_div_counter /= "01" then
+												object_distance <= object_distance + dist_step;
+											end if;
+										when others =>
+											object_distance <= object_distance + dist_step;
+									end case;
 							  end if;
 						 end if;
 					end if;
