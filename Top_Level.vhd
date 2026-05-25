@@ -280,7 +280,6 @@ architecture game_behaviour of Top_Level is
 				reset                        : in  std_logic;
 				pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
 				mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
-				mouse_left_click             : in  std_logic;
 				any_key_pressed              : in  std_logic;
 				end_screen_outcome           : in  std_logic;
 				end_screen                   : out std_logic;
@@ -1021,7 +1020,6 @@ begin
 					pixel_column		=> pixel_column,
 					mouse_row			=> mouse_row,
 					mouse_column		=> mouse_column,
-					mouse_left_click	=> left_click,
 					any_key_pressed	=> any_key_pressed_rising,
 					end_screen_outcome=> endscreen_outcome,
 					end_screen			=> endscreen_active,

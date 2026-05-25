@@ -71,16 +71,6 @@ architecture start_screen_behaviour of Start_Screen is
    signal latched_mode_internal  : std_logic := '0';
 
    -- ---------------------------------------------------------------------------
-   -- Input synchronisers and rising-edge detection
-   -- ---------------------------------------------------------------------------
-   signal mouse_left_click_sync_1, mouse_left_click_sync_2 : std_logic;
-   signal any_key_pressed_sync_1,  any_key_pressed_sync_2  : std_logic;
-   signal mouse_left_click_previous                        : std_logic;
-   signal any_key_pressed_previous                         : std_logic;
-   signal mouse_left_click_edge                            : std_logic;
-   signal any_key_pressed_edge                             : std_logic;
-
-   -- ---------------------------------------------------------------------------
    -- Hover signals
    -- ---------------------------------------------------------------------------
    signal training_hovered      : std_logic;
@@ -163,32 +153,6 @@ architecture start_screen_behaviour of Start_Screen is
    constant SINGLE_PLAYER_HIT_Y_MAX : integer := 288;
 
 begin
-
-   -- ---------------------------------------------------------------------------
-   -- Synchronise inputs into video_clock domain and detect rising edges
-   -- ---------------------------------------------------------------------------
-   Synchronise_Inputs : process(video_clock, reset)
-   begin
-      if reset = '1' then
-         mouse_left_click_sync_1   <= '0';
-         mouse_left_click_sync_2   <= '0';
-         mouse_left_click_previous <= '0';
-         any_key_pressed_sync_1    <= '0';
-         any_key_pressed_sync_2    <= '0';
-         any_key_pressed_previous  <= '0';
-      elsif rising_edge(video_clock) then
-         mouse_left_click_sync_1   <= mouse_left_click;
-         mouse_left_click_sync_2   <= mouse_left_click_sync_1;
-         mouse_left_click_previous <= mouse_left_click_sync_2;
-         any_key_pressed_sync_1    <= any_key_pressed;
-         any_key_pressed_sync_2    <= any_key_pressed_sync_1;
-         any_key_pressed_previous  <= any_key_pressed_sync_2;
-      end if;
-   end process Synchronise_Inputs;
-
-   mouse_left_click_edge <= mouse_left_click_sync_2 and not mouse_left_click_previous;
-   any_key_pressed_edge  <= any_key_pressed_sync_2  and not any_key_pressed_previous;
-
    -- ---------------------------------------------------------------------------
    -- Hover detection (mouse cursor inside button hit box - uses small bounding box)
    -- ---------------------------------------------------------------------------
@@ -220,12 +184,12 @@ begin
       elsif rising_edge(video_clock) then
          case screen_state is
             when title_screen =>
-               if any_key_pressed_edge = '1' then
+               if any_key_pressed = '1' then
                   screen_state <= mode_select;
                end if;
 
             when mode_select =>
-               if mouse_left_click_edge = '1' then
+               if mouse_left_click = '1' then
                   if training_hovered = '1' then
                      selected_mode_internal <= '0';
                      latched_mode_internal  <= '0';
