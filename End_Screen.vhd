@@ -8,7 +8,6 @@ entity End_Screen is
          reset                        : in  std_logic;
          pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
          mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
-         mouse_left_click             : in  std_logic;
          any_key_pressed              : in  std_logic;
          end_screen_outcome           : in  std_logic;
 			end_screen_active				  : in  std_logic;
@@ -35,14 +34,6 @@ architecture end_screen_behaviour of End_Screen is
    -- State
    -- ---------------------------------------------------------------------------
    signal screen_active : std_logic := '1';
-
-   -- Input sync + edge detect
-   signal mouse_left_click_sync_1, mouse_left_click_sync_2 : std_logic;
-   signal any_key_pressed_sync_1,  any_key_pressed_sync_2  : std_logic;
-   signal mouse_left_click_previous                        : std_logic;
-   signal any_key_pressed_previous                         : std_logic;
-   signal mouse_left_click_edge                            : std_logic;
-   signal any_key_pressed_edge                             : std_logic;
 
    -- ---------------------------------------------------------------------------
    -- Text pixel outputs
@@ -72,31 +63,6 @@ architecture end_screen_behaviour of End_Screen is
 begin
 
    -- ---------------------------------------------------------------------------
-   -- Sync + edge detect
-   -- ---------------------------------------------------------------------------
-   Sync_Inputs : process(video_clock, reset)
-   begin
-      if reset = '1' then
-         mouse_left_click_sync_1   <= '0';
-         mouse_left_click_sync_2   <= '0';
-         mouse_left_click_previous <= '0';
-         any_key_pressed_sync_1    <= '0';
-         any_key_pressed_sync_2    <= '0';
-         any_key_pressed_previous  <= '0';
-      elsif rising_edge(video_clock) then
-         mouse_left_click_sync_1   <= mouse_left_click;
-         mouse_left_click_sync_2   <= mouse_left_click_sync_1;
-         mouse_left_click_previous <= mouse_left_click_sync_2;
-         any_key_pressed_sync_1    <= any_key_pressed;
-         any_key_pressed_sync_2    <= any_key_pressed_sync_1;
-         any_key_pressed_previous  <= any_key_pressed_sync_2;
-      end if;
-   end process Sync_Inputs;
-
-   mouse_left_click_edge <= mouse_left_click_sync_2 and not mouse_left_click_previous;
-   any_key_pressed_edge  <= any_key_pressed_sync_2  and not any_key_pressed_previous;
-
-   -- ---------------------------------------------------------------------------
    -- Screen active latch: goes low on click or key press
    -- ---------------------------------------------------------------------------
    Screen_Latch : process(video_clock, reset)
@@ -104,7 +70,7 @@ begin
       if reset = '1' then
          screen_active <= '1';
       elsif rising_edge(video_clock) then
-         if (((mouse_left_click_edge = '1') or (any_key_pressed_edge = '1')) and end_screen_active = '1') then
+         if (any_key_pressed = '1' and end_screen_active = '1') then
             screen_active <= '0';
          end if;
       end if;
