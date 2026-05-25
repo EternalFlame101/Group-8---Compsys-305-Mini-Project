@@ -11,6 +11,7 @@ entity End_Screen is
          mouse_left_click             : in  std_logic;
          any_key_pressed              : in  std_logic;
          end_screen_outcome           : in  std_logic;
+			end_screen_active				  : in  std_logic;
          end_screen                   : out std_logic;
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity End_Screen;
@@ -103,7 +104,7 @@ begin
       if reset = '1' then
          screen_active <= '1';
       elsif rising_edge(video_clock) then
-         if (mouse_left_click_edge = '1') or (any_key_pressed_edge = '1') then
+         if (((mouse_left_click_edge = '1') or (any_key_pressed_edge = '1')) and end_screen_active = '1') then
             screen_active <= '0';
          end if;
       end if;

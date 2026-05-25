@@ -50,6 +50,7 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
    signal HUD_active                 : std_logic;
+	signal end_screen_text_active		 : std_logic;
 	
 	signal red_next, green_next, blue_next : std_logic_vector(3 downto 0);
 
@@ -59,14 +60,14 @@ begin
    start_screen_text_active   <= '1' when (start_screen_red    or start_screen_green    or start_screen_blue)    /= "0000" else '0';
    start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000" else '0';
    HUD_active                 <= '1' when (HUD_red             or HUD_green             or HUD_blue)             /= "0000" else '0';
-
-   Final_Mux : process(start_screen_active, latched_mode,
+	end_screen_text_active   	<= '1' when (end_screen_red    or end_screen_green    or end_screen_blue)    /= "0000" else '0';
+	
+   Final_Mux : process(start_screen_active, end_screen_active, latched_mode,
                        mouse_cursor_active, start_screen_text_active, start_screen_sprite_active, HUD_active,
                        start_screen_red,        start_screen_green,        start_screen_blue,
                        start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
                        mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
                        HUD_red,                 HUD_green,                 HUD_blue,
-                       training_red,            training_green,            training_blue,
                        racing_red,              racing_green,              racing_blue)
    begin
       if start_screen_active = '1' then
@@ -94,7 +95,7 @@ begin
             red_next   <= mouse_cursor_red;
             green_next <= mouse_cursor_green;
             blue_next  <= mouse_cursor_blue;
-         elsif end_screen_active = '1' then
+         elsif end_screen_text_active = '1' then
             red_next   <= end_screen_red;
             green_next <= end_screen_green;
             blue_next  <= end_screen_blue;
@@ -109,14 +110,10 @@ begin
             red_next   <= HUD_red;
             green_next <= HUD_green;
             blue_next  <= HUD_blue;
-         elsif latched_mode = '1' then
+         else
             red_next   <= racing_red;
             green_next <= racing_green;
             blue_next  <= racing_blue;
-         else
-            red_next   <= training_red;
-            green_next <= training_green;
-            blue_next  <= training_blue;
          end if;
       end if;
    end process Final_Mux;

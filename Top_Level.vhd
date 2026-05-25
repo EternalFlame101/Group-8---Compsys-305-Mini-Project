@@ -199,6 +199,7 @@ architecture game_behaviour of Top_Level is
             mouse_left_click             : in  std_logic;
             any_key_pressed              : in  std_logic;
             start_screen_active          : out std_logic;
+				start_screen_fsm				  : in  std_logic;
             selected_mode                : out std_logic;
             latched_mode                 : out std_logic;
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -282,6 +283,7 @@ architecture game_behaviour of Top_Level is
 				any_key_pressed              : in  std_logic;
 				end_screen_outcome           : in  std_logic;
 				end_screen                   : out std_logic;
+				end_screen_active				  : in  std_logic;
 				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 	end component End_Screen;
 	
@@ -305,7 +307,8 @@ architecture game_behaviour of Top_Level is
 			  endscreen_fsm		: out std_logic;
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
 			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
-			  score            	: out  std_logic_vector(7 downto 0));
+			  score            	: out std_logic_vector(7 downto 0);
+			  lives					: out std_logic_vector(1 downto 0));
 	end component Game_Master;
 
 	component HUD_Overlay is
@@ -461,13 +464,19 @@ architecture game_behaviour of Top_Level is
 	signal endscreen_fsm		: std_logic;
 	signal startscreen_fsm	: std_logic;
 	
+	signal startscreen_fsm_prev : std_logic := '0';
+	signal endscreen_fsm_prev   : std_logic := '0';
+	signal startscreen_fsm_rise : std_logic;
+	signal endscreen_fsm_rise   : std_logic;
+	
 	-- HUD
 	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
 	signal HUD_active                   : std_logic;
 	signal score_hud                    : std_logic_vector(7 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
-	signal health								: std_logic_vector(1 downto 0);
+	signal lives								: std_logic_vector(1 downto 0);
 	signal score_h, score_t, score_o  	: std_logic_vector(3 downto 0);
+	
 	
 begin
 	-- ==================== DO NOT REMOVE ================================
@@ -494,8 +503,8 @@ begin
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
 	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
-                      or left_click or right_click
-							        or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
+                       or left_click or right_click
+							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
 									  
 
    -- ---------------------------------------------------------------------------
@@ -844,7 +853,7 @@ begin
 
    Start_Screen_Inst : Start_Screen
       port map (video_clock         => video_clock,
-                reset               => not(RESET_N),
+                reset               => not(RESET_N) or startscreen_fsm_rise,
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column,
                 mouse_row           => mouse_row,
@@ -852,6 +861,7 @@ begin
                 mouse_left_click    => left_click,
                 any_key_pressed     => any_key_pressed,
                 start_screen_active => start_screen_active,
+					 start_screen_fsm		=> startscreen_fsm,
                 selected_mode       => selected_mode,
                 latched_mode        => latched_mode,
                 red_out             => start_screen_red,
@@ -886,7 +896,7 @@ begin
 	          score        => score_hud,
 	          HUD_enable   => not start_screen_active,
 	          HUD_active   => HUD_active,
-				 health_digit => health,
+				 health_digit => not(lives),
 				 score_h 	  => score_h,
 				 score_t 	  => score_t, 
 				 score_o		  => score_o,
@@ -911,12 +921,12 @@ begin
                 HUD_red                   => HUD_red,
                 HUD_green                 => HUD_green,
                 HUD_blue                  => HUD_blue,
-                training_red              => training_red,
+                training_red              => "0000",
+					 training_green            => "0000",
+                training_blue             => "0000",
 					 end_screen_red				=> end_screen_red,
 					 end_screen_green				=>	end_screen_green,
 					 end_screen_blue				=> end_screen_blue,
-                training_green            => training_green,
-                training_blue             => training_blue,
                 racing_red                => racing_red,
                 racing_green              => racing_green,
                 racing_blue               => racing_blue,
@@ -981,7 +991,7 @@ begin
 	-- ====================================================
 	Ending_screen: End_Screen
 		port map(video_clock			=> video_clock,
-					reset					=> not(RESET_N),
+					reset					=> not(RESET_N) or endscreen_fsm_rise,
 					pixel_row			=> pixel_row,
 					pixel_column		=> pixel_column,
 					mouse_row			=> mouse_row,
@@ -990,6 +1000,7 @@ begin
 					any_key_pressed	=> any_key_pressed,
 					end_screen_outcome=> endscreen_outcome,
 					end_screen			=> endscreen_active,
+					end_screen_active => endscreen_fsm,
 					red_out				=> end_screen_red,
 					green_out			=> end_screen_green,
 					blue_out				=> end_screen_blue);
@@ -1018,7 +1029,19 @@ begin
 					  endscreen_fsm		=> endscreen_fsm,
 					  endscreen_outcome	=> endscreen_outcome,
 					  speed_select			=> speed_select,
-					  score					=> score_hud);
+					  score					=> score_hud,
+					  lives					=> lives);
+					  
+	process(video_clock)
+	begin
+		 if rising_edge(video_clock) then
+			  startscreen_fsm_prev <= startscreen_fsm;
+			  endscreen_fsm_prev   <= endscreen_fsm;
+		 end if;
+	end process;
+
+	startscreen_fsm_rise <= startscreen_fsm and not startscreen_fsm_prev;
+	endscreen_fsm_rise   <= endscreen_fsm   and not endscreen_fsm_prev;
 
    -- ---------------------------------------------------------------------------
    -- LED assignments
@@ -1093,7 +1116,7 @@ begin
 
 
    Health_Digit : Hex_To_Seven_Segment
-      port map (hex_value      => "00" & health,
+      port map (hex_value      => "00" & not(lives),
                 seven_segments => HEX5);
 
    HEX3 <= (others => '1');

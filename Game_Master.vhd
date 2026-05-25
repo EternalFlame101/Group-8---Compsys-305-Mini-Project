@@ -23,7 +23,8 @@ entity Game_Master is
         endscreen_fsm     : out std_logic;
         endscreen_outcome : out std_logic;
         speed_select      : out std_logic_vector(1 downto 0);
-        score             : out std_logic_vector(7 downto 0));
+        score             : out std_logic_vector(7 downto 0);
+		  lives				  : out std_logic_vector(1 downto 0));
 end entity Game_Master;
 
 architecture game_master_behaviour of Game_Master is
@@ -54,7 +55,8 @@ architecture game_master_behaviour of Game_Master is
 
    signal collision_guard            : std_logic := '0';
    signal guard_previous_game_enable : std_logic := '0';
-   signal prev_collision             : std_logic := '0';
+   signal prev_gift_collision        : std_logic := '0';
+	signal prev_object_collision 		 : std_logic := '0';
    signal start_seen_high            : std_logic := '0';
 
    signal lane_0_object_collision    : std_logic;
@@ -68,21 +70,21 @@ architecture game_master_behaviour of Game_Master is
 	signal object_collision				 : std_logic;
 	signal gift_collision				 : std_logic;
 	
-	signal any_collision					 : std_logic;
-	
 	signal lane_0_active					 : std_logic;
 	signal lane_1_active					 : std_logic;
 	signal lane_2_active					 : std_logic;
 	
+	signal internal_lives				 : std_logic_vector(1 downto 0);
 
 begin
   
   -- Speed escalation: freeze when game is not active; otherwise ramp by score.
 	-- Thresholds: 0-9 -> easy, 10-19 -> medium, >=20 -> hard.
 	speed_select <= "00" when internal_game_enable = '0' else
-	                "01" when conv_integer(internal_score) < 10 else
-	                "10" when conv_integer(internal_score) < 20 else
-	                "11";
+						 "01" when current_state = TRAINING else
+						 "01" when conv_integer(internal_score) < 10 else
+						 "10" when conv_integer(internal_score) < 20 else
+						 "11";
                     
 	-- object collision
 	lane_0_active <= '0' when (lane_0_obj_type = "00") else '1';
@@ -110,10 +112,9 @@ begin
 					 
 	object_collision <= lane_0_object_collision or lane_1_object_collision or lane_2_object_collision;
 	gift_collision <= lane_0_gift_collision or lane_1_gift_collision or lane_2_gift_collision;
-	
-	any_collision <= gift_collision or object_collision;
 
    score <= internal_score;
+	lives <= internal_lives;
 
    -- =========================================================================
    -- Sync process
@@ -125,19 +126,24 @@ begin
             current_state              <= INIT_SCREEN;
             collision_guard            <= '0';
             guard_previous_game_enable <= '0';
-            prev_collision             <= '0';
+            prev_gift_collision        <= '0';
+				prev_object_collision		<= '0';
             start_seen_high            <= '0';
             internal_score             <= (others => '0');
+				internal_lives					<= (others => '0');
          else
             current_state              <= next_state;
             guard_previous_game_enable <= internal_game_enable;
-            prev_collision             <= gift_collision;
+            prev_gift_collision        <= gift_collision;
+				prev_object_collision		<= object_collision;
+				
 
 				if lanes_arrived = '0' then
-					wave_scored <= '0';
-				elsif wave_scored = '0' and internal_score /= "1111111" and startscreen_enable = '0' then
-					internal_score <= internal_score + 1;
-					wave_scored    <=	'1';
+					 wave_scored <= '0';
+				elsif (wave_scored = '0' and internal_score /= "1111111" 
+				  and (current_state = NORMAL or current_state = TRAINING)) then
+					 internal_score <= internal_score + 1;
+					 wave_scored    <= '1';
 				end if;
 				
 				
@@ -161,10 +167,22 @@ begin
 
             -- Score: increment on rising edge of collision only
             if current_state = NORMAL then
-               if collision_guard = '1' and gift_collision = '1' and prev_collision = '0' then
+               if collision_guard = '1' and gift_collision = '1' and prev_gift_collision = '0' then
                   internal_score <= internal_score + 1;
                end if;
             end if;
+				
+				-- object collisions removing lives
+					if collision_guard = '1' and object_collision = '1' and prev_object_collision = '0' then
+						 internal_lives <= internal_lives + 1;
+					end if;
+				
+				-- score resetting when in start screen
+				if current_state = INIT_SCREEN then
+					internal_score <= (others => '0');
+					wave_scored    <= '0';
+					internal_lives	<= (others => '0');
+				end if;
          end if;
       end if;
    end process SYNC_PROCESS;
@@ -182,19 +200,36 @@ begin
       case current_state is
          when INIT_SCREEN =>
             startscreen_fsm          <= '1';
+				endscreen_fsm				 <= '0';
+				
             internal_game_enable     <= '0';
             internal_endscreen_state <= '0';
+				
          when TRAINING =>
-            null;
+            startscreen_fsm          <= '0';
+				endscreen_fsm				 <= '0';
+			
+            internal_game_enable     <= '1';
+            internal_endscreen_state <= '0';
          when NORMAL =>
+				startscreen_fsm          <= '0';
+				endscreen_fsm				 <= '0';
+			
             internal_game_enable     <= '1';
             internal_endscreen_state <= '0';
          when PAUSE =>
+				startscreen_fsm          <= '0';
+				endscreen_fsm				 <= '0';
+				
             internal_game_enable     <= '0';
          when WIN =>
+				startscreen_fsm          <= '0';
+
             endscreen_fsm            <= '1';
             internal_endscreen_state <= '1';
          when LOSE =>
+				startscreen_fsm          <= '0';
+				
             endscreen_fsm            <= '1';
             internal_endscreen_state <= '0';
       end case;
@@ -212,21 +247,37 @@ begin
                             collision_guard,
                             object_collision,
                             endscreen_enable,
-                            mode_selected)
+                            mode_selected,
+									 internal_lives,
+									 internal_score)
    begin
       next_state <= current_state;
 
       case current_state is
          when INIT_SCREEN =>
             if start_seen_high = '1' and startscreen_enable = '0' then
-               next_state <= NORMAL;
-            end if;
+					if mode_selected = '1' then
+						next_state <= NORMAL;
+					else
+						next_state <= TRAINING;
+					end if;
+				end if;
          when TRAINING =>
-            null;
-         when NORMAL =>
-            if (collision_guard = '1' and object_collision = '1') then
+            if (internal_lives = "11") then
 					next_state <= LOSE;
             end if;
+				
+				if (internal_score > 10) then
+					next_state <= WIN;
+				end if;
+         when NORMAL =>
+            if (internal_lives = "11") then
+					next_state <= LOSE;
+            end if;
+				
+				if (internal_score > 25) then
+					next_state <= WIN;
+				end if;
          when PAUSE =>
             null;
          when WIN =>

@@ -38,6 +38,7 @@ entity Start_Screen is
          mouse_left_click             : in  std_logic;
          any_key_pressed              : in  std_logic;
          start_screen_active          : out std_logic;
+			start_screen_fsm				  : in  std_logic;
          selected_mode                : out std_logic;
          latched_mode                 : out std_logic;
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -261,7 +262,7 @@ begin
       end if;
    end process State_Machine;
 	
-   start_screen_active <= '0' when screen_state = game_running else '1';
+   start_screen_active <= '0' when (screen_state = game_running) else '1';
    selected_mode       <= selected_mode_internal;
    latched_mode        <= latched_mode_internal;
 	
