@@ -264,9 +264,11 @@ architecture moving_object_behaviour of Moving_Object is
 	signal object_arrived : std_logic;
 	signal object_reset   : std_logic;
 	signal object_active  : std_logic;
+	
 
 	signal effective_height : std_logic_vector(9 downto 0);
-	
+	signal effective_width	: std_logic_vector(9 downto 0);
+
 	signal enable_latch : std_logic := '0';
 
 	signal enable_seen_low : std_logic := '1';
@@ -305,6 +307,9 @@ begin
    effective_height <= conv_std_logic_vector(60,  10) when obj_type = "01" else
                        conv_std_logic_vector(60,  10) when obj_type = "10" else
                        conv_std_logic_vector(120, 10);  -- "11" tall
+							  
+	effective_width  <= conv_std_logic_vector(30, 10) when obj_type = "01" else
+							  conv_std_logic_vector(80, 10);
      
    Moving : process(clock)
 	 begin
@@ -384,8 +389,8 @@ begin
    box_is_off_centre_combinational                   <= '1' when box_position_relative_to_cat_combinational /= 0 else '0';
 
    object_height_scaled_product_combinational      <= object_height_rom      * effective_height;
-   object_width_scaled_product_combinational       <= object_width_rom       * conv_std_logic_vector(REAL_WIDTH,  10);
-   object_width_back_scaled_product_combinational  <= object_width_back_rom  * conv_std_logic_vector(REAL_WIDTH,  10);
+   object_width_scaled_product_combinational       <= object_width_rom       * effective_width;
+   object_width_back_scaled_product_combinational  <= object_width_back_rom  * effective_width;
    object_height_back_scaled_product_combinational <= object_height_back_rom * effective_height;
    top_height_scaled_product_combinational         <= top_height_rom         * effective_height;
 
@@ -781,14 +786,14 @@ begin
    --                obstacles keep the original face-specific green palette.
    red_combinational   <= "0111" when (object_front_on = '1' and obj_type = "01") else
                           "0001" when (object_front_on = '1') else
-                          "0111" when (object_top_on   = '1' and obj_type = "01") else
+                          "1111" when (object_top_on   = '1' and obj_type = "01") else
                           "0001" when (object_top_on   = '1') else
                           "0111" when (object_side_on  = '1' and obj_type = "01") else
                           "0001" when (object_side_on  = '1') else
                           "0000";
    green_combinational <= "0111" when (object_front_on = '1' and obj_type = "01") else
                           "0111" when (object_front_on = '1') else
-                          "0111" when (object_top_on   = '1' and obj_type = "01") else
+                          "1111" when (object_top_on   = '1' and obj_type = "01") else
                           "1111" when (object_top_on   = '1') else
                           "0111" when (object_side_on  = '1' and obj_type = "01") else
                           "0011" when (object_side_on  = '1') else

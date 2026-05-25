@@ -309,16 +309,18 @@ architecture game_behaviour of Top_Level is
 			  endscreen_fsm		: out std_logic;
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
 			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
-			  score            	: in  std_logic_vector(7 downto 0));
+			  score            	: out  std_logic_vector(7 downto 0));
 	end component Game_Master;
 
 	component HUD_Overlay is
-		port(video_clock				         : in std_logic;
-			  reset						            : in std_logic;
+		port(video_clock				       : in std_logic;
+			  reset						       : in std_logic;
 			  pixel_row, pixel_column      : in std_logic_vector(9 downto 0);
-			  score						            : in std_logic_vector(7 downto 0);
-			  HUD_enable				         : in std_logic;
-			  HUD_active				         : out std_logic;
+			  score						       : in std_logic_vector(7 downto 0);
+			  HUD_enable				       : in std_logic;
+			  HUD_active				       : out std_logic;
+			  health_digit						 : in std_logic_vector(1 downto 0);
+			  score_h, score_t, score_o	 : out std_logic_vector(3 downto 0);
 			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 	end component;
 
@@ -471,6 +473,8 @@ architecture game_behaviour of Top_Level is
 	signal HUD_active                   : std_logic;
 	signal score_hud                    : std_logic_vector(7 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
+	signal health								: std_logic_vector(1 downto 0);
+	signal score_h, score_t, score_o  	: std_logic_vector(3 downto 0);
 	
 begin
 	-- ==================== DO NOT REMOVE ================================
@@ -886,7 +890,7 @@ begin
       generic map (SPRITE_WIDTH  => 64,
                    SPRITE_HEIGHT => 64,
                    ADDR_BITS     => 12,
-                   SCALE         => 2,
+                   SCALE         => 8,
                    MIF_FILE      => "Images_To_mif/mif/jasper.mif")
       port map (clock        => video_clock,
                 pixel_row    => pixel_row,
@@ -905,6 +909,10 @@ begin
 	          score        => score_hud,
 	          HUD_enable   => not start_screen_active,
 	          HUD_active   => HUD_active,
+				 health_digit => health,
+				 score_h 	  => score_h,
+				 score_t 	  => score_t, 
+				 score_o		  => score_o,
 	          red_out      => HUD_red,
 	          green_out    => HUD_green,
 	          blue_out     => HUD_blue);
@@ -1034,28 +1042,6 @@ begin
 					  score					=> score_hud);
 
    -- ---------------------------------------------------------------------------
-   -- Score_Counter: mirrors arrived events into the 8-bit HUD score signal.
-   -- Increments once per wave (all three arrived flags pulse high together)
-   -- while the game is running, capped at 255.
-   -- ---------------------------------------------------------------------------
-	Score_Counter : process(video_clock)
-	begin
-		if rising_edge(video_clock) then
-			if not RESET_N = '1' then
-				score_hud   <= (others => '0');
-				wave_scored <= '0';
-			else
-				if arrived_0 = '0' and arrived_1 = '0' and arrived_2 = '0' then
-					wave_scored <= '0';
-				elsif wave_scored = '0' and score_hud /= "11111111" and start_screen_active = '0' then
-					score_hud   <= score_hud + 1;
-					wave_scored <= '1';
-				end if;
-			end if;
-		end if;
-	end process;
-
-   -- ---------------------------------------------------------------------------
    -- LED assignments
 	-- ---------------------------------------------------------------------------
 	
@@ -1114,25 +1100,25 @@ begin
 	--	LEDR(2) <= arrived_sticky;
 	
    -- HEX0/HEX1 show the byte at SW(8:0) of the read sector buffer
-   Hex_Buffer_Low : Hex_To_Seven_Segment
-      port map (hex_value      => sd_buffer_byte(3 downto 0),
+   Score_Digit_Zero : Hex_To_Seven_Segment
+      port map (hex_value      => score_o,
                 seven_segments => HEX0);
 
-   Hex_Buffer_High : Hex_To_Seven_Segment
-      port map (hex_value      => sd_buffer_byte(7 downto 4),
+   Score_Digit_One : Hex_To_Seven_Segment
+      port map (hex_value      => score_t,
                 seven_segments => HEX1);
 
-   -- HEX4/HEX5 show the last raw SPI response byte (for debugging failures)
-   Hex_Response_Low : Hex_To_Seven_Segment
-      port map (hex_value      => last_response_byte_sig(3 downto 0),
-                seven_segments => HEX4);
+   Score_Digit_Two : Hex_To_Seven_Segment
+      port map (hex_value      => score_h,
+                seven_segments => HEX2);
 
-   Hex_Response_High : Hex_To_Seven_Segment
-      port map (hex_value      => last_response_byte_sig(7 downto 4),
+
+   Health_Digit : Hex_To_Seven_Segment
+      port map (hex_value      => "00" & health,
                 seven_segments => HEX5);
 
-   HEX2 <= "1111111";
-   HEX3 <= "1111111";
+   HEX3 <= (others => '1');
+   HEX4 <= (others => '1');
 
    -- Physical SD pin connections
    SD_CLK     <= sd_serial_clock;

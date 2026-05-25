@@ -4,12 +4,14 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity HUD_Overlay is
-	port(video_clock				 : in std_logic;
-		  reset					 : in std_logic;
-		  pixel_row, pixel_column      : in std_logic_vector(9 downto 0);
-		  score					 : in std_logic_vector(7 downto 0);
-		  HUD_enable				 : in std_logic;
-		  HUD_active				 : out std_logic; 
+	port(video_clock				 		: in std_logic;
+		  reset					 			: in std_logic;
+		  pixel_row, pixel_column     : in std_logic_vector(9 downto 0);
+		  score					 			: in std_logic_vector(7 downto 0);
+		  HUD_enable				 		: in std_logic;
+		  HUD_active				 		: out std_logic; 
+		  health_digit						: in std_logic_vector(1 downto 0);
+		  score_h, score_t, score_o 	: out std_logic_vector(3 downto 0);
 		  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity HUD_Overlay;
 
@@ -52,6 +54,7 @@ architecture beh of HUD_Overlay is
 	signal x_hundreds : std_logic_vector(9 downto 0);
 	signal x_tens     : std_logic_vector(9 downto 0);
 	signal x_ones     : std_logic_vector(9 downto 0);
+	
 
 	constant SCORE_Y  : integer := 50;
 	constant HEALTH_X : integer := 50;
@@ -181,6 +184,11 @@ begin
 					  else conv_std_logic_vector(320, 10) when conv_integer(score) < 100
 					  else conv_std_logic_vector(336, 10);
 
+					  
+	score_h <= score_hundreds;
+	score_t <= score_tens;
+	score_o <= score_ones;
+	
 	-- ----------------------------------------------------------------
 	-- Output mux: score digits take priority, then health, then blank
 	-- ----------------------------------------------------------------

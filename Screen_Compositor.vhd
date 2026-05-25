@@ -40,7 +40,7 @@ entity Screen_Compositor is
          HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
          training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
          racing_red, racing_green, racing_blue : in std_logic_vector(3 downto 0);
-
+			end_screen_red,     end_screen_green,     end_screen_blue  : in std_logic_vector(3 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Screen_Compositor;
 
@@ -50,6 +50,8 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
    signal HUD_active                 : std_logic;
+	
+	signal red_next, green_next, blue_next : std_logic_vector(3 downto 0);
 
 begin
 
@@ -92,7 +94,7 @@ begin
             red_next   <= mouse_cursor_red;
             green_next <= mouse_cursor_green;
             blue_next  <= mouse_cursor_blue;
-         elsif end_screen_text_active = '1' then
+         elsif end_screen_active = '1' then
             red_next   <= end_screen_red;
             green_next <= end_screen_green;
             blue_next  <= end_screen_blue;
