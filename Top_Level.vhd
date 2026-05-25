@@ -89,14 +89,6 @@ architecture game_behaviour of Top_Level is
             dive_key           : out   std_logic);
    end component Keyboard;
 
-   component Orbiting_Ball is
-      port (clock, vertical_sync    : in  std_logic;
-            pixel_row, pixel_column : in  std_logic_vector(9 downto 0);
-            radius                  : in  std_logic_vector(6 downto 0);
-            left_click              : in  std_logic;
-            ball_x_out, ball_y_out  : out std_logic_vector(9 downto 0));
-   end component Orbiting_Ball;
-
    component VGA_Sync is
       port (pixel_clock                            : in  std_logic;
             red, green, blue                       : in  std_logic_vector(3 downto 0);
@@ -334,7 +326,6 @@ architecture game_behaviour of Top_Level is
 
    -- Training-mode graphics layer signals (orbiting ball + text + mouse demo)
    signal training_red, training_green, training_blue              : std_logic_vector(3 downto 0);
-   signal orbit_ball_red,  orbit_ball_green,  orbit_ball_blue      : std_logic_vector(3 downto 0);
    signal mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue  : std_logic_vector(3 downto 0);
    signal text_small_red,  text_small_green,  text_small_blue      : std_logic_vector(3 downto 0);
    signal text_large_red,  text_large_green,  text_large_blue      : std_logic_vector(3 downto 0);
@@ -576,26 +567,6 @@ begin
    -- Orbiting ball + HELLO WORLD / OINK text + mouse cursor
    -- ===========================================================================
 
-   Orbiting : Orbiting_Ball
-      port map (clock         => video_clock,
-                vertical_sync => vertical_sync,
-                pixel_row     => pixel_row,
-                pixel_column  => pixel_column,
-                radius        => conv_std_logic_vector(100, 7),
-                left_click    => left_click,
-                ball_x_out    => ball_x_out,
-                ball_y_out    => ball_y_out);
-
-   Orbit_Ball_Sprite : Ball
-      generic map (SIZE_CONST => 20)
-      port map (pixel_column => pixel_column,
-                pixel_row    => pixel_row,
-                ball_x       => ball_x_out,
-                ball_y       => ball_y_out,
-                red          => orbit_ball_red,
-                green        => orbit_ball_green,
-                blue         => orbit_ball_blue);
-
    Mouse_Cursor_Sprite : Ball
       generic map (SIZE_CONST => 8)
       port map (pixel_column => pixel_column,
@@ -655,9 +626,9 @@ begin
                 background_red   => "0000",
                 background_green => "0000",
                 background_blue  => "0000",
-                sprite_red       => orbit_ball_red,
-                sprite_green     => orbit_ball_green,
-                sprite_blue      => orbit_ball_blue,
+                sprite_red       => "0000",
+                sprite_green     => "0000",
+                sprite_blue      => "0000",
                 mouse_red        => mouse_cursor_red,
                 mouse_green      => mouse_cursor_green,
                 mouse_blue       => mouse_cursor_blue,
