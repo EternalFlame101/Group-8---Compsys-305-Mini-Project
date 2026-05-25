@@ -122,7 +122,7 @@ begin
 					TEXT_GREEN    => "1111",
 					TEXT_BLUE     => "1111")
 		port map (clock         => video_clock,
-				  characters    => "110000",
+				  characters    => "11" & "00" & health_digit,
 				  x_position    => conv_std_logic_vector(HEALTH_X, 10),
 				  y_position    => conv_std_logic_vector(HEALTH_Y, 10),
 				  pixel_row     => pixel_row,

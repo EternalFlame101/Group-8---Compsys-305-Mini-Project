@@ -275,13 +275,25 @@ architecture moving_object_behaviour of Moving_Object is
 
 	signal frame_div_counter : std_logic_vector(1 downto 0) := "00";
 
-	-- Perspective correction: step by 2 once past the midpoint so the object
-	-- visually accelerates toward the player, counteracting ROM-perspective slowdown.
-	signal dist_step : std_logic_vector(9 downto 0);
+	-- frac_counter increments on every actual advance (not every vsync) to produce
+	-- fractional average step sizes across 5 distance zones:
+	--   zone 1 (  0- 31): step always 1    -> avg 1.00
+	--   zone 2 ( 32- 63): step 2 once/4   -> avg 1.25
+	--   zone 3 ( 64- 95): step alternates  -> avg 1.50
+	--   zone 4 ( 96-127): step 1 once/4   -> avg 1.75
+	--   zone 5 (128-159): step always 2    -> avg 2.00
+	signal frac_counter : std_logic_vector(1 downto 0) := "00";
+	signal dist_step    : std_logic_vector(9 downto 0);
 begin
 
-	dist_step <= conv_std_logic_vector(2, 10) when object_distance >= conv_std_logic_vector(80, 10)
-	             else conv_std_logic_vector(1, 10);
+	dist_step <=
+		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 128 else
+		conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 96 and frac_counter = "11" else
+		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 96 else
+		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 64 and frac_counter(0) = '0' else
+		conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 64 else
+		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 32 and frac_counter = "00" else
+		conv_std_logic_vector(1, 10);
 
    -- ROM lookups
    Object_Geometry_Lookup : Object_ROM
@@ -323,6 +335,7 @@ begin
 					enable_latch      <= '0';
 					enable_seen_low   <= '1';
 					frame_div_counter <= "00";
+				frac_counter      <= "00";
 			  else
 					-- Update enable latch combinationally each cycle
 					if enable = '0' then
@@ -340,6 +353,7 @@ begin
 						 if enable_latch = '1' and object_active = '0' then
 							  object_active   <= '1';
 							  object_distance <= (others => '0');
+							  frac_counter    <= "00";
 						 end if;
 
 						 if object_active = '1' then
@@ -361,13 +375,16 @@ begin
 										when "01" =>
 											if frame_div_counter(0) = '1' then
 												object_distance <= object_distance + dist_step;
+												frac_counter    <= frac_counter + 1;
 											end if;
 										when "10" =>
 											if frame_div_counter /= "01" then
 												object_distance <= object_distance + dist_step;
+												frac_counter    <= frac_counter + 1;
 											end if;
 										when others =>
 											object_distance <= object_distance + dist_step;
+											frac_counter    <= frac_counter + 1;
 									end case;
 							  end if;
 						 end if;

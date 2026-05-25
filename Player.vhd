@@ -117,6 +117,7 @@ architecture player_behaviour of Player is
    -- (right roll is just the left-roll list reversed, since the artist drew
    -- the rotations counter-clockwise).
    signal roll_frame_index  : integer range 0 to 7 := 0;
+   signal roll_vsync_count  : integer range 0 to ROLL_FRAME_STEP / TRANSITION_SPEED - 1 := 0;
 
    signal vsync_previous       : std_logic := '0';
    signal click_previous       : std_logic := '0';
@@ -585,7 +586,6 @@ begin
    -- State machine
    -- ---------------------------------------------------------------------------
    Animation_Process : process(clock, reset)
-      variable distance_travelled : integer range 0 to LANE_RESOLUTION;
    begin
       if reset = '1' then
          current_state        <= '0';
@@ -605,6 +605,7 @@ begin
          transition_step      <= 0;
          roll_direction       <= '0';
          roll_frame_index     <= 0;
+         roll_vsync_count     <= 0;
       elsif rising_edge(clock) then
          vsync_previous <= vertical_sync;
 
@@ -704,25 +705,41 @@ begin
                if view_pos_int = view_pos_target then
                   transition_active <= '0';
                   roll_frame_index  <= 0;
-                  -- current_lane_int is now derived combinationally from
-                  -- view_pos_int (see assignment below), so it has already
-                  -- switched when the cat passed the halfway point.
+                  roll_vsync_count  <= 0;
                else
-                  view_pos_int <= view_pos_int + transition_step;
-
-                  -- How many steps of the 64-step transition have we completed?
-                  -- Used to pick which of the 8 roll frames to display.
-                  -- distance_travelled = LANE_RESOLUTION - |view_pos_target - (view_pos_int + step)|
-                  distance_travelled := LANE_RESOLUTION - abs(view_pos_target - (view_pos_int + transition_step));
-
-                  -- Map 1..63 -> 0..6, and 64 (final step) -> 7 (the 0-degree
-                  -- frame, which is just neutral). distance_travelled / 8
-                  -- gives 0 at steps 1..7, 1 at 8..15, ..., 7 at 56..63, and 8
-                  -- at 64; clamp the 64 case down to 7.
-                  if distance_travelled / ROLL_FRAME_STEP >= 7 then
-                     roll_frame_index <= 7;
+                  -- Roll cancel: opposite input mid-transition reverses direction.
+                  -- Right frame N and left frame (6-N) display the same sprite,
+                  -- so mirroring the index gives seamless visual continuity.
+                  if (roll_direction = '1') and (shift_left_input_sync = '1') and (click_previous = '0') then
+                     roll_direction  <= '0';
+                     transition_step <= -TRANSITION_SPEED;
+                     view_pos_target <= view_pos_target - LANE_RESOLUTION;
+                     if roll_frame_index <= 6 then
+                        roll_frame_index <= 6 - roll_frame_index;
+                     else
+                        roll_frame_index <= 0;
+                     end if;
+                     roll_vsync_count <= 0;
+                  elsif (roll_direction = '0') and (shift_right_input_sync = '1') and (right_click_previous = '0') then
+                     roll_direction  <= '1';
+                     transition_step <= TRANSITION_SPEED;
+                     view_pos_target <= view_pos_target + LANE_RESOLUTION;
+                     if roll_frame_index <= 6 then
+                        roll_frame_index <= 6 - roll_frame_index;
+                     else
+                        roll_frame_index <= 0;
+                     end if;
+                     roll_vsync_count <= 0;
                   else
-                     roll_frame_index <= distance_travelled / ROLL_FRAME_STEP;
+                     view_pos_int <= view_pos_int + transition_step;
+                     if roll_vsync_count = ROLL_FRAME_STEP / TRANSITION_SPEED - 1 then
+                        roll_vsync_count <= 0;
+                        if roll_frame_index < 7 then
+                           roll_frame_index <= roll_frame_index + 1;
+                        end if;
+                     else
+                        roll_vsync_count <= roll_vsync_count + 1;
+                     end if;
                   end if;
                end if;
             else
@@ -733,12 +750,14 @@ begin
                      transition_active <= '1';
                      roll_direction    <= '1';
                      roll_frame_index  <= 0;
+                     roll_vsync_count  <= 0;
                   elsif current_lane_int = 1 then
                      view_pos_target   <= LANE_RESOLUTION;
                      transition_step   <= TRANSITION_SPEED;
                      transition_active <= '1';
                      roll_direction    <= '1';
                      roll_frame_index  <= 0;
+                     roll_vsync_count  <= 0;
                   end if;
                elsif (shift_left_input_sync = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
@@ -747,12 +766,14 @@ begin
                      transition_active <= '1';
                      roll_direction    <= '0';
                      roll_frame_index  <= 0;
+                     roll_vsync_count  <= 0;
                   elsif current_lane_int = 1 then
                      view_pos_target   <= -LANE_RESOLUTION;
                      transition_step   <= -TRANSITION_SPEED;
                      transition_active <= '1';
                      roll_direction    <= '0';
                      roll_frame_index  <= 0;
+                     roll_vsync_count  <= 0;
                   end if;
                end if;
             end if;
