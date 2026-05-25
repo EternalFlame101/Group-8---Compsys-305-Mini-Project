@@ -32,7 +32,7 @@ architecture player_behaviour of Player is
                SPRITE_HEIGHT : positive := 64;
                ADDR_BITS     : positive := 12;
                SCALE         : positive := 2;
-               MIF_FILE      : string   := "Images_To_mif/mif/jasper.mif");
+               MIF_FILE      : string   := "Assets/Memory_Initialization_Files/jasper.mif");
       port (clock                        : in  std_logic;
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             sprite_x,  sprite_y          : in  std_logic_vector(9 downto 0);
@@ -251,7 +251,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/neutral.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/neutral.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -266,7 +266,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/left_1.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/left_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -281,7 +281,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/left_2.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/left_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -296,7 +296,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/right_1.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/right_1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -311,7 +311,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/right_2.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/right_2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -329,7 +329,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-45.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-45.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -344,7 +344,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-90.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-90.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -359,7 +359,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-135.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-135.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -374,7 +374,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-180.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-180.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -389,7 +389,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-225.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-225.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -404,7 +404,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-270.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-270.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -419,7 +419,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/-315.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/-315.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -437,7 +437,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish1.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/squish1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -452,7 +452,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish2.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/squish2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -467,7 +467,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish3.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/squish3.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -482,7 +482,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/squish4.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/squish4.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -501,7 +501,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/1.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/1.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -516,7 +516,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/2.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/2.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -531,7 +531,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/3.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/3.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -546,7 +546,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/4.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/4.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -561,7 +561,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/5.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/5.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -576,7 +576,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/6.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/6.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -591,7 +591,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/7.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/7.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,
@@ -606,7 +606,7 @@ begin
                    SPRITE_HEIGHT => SPRITE_SIZE,
                    ADDR_BITS     => 12,
                    SCALE         => SPRITE_SCALE,
-                   MIF_FILE      => "Images_To_mif/mif/8.mif")
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/8.mif")
       port map (clock        => clock,
                 pixel_row    => pixel_row_reg,
                 pixel_column => pixel_column_reg,

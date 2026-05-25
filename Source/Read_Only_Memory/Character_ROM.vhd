@@ -6,13 +6,17 @@ use ieee.std_logic_unsigned.all;
 library altera_mf;
 use altera_mf.all;
 
-entity Perspective_ROM is
+entity Character_ROM is
 	port (clock						  : in  std_logic;
-			pixel_row              : in  std_logic_vector (9 downto 0);
-		   perspective_output     : out std_logic);
-end entity Perspective_ROM;
+			font_column, font_row  : in  std_logic_vector (2 downto 0);
+		   character_address	     : in  std_logic_vector (5 downto 0);
+		   rom_multiplexer_output : out std_logic);
+end entity Character_ROM;
 
-architecture perspective_rom_behaviour of Character_ROM is
+architecture character_rom_behaviour of Character_ROM is
+	signal rom_data	 : std_logic_vector (7 downto 0);
+	signal rom_address : std_logic_vector (8 downto 0);
+
 	component altsyncram
 		generic (address_aclr_a			  : string;
 					clock_enable_input_a	  : string;
@@ -38,16 +42,16 @@ begin
 		generic map (address_aclr_a         => "none",
 						 clock_enable_input_a   => "bypass",
 						 clock_enable_output_a  => "bypass",
-						 init_file              => "perspective.mif",
-						 intended_device_family => "cyclone V",
+						 init_file              => "Assets/Memory_Initialization_Files/tcgrom.mif",
+						 intended_device_family => "Cyclone V",
 						 lpm_hint               => "enable_runtime_mod=no",
 						 lpm_type               => "altsyncram",
 						 numwords_a             => 512,
 						 operation_mode         => "rom",
 						 outdata_aclr_a         => "none",
 						 outdata_reg_a          => "unregistered",
-						 widthad_a              => 8,
-						 width_a                => 10,
+						 widthad_a              => 9,
+						 width_a                => 8,
 						 width_byteena_a        => 1)
 										  
 			port map (clock0    => clock,
@@ -56,4 +60,4 @@ begin
 
 	rom_address 			  <= character_address & font_row;
 	rom_multiplexer_output <= rom_data (conv_integer(not font_column(2 downto 0)));
-end perspective_rom_behaviour;
+end character_rom_behaviour;
