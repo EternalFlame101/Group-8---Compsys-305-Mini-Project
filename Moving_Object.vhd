@@ -128,7 +128,7 @@ architecture moving_object_behaviour of Moving_Object is
    signal side_face_top_y_stage_2 : std_logic_vector(9 downto 0);
 
    -- Distance update
-   signal object_distance    : std_logic_vector(9 downto 0) := (others => '1');
+   signal object_distance    : std_logic_vector(9 downto 0) := (others => '0');
    signal vertical_sync_previous : std_logic;
 
    -- Per-pixel pipeline is split into Stage 1A (row derivations) + Stage 1B
@@ -818,6 +818,6 @@ begin
    blue_out  <= blue_out_register;
 
 	arrived 	 <= object_arrived;
-   row_out <= object_distance;
+	row_out <= object_distance when object_active = '1' else (others => '0');
 
 end architecture moving_object_behaviour;

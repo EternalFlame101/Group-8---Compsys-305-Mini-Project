@@ -223,13 +223,16 @@ architecture game_behaviour of Top_Level is
    end component Sprites_Display;
 
    component Screen_Compositor is
-      port (start_screen_active : in  std_logic;
+      port (clock					  : in  std_logic;
+				start_screen_active : in  std_logic;
+				end_screen_active	  : in  std_logic;
             latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
             HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
             training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
+            end_screen_red,     end_screen_green,     end_screen_blue  : in std_logic_vector(3 downto 0);
             racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
@@ -275,24 +278,35 @@ architecture game_behaviour of Top_Level is
             red_out,     green_out,     blue_out     : out std_logic_vector(3 downto 0));
    end component Player_And_Objects_Manager;
 	
+	component End_Screen is
+		port (video_clock                  : in  std_logic;
+				reset                        : in  std_logic;
+				pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
+				mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
+				mouse_left_click             : in  std_logic;
+				any_key_pressed              : in  std_logic;
+				end_screen_outcome           : in  std_logic;
+				end_screen                   : out std_logic;
+				red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component End_Screen;
+	
 	component Game_Master is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
-			  lane_0_gift			: in 	std_logic; -- 0 for no gift in lane, 1 for gift in lane
-			  lane_1_gift			: in 	std_logic;
-			  lane_2_gift			: in 	std_logic;
-			  lane_0_obj_type  	: in  std_logic; -- 0 for short, 1 for tall
-			  lane_1_obj_type  	: in  std_logic;
-			  lane_2_obj_type  	: in  std_logic;
+			  lane_0_obj_type   	: in  std_logic_vector(1 downto 0);
+			  lane_1_obj_type   	: in  std_logic_vector(1 downto 0);
+			  lane_2_obj_type   	: in  std_logic_vector(1 downto 0);
 			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  player_lane			: in	std_logic_vector(1 downto 0);
 			  player_state			: in 	std_logic;
 			  startscreen_enable : in  std_logic; -- 0 = off, 1 = on, startscreen on/off
+			  startscreen_fsm		: out std_logic;
 			  mode_selected		: in  std_logic; -- 0 = training, 1 = normal/single player
 			  game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
-			  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_enable	: in  std_logic; -- 0 = off, 1 = on, win/lose screen
+			  endscreen_fsm		: out std_logic;
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
 			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
 			  score            	: in  std_logic_vector(7 downto 0));
@@ -345,6 +359,10 @@ architecture game_behaviour of Top_Level is
    signal selected_mode              : std_logic;
    signal latched_mode               : std_logic;
    signal any_key_pressed            : std_logic;
+	
+	signal startup_reset_counter : std_logic_vector(23 downto 0) := (others => '0');
+   signal startup_reset         : std_logic;
+   signal combined_reset        : std_logic;
 
    -- Final composited pixel values feeding VGA_Sync
    signal red_final, green_final, blue_final : std_logic_vector(3 downto 0);
@@ -428,16 +446,25 @@ architecture game_behaviour of Top_Level is
    signal cat_view_position                                                : std_logic_vector(7 downto 0);
    signal combined_sprite_red, combined_sprite_green, combined_sprite_blue : std_logic_vector(3 downto 0);
 	
+	-- end screen colours
+	signal end_screen_red	: std_logic_vector(3 downto 0);
+	signal end_screen_green	: std_logic_vector(3 downto 0);
+	signal end_screen_blue	: std_logic_vector(3 downto 0);
+	
 	-- fsm output signals
 	signal lane_0_enable : std_logic;
 	signal lane_1_enable : std_logic;
 	signal lane_2_enable	: std_logic;
 	
 	signal game_enable		: std_logic;
-	signal endscreen_enable : std_logic;
+	signal endscreen_active	: std_logic;
 	signal endscreen_outcome: std_logic;
 	
 	signal speed_select : std_logic_vector(1 downto 0);
+	signal endscreen_fsm		: std_logic;
+	signal startscreen_fsm	: std_logic;
+	
+	signal score	: std_logic_vector(5 downto 0);
 
 	-- HUD
 	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
@@ -470,8 +497,8 @@ begin
    -- "Any key" detection. KEY[3:0] are active-low pushbuttons.
    -- ---------------------------------------------------------------------------
 	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
-                       or left_click or right_click
-							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
+                      or left_click or right_click
+							        or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
 
    -- ---------------------------------------------------------------------------
    -- Combined player input signals. The various sources work in parallel as
@@ -688,7 +715,7 @@ begin
       port map (enable            => (lane_2_type(1) or lane_2_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => not RESET_N,
+                reset             => (not RESET_N) or (not game_enable),
                 obj_type          => lane_2_type,
                 arrived           => arrived_2,
                 pixel_column      => pixel_column,
@@ -707,7 +734,7 @@ begin
       port map (enable            => (lane_1_type(1) or lane_1_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset 			    => not RESET_N,
+                reset 			    => (not RESET_N) or (not game_enable),
 					 obj_type 		    => lane_1_type,
 					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
@@ -726,7 +753,7 @@ begin
       port map (enable            => (lane_0_type(1) or lane_0_type(0)) and game_enable,
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => not RESET_N,
+                reset             => (not RESET_N) or (not game_enable),
                 obj_type          => lane_0_type,
                 arrived           => arrived_0,
                 pixel_column      => pixel_column,
@@ -836,7 +863,7 @@ begin
 
    Start_Screen_Inst : Start_Screen
       port map (video_clock         => video_clock,
-                reset               => not RESET_N,
+                reset               => not(RESET_N),
                 pixel_row           => pixel_row,
                 pixel_column        => pixel_column,
                 mouse_row           => mouse_row,
@@ -883,7 +910,9 @@ begin
 	          blue_out     => HUD_blue);
 
    Final_Compositor_Inst : Screen_Compositor
-      port map (start_screen_active       => start_screen_active,
+      port map (clock							=> video_clock,
+					 start_screen_active       => startscreen_fsm,
+					 end_screen_active			=> endscreen_fsm,
                 latched_mode              => latched_mode,
                 start_screen_red          => start_screen_red,
                 start_screen_green        => start_screen_green,
@@ -898,6 +927,9 @@ begin
                 HUD_green                 => HUD_green,
                 HUD_blue                  => HUD_blue,
                 training_red              => training_red,
+					 end_screen_red				=> end_screen_red,
+					 end_screen_green				=>	end_screen_green,
+					 end_screen_blue				=> end_screen_blue,
                 training_green            => training_green,
                 training_blue             => training_blue,
                 racing_red                => racing_red,
@@ -958,27 +990,45 @@ begin
 					debug_lfsr        => debug_lfsr);
 	
 	
+	-- ====================================================
+	-- End screen
+	-- ====================================================
+	Ending_screen: End_Screen
+		port map(video_clock			=> video_clock,
+					reset					=> not(RESET_N),
+					pixel_row			=> pixel_row,
+					pixel_column		=> pixel_column,
+					mouse_row			=> mouse_row,
+					mouse_column		=> mouse_column,
+					mouse_left_click	=> left_click,
+					any_key_pressed	=> any_key_pressed,
+					end_screen_outcome=> endscreen_outcome,
+					end_screen			=> endscreen_active,
+					red_out				=> end_screen_red,
+					green_out			=> end_screen_green,
+					blue_out				=> end_screen_blue);
+	
+	
 	-- ===========================================================================
 	-- FSM
 	-- ===========================================================================
 	FSM : Game_Master
-		port map  (clock					=> CLOCK_50,
-					  reset					=> not RESET_N,
-					  lane_0_gift			=> not(lane_0_type(1)),
-					  lane_1_gift			=> not(lane_1_type(1)),
-					  lane_2_gift			=> not(lane_2_type(1)),
-					  lane_0_obj_type		=> lane_0_type(0),
-					  lane_1_obj_type		=> lane_1_type(0),
-					  lane_2_obj_type		=> lane_2_type(0),
+		port map  (clock					=> video_clock,
+					  reset					=> not(RESET_N),
+					  lane_0_obj_type		=> lane_0_type,
+					  lane_1_obj_type		=> lane_1_type,
+					  lane_2_obj_type		=> lane_2_type,
 					  lane_0_obj_dist		=> sprite_0_row,
 					  lane_1_obj_dist		=> sprite_1_row,
 					  lane_2_obj_dist		=> sprite_2_row,
 					  player_lane			=> player_lane,
 					  player_state			=> player_state,
 					  startscreen_enable => start_screen_active,
+					  startscreen_fsm		=> startscreen_fsm,
 					  mode_selected		=> latched_mode,
 					  game_enable			=> game_enable,
-					  endscreen_enable	=> endscreen_enable,
+					  endscreen_enable	=> endscreen_active,
+					  endscreen_fsm		=> endscreen_fsm,
 					  endscreen_outcome	=> endscreen_outcome,
 					  speed_select			=> speed_select,
 					  score					=> score_hud);
@@ -1009,7 +1059,7 @@ begin
    -- LED assignments
 	-- ---------------------------------------------------------------------------
 	
-	LEDR(3 downto 0) <= init_state_indicator;
+	 LEDR(3 downto 0) <= init_state_indicator;
    LEDR(4)          <= init_done_signal;
    LEDR(5)          <= pll_locked;
    LEDR(6)          <= start_screen_active;
