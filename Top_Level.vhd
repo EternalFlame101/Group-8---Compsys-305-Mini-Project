@@ -517,7 +517,7 @@ begin
 				any_key_pressed_prev <= any_key_pressed;
 				
 				-- rising edge only
-				if (any_key_pressed <= '1' and any_key_pressed_prev = '0') then
+				if (any_key_pressed = '1' and any_key_pressed_prev = '0') then
 					any_key_pressed_rising <= '1';
 				else 
 					any_key_pressed_rising <= '0';
