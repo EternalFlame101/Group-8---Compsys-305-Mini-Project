@@ -135,7 +135,7 @@ architecture game_behaviour of Top_Level is
 				    obj_type								     : in  std_logic_vector(1 downto 0);
 				    arrived				 				       : out std_logic;
             pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
-            speed                        : in  std_logic_vector(3 downto 0);
+            speed_select                 : in  std_logic_vector(1 downto 0);
             cat_view_position            : in  std_logic_vector(7 downto 0);
             row_out                      : out std_logic_vector(9 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
@@ -294,8 +294,8 @@ architecture game_behaviour of Top_Level is
 			  game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
 			  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
-			  speed            	: out std_logic_vector(3 downto 0); -- manages speed
-			  score            	: out std_logic_vector(5 downto 0));
+			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
+			  score            	: in  std_logic_vector(7 downto 0));
 	end component Game_Master;
 
 	component HUD_Overlay is
@@ -437,8 +437,7 @@ architecture game_behaviour of Top_Level is
 	signal endscreen_enable : std_logic;
 	signal endscreen_outcome: std_logic;
 	
-	signal speed	: std_logic_vector(3 downto 0);
-	signal score	: std_logic_vector(5 downto 0);
+	signal speed_select : std_logic_vector(1 downto 0);
 
 	-- HUD
 	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
@@ -694,7 +693,7 @@ begin
                 arrived           => arrived_2,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
-                speed             => conv_std_logic_vector(2, 4),
+                speed_select      => speed_select,
                 cat_view_position => cat_view_position,
                 row_out           => sprite_2_row,
                 red_out           => sprite_2_red,
@@ -713,7 +712,7 @@ begin
 					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
-                speed             => conv_std_logic_vector(2, 4),
+                speed_select      => speed_select,
                 cat_view_position => cat_view_position,
                 row_out           => sprite_1_row,
                 red_out           => sprite_1_red,
@@ -732,7 +731,7 @@ begin
                 arrived           => arrived_0,
                 pixel_column      => pixel_column,
                 pixel_row         => pixel_row,
-                speed             => conv_std_logic_vector(2, 4),
+                speed_select      => speed_select,
                 cat_view_position => cat_view_position,
                 row_out           => sprite_0_row,
                 red_out           => sprite_0_red,
@@ -981,8 +980,8 @@ begin
 					  game_enable			=> game_enable,
 					  endscreen_enable	=> endscreen_enable,
 					  endscreen_outcome	=> endscreen_outcome,
-					  speed					=> speed,
-					  score					=> score);
+					  speed_select			=> speed_select,
+					  score					=> score_hud);
 
    -- ---------------------------------------------------------------------------
    -- Score_Counter: mirrors arrived events into the 8-bit HUD score signal.

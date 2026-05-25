@@ -24,8 +24,8 @@ entity Game_Master is
         game_enable		 	: out std_logic; -- 0 = pause, 1 = playing, game pause
 		  endscreen_enable	: out std_logic; -- 0 = off, 1 = on, win/lose screen
 		  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
-        speed            	: out std_logic_vector(3 downto 0); -- manages speed
-        score            	: out std_logic_vector(5 downto 0));
+        speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
+        score            	: in  std_logic_vector(7 downto 0));
 end entity Game_Master;
 
 architecture game_master_behaviour of Game_Master is
@@ -131,8 +131,15 @@ begin
 	end process FSM_OUTPUT;
 	
 	-- mapping process signal to output
-	game_enable <= internal_game_enable;
+	game_enable       <= internal_game_enable;
 	endscreen_outcome <= internal_endscreen_state;
+
+	-- Speed escalation: freeze when game is not active; otherwise ramp by score.
+	-- Thresholds: 0-9 -> easy, 10-19 -> medium, >=20 -> hard.
+	speed_select <= "00" when internal_game_enable = '0' else
+	                "01" when conv_integer(score) < 10 else
+	                "10" when conv_integer(score) < 20 else
+	                "11";
 	
 	FSM_NEXT_STATE: process(current_state, 
 									lane_0_collision, 
