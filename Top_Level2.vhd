@@ -50,12 +50,12 @@ architecture game_behaviour of Top_Level2 is
             locked   : out std_logic);
    end component Video_PLL;
 
-   component Ball is
+   component Cursor is
       generic (SIZE_CONST : positive := 8);
       port (pixel_column, pixel_row : in  std_logic_vector(9 downto 0);
-            ball_x, ball_y          : in  std_logic_vector(9 downto 0);
+            cursor_x, cursor_y      : in  std_logic_vector(9 downto 0);
             red, green, blue        : out std_logic_vector(3 downto 0));
-   end component Ball;
+   end component Cursor;
 
    component Graphics_Manager is
       port (text_large_red,   text_large_green,   text_large_blue : in  std_logic_vector(3 downto 0);
@@ -103,7 +103,7 @@ architecture game_behaviour of Top_Level2 is
             pixel_row, pixel_column                : out std_logic_vector(9 downto 0));
    end component VGA_Sync;
 
-   -- Background pipeline components (racing-game visuals)
+   -- Background pipeline components (game visuals)
    component Background_Generator is
       port (clock, vertical_sync          : in  std_logic;
             pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
@@ -222,7 +222,7 @@ architecture game_behaviour of Top_Level2 is
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
 				HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
             training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
-            racing_red,   racing_green,   racing_blue   : in std_logic_vector(3 downto 0);
+            game_red,     game_green,     game_blue     : in std_logic_vector(3 downto 0);
             red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
    end component Screen_Compositor;
 	
@@ -291,8 +291,8 @@ architecture game_behaviour of Top_Level2 is
    signal text_small_red,  text_small_green,  text_small_blue      : std_logic_vector(3 downto 0);
    signal text_large_red,  text_large_green,  text_large_blue      : std_logic_vector(3 downto 0);
 
-   -- Racing-mode graphics layer signals (background + track + moving objects)
-   signal racing_red, racing_green, racing_blue                                            : std_logic_vector(3 downto 0);
+   -- Game pipeline graphics layer signals (background + track + moving objects)
+   signal game_red, game_green, game_blue                                                  : std_logic_vector(3 downto 0);
    signal background_layer_red, background_layer_green, background_layer_blue              : std_logic_vector(3 downto 0);
    signal track_layer_red,      track_layer_green,      track_layer_blue                   : std_logic_vector(3 downto 0);
    signal sprite_0_row,         sprite_1_row,           sprite_2_row                       : std_logic_vector(9 downto 0);
@@ -505,22 +505,22 @@ begin
                 ball_x_out    => ball_x_out,
                 ball_y_out    => ball_y_out);
 
-   Orbit_Ball_Sprite : Ball
+   Orbit_Ball_Sprite : Cursor
       generic map (SIZE_CONST => 20)
       port map (pixel_column => pixel_column,
                 pixel_row    => pixel_row,
-                ball_x       => ball_x_out,
-                ball_y       => ball_y_out,
+                cursor_x     => ball_x_out,
+                cursor_y     => ball_y_out,
                 red          => orbit_ball_red,
                 green        => orbit_ball_green,
                 blue         => orbit_ball_blue);
 
-   Mouse_Cursor_Sprite : Ball
+   Mouse_Cursor_Sprite : Cursor
       generic map (SIZE_CONST => 8)
       port map (pixel_column => pixel_column,
                 pixel_row    => pixel_row,
-                ball_x       => mouse_column,
-                ball_y       => mouse_row,
+                cursor_x     => mouse_column,
+                cursor_y     => mouse_row,
                 red          => mouse_cursor_red,
                 green        => mouse_cursor_green,
                 blue         => mouse_cursor_blue);
@@ -585,7 +585,7 @@ begin
                 blue_out         => training_blue);
 
    -- ===========================================================================
-   -- RACING MODE PIPELINE
+   -- GAME PIPELINE
    -- Sky/ground background + perspective track + two moving objects
    -- ===========================================================================
 
@@ -694,7 +694,7 @@ begin
                 green_out      => sprite_composite_green,
                 blue_out       => sprite_composite_blue);
 
-   Racing_Graphics : Graphics_Manager
+   Game_Graphics : Graphics_Manager
       port map (text_large_red   => "0000",
                 text_large_green => "0000",
                 text_large_blue  => "0000",
@@ -710,9 +710,9 @@ begin
                 mouse_red        => "0000",
                 mouse_green      => "0000",
                 mouse_blue       => "0000",
-                red_out          => racing_red,
-                green_out        => racing_green,
-                blue_out         => racing_blue);
+                red_out          => game_red,
+                green_out        => game_green,
+                blue_out         => game_blue);
 
    -- ===========================================================================
    -- PERIPHERALS (stay on CLOCK_50 for protocol timing)
@@ -831,9 +831,9 @@ begin
                 training_red              => training_red,
                 training_green            => training_green,
                 training_blue             => training_blue,
-                racing_red                => racing_red,
-                racing_green              => racing_green,
-                racing_blue               => racing_blue,
+                game_red                  => game_red,
+                game_green                => game_green,
+                game_blue                 => game_blue,
                 red_out                   => red_final,
                 green_out                 => green_final,
                 blue_out                  => blue_final);

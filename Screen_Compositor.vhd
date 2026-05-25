@@ -20,7 +20,7 @@ use IEEE.std_logic_unsigned.all;
 --                                                   player)
 --     start_screen_active = '0', latched_mode = '0'
 --                                                -> training pipeline
---                                                   (orbiting ball demo;
+--                                                   (training mode demo;
 --                                                   default before any
 --                                                   selection has been made)
 --
@@ -39,7 +39,7 @@ entity Screen_Compositor is
          mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
          HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
          training_red, training_green, training_blue : in std_logic_vector(3 downto 0);
-         racing_red, racing_green, racing_blue : in std_logic_vector(3 downto 0);
+         game_red, game_green, game_blue : in std_logic_vector(3 downto 0);
 			end_screen_red,     end_screen_green,     end_screen_blue  : in std_logic_vector(3 downto 0);
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity Screen_Compositor;
@@ -69,7 +69,7 @@ begin
                        start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
                        mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
                        HUD_red,                 HUD_green,                 HUD_blue,
-                       racing_red,              racing_green,              racing_blue,
+                       game_red,                game_green,                game_blue,
                        end_screen_red,          end_screen_green,          end_screen_blue)
    begin
       if start_screen_active = '1' then
@@ -113,9 +113,9 @@ begin
             green_next <= HUD_green;
             blue_next  <= HUD_blue;
          else
-            red_next   <= racing_red;
-            green_next <= racing_green;
-            blue_next  <= racing_blue;
+            red_next   <= game_red;
+            green_next <= game_green;
+            blue_next  <= game_blue;
          end if;
       end if;
    end process Final_Mux;
