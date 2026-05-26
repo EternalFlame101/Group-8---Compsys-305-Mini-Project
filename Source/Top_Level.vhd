@@ -482,7 +482,7 @@ architecture game_behaviour of Top_Level is
 begin
 	-- ==================== DO NOT REMOVE ================================
 	-- buffers video clock and fixes all issues to do with vga
-	-- original issue is that clock fanouts was around 1000 
+	-- original issue is that clock fanouts was around 1000
 	-- additional logic pushes too much and breaks it
 	video_clock_buf : GLOBAL
 		port map (
@@ -490,13 +490,31 @@ begin
 		  a_out => video_clock
 		);
 
+   -- ---------------------------------------------------------------------------
+   -- Startup reset: holds the PLL in reset for ~335 ms after power-on so it
+   -- locks cleanly before any game logic starts.  RESET_N is intentionally NOT
+   -- wired here: stopping the pixel clock mid-game prevents synchronous resets
+   -- from processing, which is the root cause of the board-reset not working.
+   -- All game logic still uses (not RESET_N) directly for its own resets.
+   -- ---------------------------------------------------------------------------
+   Startup_Reset_Process : process(CLOCK_50)
+   begin
+      if rising_edge(CLOCK_50) then
+         if startup_reset_counter /= x"FFFFFF" then
+            startup_reset_counter <= startup_reset_counter + 1;
+            startup_reset         <= '1';
+         else
+            startup_reset <= '0';
+         end if;
+      end if;
+   end process Startup_Reset_Process;
 
    -- ---------------------------------------------------------------------------
    -- Video PLL: produces a true 25 MHz pixel clock from 50 MHz input.
    -- ---------------------------------------------------------------------------
    Pixel_Clock_PLL : Video_PLL
       port map (refclk   => CLOCK_50,
-                rst      => not RESET_N,
+                rst      => startup_reset,
                 outclk_0 => video_clock_prebuffered,
                 locked   => pll_locked);
 

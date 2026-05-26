@@ -169,7 +169,7 @@ begin
             end if;
 
             -- Score: increment on rising edge of collision only
-            if current_state = NORMAL then
+            if current_state = NORMAL or current_state = TRAINING then
                if collision_guard = '1' and gift_collision = '1' and prev_gift_collision = '0' then
                   internal_score <= internal_score + 1;
                end if;
