@@ -259,7 +259,7 @@ architecture game_behaviour of Top_Level is
                JUMP_TOTAL_FRAMES      : positive := 64;
                JUMP_PEAK_HEIGHT       : positive := 60;
                LANE_TRANSITION_FRAMES : positive := 64);
-      port (clock, reset, vertical_sync             : in  std_logic;
+      port (clock, reset, enable, vertical_sync     : in  std_logic;
             pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
             shift_left_input                        : in  std_logic;
             shift_right_input                       : in  std_logic;
@@ -294,13 +294,14 @@ architecture game_behaviour of Top_Level is
 	component Game_Master is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
+			  pause_input			: in 	std_logic;
 			  lane_0_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_1_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_2_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_0_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_1_obj_dist  	: in  std_logic_vector(9 downto 0);
 			  lane_2_obj_dist  	: in  std_logic_vector(9 downto 0);
-			  lanes_arrived	  : in  std_logic;
+			  lanes_arrived	   : in  std_logic;
 			  player_lane			: in	std_logic_vector(1 downto 0);
 			  player_state			: in 	std_logic;
 			  player_dive			: in	std_logic;
@@ -311,6 +312,7 @@ architecture game_behaviour of Top_Level is
 			  endscreen_enable	: in  std_logic; -- 0 = off, 1 = on, win/lose screen
 			  endscreen_fsm		: out std_logic;
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
+			  pause_fsm				: out std_logic;
 			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
 			  score            	: out std_logic_vector(7 downto 0);
 			  lives					: out std_logic_vector(1 downto 0));
@@ -483,6 +485,7 @@ architecture game_behaviour of Top_Level is
 	signal speed_select : std_logic_vector(1 downto 0);
 	signal endscreen_fsm		: std_logic;
 	signal startscreen_fsm	: std_logic;
+	signal pause_fsm			: std_logic;
 	
 	signal startscreen_fsm_prev : std_logic := '0';
 	signal endscreen_fsm_prev   : std_logic := '0';
@@ -697,10 +700,10 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 80,
                    LANE        => 2)
-      port map (enable            => (lane_2_type(2) or lane_2_type(1) or lane_2_type(0)) and game_enable,
+      port map (enable            => (lane_2_type(2) or lane_2_type(1) or lane_2_type(0)) and (game_enable),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => (not RESET_N) or (not game_enable),
+                reset             => (not RESET_N) or (startscreen_fsm),
                 obj_type          => lane_2_type,
                 arrived           => arrived_2,
                 pixel_column      => pixel_column,
@@ -716,10 +719,10 @@ begin
       generic map (REAL_HEIGHT => 60,
                    REAL_WIDTH  => 70,
                    LANE        => 1)
-      port map (enable            => (lane_1_type(2) or lane_1_type(1) or lane_1_type(0)) and game_enable,
+      port map (enable            => (lane_1_type(2) or lane_1_type(1) or lane_1_type(0)) and (game_enable),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset 			    => (not RESET_N) or (not game_enable),
+                reset 			    => (not RESET_N) or (startscreen_fsm),
 					 obj_type 		    => lane_1_type,
 					 arrived			    => arrived_1,
                 pixel_column      => pixel_column,
@@ -735,10 +738,10 @@ begin
       generic map (REAL_HEIGHT => 120,
                    REAL_WIDTH  => 70,
                    LANE        => 0)
-      port map (enable            => (lane_0_type(2) or lane_0_type(1) or lane_0_type(0)) and game_enable,
+      port map (enable            => (lane_0_type(2) or lane_0_type(1) or lane_0_type(0)) and (game_enable),
                 clock             => video_clock,
                 vertical_sync     => vertical_sync,
-                reset             => (not RESET_N) or (not game_enable),
+                reset             => (not RESET_N) or (startscreen_fsm),
                 obj_type          => lane_0_type,
                 arrived           => arrived_0,
                 pixel_column      => pixel_column,
@@ -960,6 +963,7 @@ begin
                    SPRITE_SCALE  => 2)
       port map (clock             => video_clock,
                 reset             => not RESET_N,
+					 enable				 => game_enable,
                 vertical_sync     => vertical_sync,
                 pixel_row         => pixel_row,
                 pixel_column      => pixel_column,
@@ -1027,6 +1031,7 @@ begin
 	FSM : Game_Master
 		port map  (clock					=> video_clock,
 					  reset					=> not(RESET_N),
+					  pause_input			=> not KEY(3),
 					  lane_0_obj_type		=> lane_0_type,
 					  lane_1_obj_type		=> lane_1_type,
 					  lane_2_obj_type		=> lane_2_type,
@@ -1044,6 +1049,7 @@ begin
 					  endscreen_enable	=> endscreen_active,
 					  endscreen_fsm		=> endscreen_fsm,
 					  endscreen_outcome	=> endscreen_outcome,
+					  pause_fsm			   => pause_fsm,
 					  speed_select			=> speed_select,
 					  score					=> score_hud,
 					  lives					=> lives);

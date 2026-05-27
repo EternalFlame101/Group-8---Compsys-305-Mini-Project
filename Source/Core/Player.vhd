@@ -12,7 +12,7 @@ entity Player is
             JUMP_TOTAL_FRAMES      : positive := 64;
             JUMP_PEAK_HEIGHT       : positive := 60;
             LANE_TRANSITION_FRAMES : positive := 64);
-   port (clock, reset, vertical_sync             : in  std_logic;
+   port (clock, reset, enable, vertical_sync     : in  std_logic;
          pixel_row, pixel_column                 : in  std_logic_vector(9 downto 0);
          shift_left_input                        : in  std_logic;
          shift_right_input                       : in  std_logic;
@@ -643,7 +643,7 @@ begin
       elsif rising_edge(clock) then
          vsync_previous <= vertical_sync;
 
-         if (vertical_sync = '1') and (vsync_previous = '0') then
+         if (vertical_sync = '1') and (vsync_previous = '0') and (enable = '1') then
 
             -- Walk cycle: only advances when not transitioning AND not jumping
             -- AND not diving. The cat is rolling/jumping/squishing during those

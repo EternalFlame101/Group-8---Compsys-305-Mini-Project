@@ -6,6 +6,7 @@ use IEEE.std_logic_unsigned.all;
 entity Game_Master is
    port(clock             : in  std_logic;
         reset             : in  std_logic;
+		  pause_input		  : in  std_logic;
         lane_0_obj_type   : in  std_logic_vector(2 downto 0);
         lane_1_obj_type   : in  std_logic_vector(2 downto 0);
         lane_2_obj_type   : in  std_logic_vector(2 downto 0);
@@ -23,6 +24,7 @@ entity Game_Master is
         endscreen_enable  : in  std_logic;
         endscreen_fsm     : out std_logic;
         endscreen_outcome : out std_logic;
+		  pause_fsm			  : out std_logic;
         speed_select      : out std_logic_vector(1 downto 0);
         score             : out std_logic_vector(7 downto 0);
 		  lives				  : out std_logic_vector(1 downto 0));
@@ -49,6 +51,7 @@ architecture game_master_behaviour of Game_Master is
 
    signal current_state              : game_state_type := INIT_SCREEN;
    signal next_state                 : game_state_type;
+	signal prev_state						 : game_state_type;
 
    signal internal_game_enable       : std_logic;
    signal internal_endscreen_state   : std_logic;
@@ -77,6 +80,9 @@ architecture game_master_behaviour of Game_Master is
 	signal lane_2_active					 : std_logic;
 	
 	signal internal_lives				 : std_logic_vector(1 downto 0);
+	
+	signal internal_pause_prev			 : std_logic;
+	signal internal_pause_state		 : std_logic;
 
 begin
   
@@ -134,13 +140,27 @@ begin
             start_seen_high            <= '0';
             internal_score             <= (others => '0');
 				internal_lives					<= "11";
+				internal_pause_state			<= '0';
          else
             current_state              <= next_state;
             guard_previous_game_enable <= internal_game_enable;
             prev_gift_collision        <= gift_collision;
 				prev_object_collision		<= object_collision;
 				
-
+				internal_pause_prev			<= pause_input;
+				
+				
+				
+				-- pause logic
+				if (pause_input = '1' and internal_pause_prev = '0') then
+					internal_pause_state <= not internal_pause_state;
+				end if;
+				
+				if current_state /= next_state then
+					 prev_state <= current_state;
+				end if;
+				
+				-- wave logic
 				if lanes_arrived = '0' then
 					 wave_scored <= '0';
 				elsif (wave_scored = '0' and internal_score /= "1111111" 
@@ -148,7 +168,6 @@ begin
 					 internal_score <= internal_score + 1;
 					 wave_scored    <= '1';
 				end if;
-				
 				
             -- Arm start_seen_high once start screen confirmed active
             if current_state = INIT_SCREEN then
@@ -206,6 +225,7 @@ begin
       internal_endscreen_state <= '0';
       startscreen_fsm          <= '0';
       endscreen_fsm            <= '0';
+		pause_fsm					 <= '0';
 
       case current_state is
          when INIT_SCREEN =>
@@ -214,34 +234,39 @@ begin
 				
             internal_game_enable     <= '0';
             internal_endscreen_state <= '0';
-				
+				pause_fsm					 <= '0';
          when TRAINING =>
             startscreen_fsm          <= '0';
 				endscreen_fsm				 <= '0';
 			
             internal_game_enable     <= '1';
             internal_endscreen_state <= '0';
+				pause_fsm					 <= '0';
          when NORMAL =>
 				startscreen_fsm          <= '0';
 				endscreen_fsm				 <= '0';
 			
             internal_game_enable     <= '1';
             internal_endscreen_state <= '0';
+				pause_fsm					 <= '0';
          when PAUSE =>
 				startscreen_fsm          <= '0';
 				endscreen_fsm				 <= '0';
 				
             internal_game_enable     <= '0';
+				pause_fsm					 <= '1';
          when WIN =>
 				startscreen_fsm          <= '0';
 
             endscreen_fsm            <= '1';
             internal_endscreen_state <= '1';
+				pause_fsm					 <= '0';
          when LOSE =>
 				startscreen_fsm          <= '0';
 				
             endscreen_fsm            <= '1';
             internal_endscreen_state <= '0';
+				pause_fsm					 <= '0';
       end case;
    end process FSM_OUTPUT;
 
@@ -259,7 +284,8 @@ begin
                             endscreen_enable,
                             mode_selected,
 									 internal_lives,
-									 internal_score)
+									 internal_score,
+									 internal_pause_state)
    begin
       next_state <= current_state;
 
@@ -273,23 +299,25 @@ begin
 					end if;
 				end if;
          when TRAINING =>
-            if (internal_lives = "11") then
+				if (internal_pause_state = '1') then
+					next_state	<= PAUSE;
+            elsif (internal_lives = "11") then
 					next_state <= LOSE;
-            end if;
-				
-				if (internal_score >= 10) then
+				elsif (internal_score >= 10) then
 					next_state <= WIN;
 				end if;
          when NORMAL =>
-            if (internal_lives = "11") then
+            if (internal_pause_state = '1') then
+					next_state	<= PAUSE;
+            elsif (internal_lives = "11") then
 					next_state <= LOSE;
-            end if;
-				
-				if (internal_score >= 30) then
+				elsif (internal_score >= 30) then
 					next_state <= WIN;
 				end if;
          when PAUSE =>
-            null;
+            if (internal_pause_state = '0') then
+					next_state <= prev_state;
+				end if;
          when WIN =>
             if endscreen_enable = '0' then
                next_state <= INIT_SCREEN;
