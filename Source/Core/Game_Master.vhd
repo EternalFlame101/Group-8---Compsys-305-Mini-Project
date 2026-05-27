@@ -133,7 +133,7 @@ begin
 				prev_object_collision		<= '0';
             start_seen_high            <= '0';
             internal_score             <= (others => '0');
-				internal_lives					<= (others => '0');
+				internal_lives					<= "11";
          else
             current_state              <= next_state;
             guard_previous_game_enable <= internal_game_enable;
@@ -176,16 +176,23 @@ begin
             end if;
 				
 				-- object collisions removing lives
-					if collision_guard = '1' and object_collision = '1' and prev_object_collision = '0' then
-						 internal_lives <= internal_lives + 1;
-					end if;
-				
-				-- score resetting when in start screen
-				if current_state = INIT_SCREEN then
-					internal_score <= (others => '0');
-					wave_scored    <= '0';
-					internal_lives	<= (others => '0');
+				if collision_guard = '1' and object_collision = '1' and prev_object_collision = '0' then
+					internal_lives <= internal_lives + 1;
 				end if;
+				
+				-- score and lives resetting when in start screen
+            if current_state = INIT_SCREEN then
+                internal_score <= (others => '0');
+                wave_scored    <= '0';
+                internal_lives <= "11"; -- Keep HEX5 at 0 while waiting
+                
+                -- Set lives perfectly on the transition INTO the game states
+                if next_state = NORMAL then
+                    internal_lives <= "10"; -- Single Player (Inverts to display 1)
+                elsif next_state = TRAINING then
+                    internal_lives <= "00"; -- Training (Inverts to display 3)
+                end if;
+            end if;
          end if;
       end if;
    end process SYNC_PROCESS;
@@ -274,7 +281,7 @@ begin
 					next_state <= WIN;
 				end if;
          when NORMAL =>
-            if (internal_lives = "01") then
+            if (internal_lives = "11") then
 					next_state <= LOSE;
             end if;
 				

@@ -891,7 +891,7 @@ begin
 	My_Timer : Game_Timer
 		generic map (CLOCK_HZ => 50_000_000)
 		port map (clock    => CLOCK_50,       -- 50MHz system clock
-					 reset    => not(RESET_N),
+					 reset    => (endscreen_fsm or (not RESET_N)),
 					 enable   => game_enable,    -- from Game_Master
 					 min_tens => hud_min_tens,
 					 min_ones => hud_min_ones,

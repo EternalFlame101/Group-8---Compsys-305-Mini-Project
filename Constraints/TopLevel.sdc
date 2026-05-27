@@ -67,3 +67,6 @@ set_false_path -from [all_registers] -to [get_ports {SD_CLK SD_CMD SD_DATA[*]}]
 # need every-direction false_path because of the shared-pin routing.
 set_false_path -from [get_ports {SD_DATA[0] GPIO_0[3]}]
 set_false_path -to   [get_ports {SD_DATA[0] GPIO_0[3]}]
+
+# mouse_clock_filter is a filtered PS/2 clock, ~16kHz max - cut false timing paths
+set_clock_groups -asynchronous -group { mouse_filter_clk }

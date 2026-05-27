@@ -118,21 +118,25 @@ begin
 	-- Remaining lives compute
 	-- ==========================================================
 	process(game_mode, health_digit)
-		variable hits : integer range 0 to 3;
 	begin
-		hits := conv_integer(health_digit);
-		if game_mode = '0' then
-			if hits >= 3 then
-				remaining_lives <= "0000";
+		if health_digit = "11" then
+			-- Title screen or game over state
+			remaining_lives <= "0000"; 
+		elsif game_mode = '1' then
+			-- SINGLE PLAYER MODE (Normal)
+			if health_digit = "10" then
+				remaining_lives <= "0001"; -- 1 Life remaining at start
 			else
-				remaining_lives <= conv_std_logic_vector(3 - hits, 4);
+				remaining_lives <= "0000";
 			end if;
 		else
-			if hits >= 1 then
-				remaining_lives <= "0000";
-			else
-				remaining_lives <= conv_std_logic_vector(1 - hits, 4);
-			end if;
+			-- TRAINING MODE
+			case health_digit is
+				when "00"   => remaining_lives <= "0011"; -- 3 Lives remaining at start
+				when "01"   => remaining_lives <= "0010"; -- 2 Lives remaining
+				when "10"   => remaining_lives <= "0001"; -- 1 Life remaining
+				when others => remaining_lives <= "0000";
+			end case;
 		end if;
 	end process;
 

@@ -687,43 +687,33 @@ begin
             -- dive_edge = dive_input  rising edge
             -- (Computed in-line below via the *_previous registers.)
 
-				-- =============================================================
-            -- 1. DIVE (Squish) Logic
-            -- =============================================================
             if (dive_input_sync = '1') and (dive_input_previous = '0') then
-               -- NEW PRESS OR SPAM: Restart dive perfectly
+               -- Dive edge: start or restart dive. Resets the frame counter so
+               -- the player stays crouched while holding the button rapidly,
+               -- which is needed to pass under a floating air-box obstacle.
                dive_active      <= '1';
                dive_frame_count <= 0;
-               
-               -- Fast drop if currently jumping
                if current_state = '1' then
+                  -- Airborne: snap jump_frame_count toward landing so the
+                  -- remaining parabola arc plays out over FAST_DROP_TAIL_FRAMES
+                  -- vsyncs. current_state stays '1' so jump_pixel_offset
+                  -- continues to be derived from the parabola until the tail
+                  -- completes normally below.
                   jump_frame_count <= JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES;
                end if;
-               
-            elsif dive_active = '1' then
-               -- ANIMATING OR HOLDING DIVE
-               if (dive_input_sync = '1') and (dive_frame_count = 15) then
-                  dive_frame_count <= 15; -- The Pancake Hold!
-               elsif dive_frame_count = DIVE_TOTAL_FRAMES - 1 then
-                  dive_active      <= '0';
-                  dive_frame_count <= 0;
-               else
-                  dive_frame_count <= dive_frame_count + 1;
-               end if;
-            end if;
-
-            -- =============================================================
-            -- 2. JUMP Logic
-            -- =============================================================
-            if (jump_input_sync = '1') and (current_state = '0') then
-               -- START OR CHAIN JUMP (Hold to bounce continuously)
+            elsif (jump_input_sync = '1') and (jump_input_previous = '0') and (current_state = '0') then
+               -- Jump edge AND not already jumping: start jump. Cancel any
+               -- active dive. Pressing jump while already jumping does
+               -- nothing (no double-jump).
                current_state    <= '1';
                jump_frame_count <= 0;
                dive_active      <= '0';
-               
-            elsif current_state = '1' then
-               -- Guard against overriding the dive's fast-drop assignment
-               if not ((dive_input_sync = '1') and (dive_input_previous = '0')) then
+               dive_frame_count <= 0;
+            else
+               -- No new input: advance whichever animations are running.
+
+               -- Jump frame counter advance / completion.
+               if current_state = '1' then
                   if jump_frame_count = JUMP_TOTAL_FRAMES - 1 then
                      current_state    <= '0';
                      jump_frame_count <= 0;
@@ -731,11 +721,19 @@ begin
                      jump_frame_count <= jump_frame_count + 1;
                   end if;
                end if;
+
+               -- Dive frame counter advance / completion.
+               if dive_active = '1' then
+                  if dive_frame_count = DIVE_TOTAL_FRAMES - 1 then
+                     dive_active      <= '0';
+                     dive_frame_count <= 0;
+                  else
+                     dive_frame_count <= dive_frame_count + 1;
+                  end if;
+               end if;
             end if;
 
-            -- =============================================================
-            -- 3. Lane Transition (Hold-to-Repeat Roll)
-            -- =============================================================
+            -- Lane transition + roll-frame index update
             if transition_active = '1' then
                if view_pos_int = view_pos_target then
                   transition_active <= '0';
@@ -743,6 +741,8 @@ begin
                   roll_vsync_count  <= 0;
                else
                   -- Roll cancel: opposite input mid-transition reverses direction.
+                  -- Right frame N and left frame (6-N) display the same sprite,
+                  -- so mirroring the index gives seamless visual continuity.
                   if (roll_direction = '1') and (shift_left_input_sync = '1') and (click_previous = '0') then
                      roll_direction  <= '0';
                      transition_step <= -TRANSITION_SPEED;
@@ -776,8 +776,7 @@ begin
                   end if;
                end if;
             else
-               -- EDGE DETECTS REMOVED: Holding right/left automatically starts a new roll!
-               if (shift_right_input_sync = '1') then
+               if (shift_right_input_sync = '1') and (right_click_previous = '0') then
                   if current_lane_int = 0 then
                      view_pos_target   <= 0;
                      transition_step   <= TRANSITION_SPEED;
@@ -793,7 +792,7 @@ begin
                      roll_frame_index  <= 0;
                      roll_vsync_count  <= 0;
                   end if;
-               elsif (shift_left_input_sync = '1') then
+               elsif (shift_left_input_sync = '1') and (click_previous = '0') then
                   if current_lane_int = 2 then
                      view_pos_target   <= 0;
                      transition_step   <= -TRANSITION_SPEED;
