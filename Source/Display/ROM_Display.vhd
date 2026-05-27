@@ -42,9 +42,8 @@ architecture rom_display_behaviour of ROM_Display is
 
    constant CHAR_SIZE : integer := 8 * SCALE;
 
-   signal display_on            : std_logic;
-   signal character_on          : std_logic;
-   signal character_on_register : std_logic;
+   signal display_on   : std_logic;
+   signal character_on : std_logic;
 
    signal row_offset    : std_logic_vector(9 downto 0);
    signal column_offset : std_logic_vector(9 downto 0);
@@ -52,7 +51,7 @@ architecture rom_display_behaviour of ROM_Display is
    signal font_column   : std_logic_vector(2 downto 0);
 
    -- Map a 5-bit offset (0..23) to a font index (0..7) for SCALE = 3.
-   -- Out-of-range offsets get gated to 0 by character_on_register anyway.
+   -- Out-of-range offsets get gated to 0 by character_on anyway.
    function divide_by_three(offset : std_logic_vector) return std_logic_vector is
       variable o : integer range 0 to 31;
    begin
@@ -71,13 +70,6 @@ architecture rom_display_behaviour of ROM_Display is
    end function divide_by_three;
 
 begin
-
-   Character_Process : process (clock)
-   begin
-      if rising_edge(clock) then
-         character_on_register <= character_on;
-      end if;
-   end process Character_Process;
 
    row_offset    <= pixel_row    - y_position;
    column_offset <= pixel_column - x_position;
@@ -121,8 +113,8 @@ begin
                 font_column            => font_column,
                 rom_multiplexer_output => display_on);
 
-   red_out   <= TEXT_RED   when (character_on_register = '1' and display_on = '1') else "0000";
-   green_out <= TEXT_GREEN when (character_on_register = '1' and display_on = '1') else "0000";
-   blue_out  <= TEXT_BLUE  when (character_on_register = '1' and display_on = '1') else "0000";
+   red_out   <= TEXT_RED   when (character_on = '1' and display_on = '1') else "0000";
+   green_out <= TEXT_GREEN when (character_on = '1' and display_on = '1') else "0000";
+   blue_out  <= TEXT_BLUE  when (character_on = '1' and display_on = '1') else "0000";
 
 end architecture rom_display_behaviour;

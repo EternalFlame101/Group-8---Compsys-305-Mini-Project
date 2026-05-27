@@ -270,15 +270,15 @@ begin
 					next_state <= LOSE;
             end if;
 				
-				if (internal_score >= 10) then
+				if (internal_score > 10) then
 					next_state <= WIN;
 				end if;
          when NORMAL =>
-            if (internal_lives = "01") then
+            if (internal_lives = "11") then
 					next_state <= LOSE;
             end if;
 				
-				if (internal_score >= 30) then
+				if (internal_score > 25) then
 					next_state <= WIN;
 				end if;
          when PAUSE =>

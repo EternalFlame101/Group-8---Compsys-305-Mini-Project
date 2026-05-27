@@ -197,7 +197,6 @@ architecture game_behaviour of Top_Level is
             pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
             mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
             mouse_left_click             : in  std_logic;
-            mouse_right_click            : in  std_logic;
             any_key_pressed              : in  std_logic;
             any_key_held                 : in  std_logic;
             sw0, sw1                     : in  std_logic;
@@ -315,32 +314,18 @@ architecture game_behaviour of Top_Level is
 			  score            	: out std_logic_vector(7 downto 0);
 			  lives					: out std_logic_vector(1 downto 0));
 	end component Game_Master;
-	
-	component Game_Timer is
-		generic (CLOCK_HZ : positive := 50_000_000);
-		port (clock      : in  std_logic;
-				reset      : in  std_logic;   -- synchronous reset, returns to 00:00
-				enable     : in  std_logic;   -- pause/resume the timer
-				min_tens   : out std_logic_vector(3 downto 0);
-				min_ones   : out std_logic_vector(3 downto 0);
-				sec_tens   : out std_logic_vector(3 downto 0);
-				sec_ones   : out std_logic_vector(3 downto 0));
-	end component Game_Timer;
 
 	component HUD_Overlay is
-		port (video_clock                   : in  std_logic;
-				reset                         : in  std_logic;
-				pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-				score                         : in  std_logic_vector(7 downto 0);
-				HUD_enable                    : in  std_logic;
-				HUD_active                    : out std_logic;
-				health_digit 						: in std_logic_vector(1 downto 0);	-- raw hit counter from Game_Master
-				game_mode    						: in std_logic;                     -- '0'=training(max 3), '1'=normal(max 1)
-				min_tens, min_ones            : in  std_logic_vector(3 downto 0);
-				sec_tens, sec_ones            : in  std_logic_vector(3 downto 0);
-				score_h, score_t, score_o     : out std_logic_vector(3 downto 0);
-				red_out, green_out, blue_out  : out std_logic_vector(3 downto 0));
-	end component HUD_Overlay;
+		port(video_clock				       : in std_logic;
+			  reset						       : in std_logic;
+			  pixel_row, pixel_column      : in std_logic_vector(9 downto 0);
+			  score						       : in std_logic_vector(7 downto 0);
+			  HUD_enable				       : in std_logic;
+			  HUD_active				       : out std_logic;
+			  health_digit						 : in std_logic_vector(1 downto 0);
+			  score_h, score_t, score_o	 : out std_logic_vector(3 downto 0);
+			  red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
+	end component;
 
    -- ---------------------------------------------------------------------------
    -- Signals
@@ -374,7 +359,6 @@ architecture game_behaviour of Top_Level is
    signal any_key_pressed            : std_logic;
 	signal any_key_pressed_prev		 : std_logic;
 	signal any_key_pressed_rising		 : std_logic;
-   signal keys_held                  : std_logic;
 	
 	signal startup_reset_counter : std_logic_vector(23 downto 0) := (others => '0');
    signal startup_reset         : std_logic;
@@ -495,11 +479,8 @@ architecture game_behaviour of Top_Level is
 	signal score_hud                    : std_logic_vector(7 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
 	signal lives								: std_logic_vector(1 downto 0);
-	signal hud_min_tens 						: std_logic_vector(3 downto 0);
-	signal hud_min_ones 						: std_logic_vector(3 downto 0);
-	signal hud_sec_tens 						: std_logic_vector(3 downto 0);
-	signal hud_sec_ones 						: std_logic_vector(3 downto 0);	
 	signal score_h, score_t, score_o  	: std_logic_vector(3 downto 0);
+	
 	
 begin
 	-- ==================== DO NOT REMOVE ================================
@@ -565,7 +546,6 @@ begin
 	any_key_pressed <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3))
                        or left_click or right_click
 							  or keyboard_left_key or keyboard_right_key or keyboard_jump_key or keyboard_dive_key;
-   keys_held <= (not KEY(0)) or (not KEY(1)) or (not KEY(2)) or (not KEY(3));
 									  
 
    -- ---------------------------------------------------------------------------
@@ -855,8 +835,7 @@ begin
                 mouse_row           => mouse_row,
                 mouse_column        => mouse_column,
                 mouse_left_click    => left_click,
-                mouse_right_click   => right_click,
-                any_key_pressed     => any_key_pressed,
+                any_key_pressed     => any_key_pressed_rising,
                 any_key_held        => any_key_pressed,
                 sw0                 => SW(0),
                 sw1                 => SW(1),
@@ -869,55 +848,41 @@ begin
                 green_out           => start_screen_green,
                 blue_out            => start_screen_blue);
 
-	-- Knee logo sprite, SCALE 8 = 512x512, intentionally overflows the screen.
-	-- It's funny. Don't question it.
-	-- sprite_x = 320 - 256 = 64
-	-- sprite_y = 240 - 256 = -16, clamped to 0 (unsigned can't go negative)
-	Start_Screen_Background_Sprite : Sprites_Display
-		generic map (SPRITE_WIDTH  => 64,
-						 SPRITE_HEIGHT => 64,
-						 ADDR_BITS     => 12,
-						 SCALE         => 8,
-						 MIF_FILE      => "Assets/Memory_Initialization_Files/jasper.mif")
-		port map (clock        => video_clock,
-					 pixel_row    => pixel_row,
-					 pixel_column => pixel_column,
-					 sprite_x     => conv_std_logic_vector(64, 10),
-					 sprite_y     => conv_std_logic_vector(0, 10),
-					 red_out      => start_screen_sprite_red,
-					 green_out    => start_screen_sprite_green,
-					 blue_out     => start_screen_sprite_blue);
-	
-	My_Timer : Game_Timer
-		generic map (CLOCK_HZ => 50_000_000)
-		port map (clock    => CLOCK_50,       -- 50MHz system clock
-					 reset    => not(RESET_N),
-					 enable   => game_enable,    -- from Game_Master
-					 min_tens => hud_min_tens,
-					 min_ones => hud_min_ones,
-					 sec_tens => hud_sec_tens,
-                sec_ones => hud_sec_ones);
-					 
+   -- Knee logo sprite, drawn underneath the start-screen text.
+   -- 32x32 base * SCALE 4 = 128x128 on screen.
+   -- Centred on x=320: sprite_x = 320 - 64 = 256.
+   -- Centred behind the title block (title centre y ~ 132): sprite_y = 132 - 64 = 68.
+   -- So the sprite spans (256..384) x (68..196), sitting behind the title and credits.
+   Start_Screen_Background_Sprite : Sprites_Display
+      generic map (SPRITE_WIDTH  => 64,
+                   SPRITE_HEIGHT => 64,
+                   ADDR_BITS     => 12,
+                   SCALE         => 8,
+                   MIF_FILE      => "Assets/Memory_Initialization_Files/jasper.mif")
+      port map (clock        => video_clock,
+                pixel_row    => pixel_row,
+                pixel_column => pixel_column,
+                sprite_x     => conv_std_logic_vector(256, 10),
+                sprite_y     => conv_std_logic_vector(68, 10),
+                red_out      => start_screen_sprite_red,
+                green_out    => start_screen_sprite_green,
+                blue_out     => start_screen_sprite_blue);
+
 	HUD : HUD_Overlay
-		port map (video_clock  => video_clock,
-					 reset        => not RESET_N,
-					 pixel_row    => pixel_row,
-					 pixel_column => pixel_column,
-					 score        => score_hud,
-					 HUD_enable   => not start_screen_active,
-					 HUD_active   => HUD_active,
-					 health_digit => lives,
-					 game_mode    => latched_mode,
-					 min_tens     => hud_min_tens,
-                min_ones     => hud_min_ones,
-                sec_tens     => hud_sec_tens,
-                sec_ones     => hud_sec_ones,
-					 score_h 	  => score_h,
-					 score_t 	  => score_t, 
-					 score_o		  => score_o,
-					 red_out      => HUD_red,
-					 green_out    => HUD_green,
-					 blue_out     => HUD_blue);
+	port map (video_clock  => video_clock,
+	          reset        => not RESET_N,
+	          pixel_row    => pixel_row,
+	          pixel_column => pixel_column,
+	          score        => score_hud,
+	          HUD_enable   => not start_screen_active,
+	          HUD_active   => HUD_active,
+				 health_digit => not(lives),
+				 score_h 	  => score_h,
+				 score_t 	  => score_t, 
+				 score_o		  => score_o,
+	          red_out      => HUD_red,
+	          green_out    => HUD_green,
+	          blue_out     => HUD_blue);
 
    Final_Compositor_Inst : Screen_Compositor
       port map (clock							=> video_clock,

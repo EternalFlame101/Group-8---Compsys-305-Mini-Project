@@ -57,8 +57,8 @@ architecture end_screen_behaviour of End_Screen is
    constant WIN_Y  : integer := 240;
    constant LOSE_X : integer := 272;
    constant LOSE_Y : integer := 240;
-   constant CONT_X : integer := 104;
-   constant CONT_Y : integer := 320;
+   constant CONT_X : integer := 216;
+   constant CONT_Y : integer := 360;
 
 begin
 
@@ -142,11 +142,11 @@ begin
                 green_out      => lose_green,
                 blue_out       => lose_blue);
 
-   -- --------------------------------------------------------------------------------
-   -- "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (SCALE 1, muted purple)
-   -- --------------------------------------------------------------------------------
-   Subtitle : Word_Display
-      generic map (STRING_LENGTH => 54,
+   -- ---------------------------------------------------------------------------
+   -- "CLICK ANYWHERE TO CONTINUE" (SCALE 1, muted purple)
+   -- ---------------------------------------------------------------------------
+   Continue_Text : Word_Display
+      generic map (STRING_LENGTH => 26,
                    SCALE         => 1,
                    TEXT_RED      => "0110",
                    TEXT_GREEN    => "0101",
@@ -166,34 +166,6 @@ begin
                                   "000101" &  -- E
                                   "010010" &  -- R
                                   "000101" &  -- E
-                                  "100000" &  -- sp
-                                  "001111" &  -- O
-                                  "001110" &  -- N
-                                  "100000" &  -- sp
-                                  "010100" &  -- T
-                                  "001000" &  -- H
-                                  "000101" &  -- E
-                                  "100000" &  -- sp
-                                  "010011" &  -- S
-                                  "000011" &  -- C
-                                  "010010" &  -- R
-                                  "000101" &  -- E
-                                  "000101" &  -- E
-                                  "001110" &  -- N
-                                  "101111" &  -- /  = 47
-                                  "010000" &  -- P
-                                  "010010" &  -- R
-                                  "000101" &  -- E
-                                  "010011" &  -- S
-                                  "010011" &  -- S
-                                  "100000" &  -- sp
-                                  "000001" &  -- A
-                                  "001110" &  -- N
-                                  "011001" &  -- Y
-                                  "100000" &  -- sp
-                                  "001011" &  -- K
-                                  "000101" &  -- E
-                                  "011001" &  -- Y
                                   "100000" &  -- sp
                                   "010100" &  -- T
                                   "001111" &  -- O

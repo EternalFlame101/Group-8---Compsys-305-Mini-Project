@@ -9,7 +9,6 @@ entity Start_Screen is
          pixel_row, pixel_column      : in  std_logic_vector(9 downto 0);
          mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
          mouse_left_click             : in  std_logic;
-         mouse_right_click            : in  std_logic;
          any_key_pressed              : in  std_logic;
          any_key_held                 : in  std_logic;
          sw0, sw1                     : in  std_logic;
@@ -43,7 +42,6 @@ architecture start_screen_behaviour of Start_Screen is
    signal mouse_left_click_prev  : std_logic := '0';
    signal mode_click_armed       : std_logic := '0';
    signal title_advance_armed    : std_logic := '0';
-   signal title_clear_counter    : integer range 0 to 5000000 := 0;
 
    signal training_hovered      : std_logic;
    signal single_player_hovered : std_logic;
@@ -52,7 +50,7 @@ architecture start_screen_behaviour of Start_Screen is
    signal title_red,       title_green,       title_blue       : std_logic_vector(3 downto 0);
    signal credits_one_red, credits_one_green, credits_one_blue : std_logic_vector(3 downto 0);
    signal credits_two_red, credits_two_green, credits_two_blue : std_logic_vector(3 downto 0);
-   signal continue_red,    continue_green,    continue_blue    : std_logic_vector(3 downto 0);
+   signal subtitle_red,    subtitle_green,    subtitle_blue    : std_logic_vector(3 downto 0);
 
    -- Mode select colours
    signal header_red,   header_green,   header_blue   : std_logic_vector(3 downto 0);
@@ -97,8 +95,8 @@ architecture start_screen_behaviour of Start_Screen is
    constant CREDITS_ONE_Y  : integer := 170;
    constant CREDITS_TWO_X  : integer := 216;
    constant CREDITS_TWO_Y  : integer := 185;
-   constant CONTINUE_X     : integer := 104;
-   constant CONTINUE_Y     : integer := 320;
+   constant SUBTITLE_X     : integer := 104;
+   constant SUBTITLE_Y     : integer := 320;
    constant HEADER_X       : integer := 144;
    constant HEADER_Y       : integer := 100;
 
@@ -146,24 +144,21 @@ begin
    -- Hover: left/right screen half, Y-bounded so outside the button+tip area neither side is active.
    -- SW1='1' lets SW0 override mouse position (SW0=0->Training, SW0=1->Single Player).
    training_hovered <= '1' when ((mouse_column <  conv_std_logic_vector(320, 10))
-										and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
-										and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
-									else '0';
+                             and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
+                             and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
+                            or  (sw1 = '1' and sw0 = '0')
+                    else '0';
 
    single_player_hovered <= '1' when ((mouse_column >= conv_std_logic_vector(320, 10))
-										     and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
-											  and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
-										  else '0';
+                                  and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
+                                  and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
+                                 or  (sw1 = '1' and sw0 = '1')
+                    else '0';
 
-   -- State machine.
-   -- Title screen arming: title_advance_armed is set only after any_key_held has been
-   -- continuously '0' for 200 ms (5,000,000 cycles at 25 MHz).  Any brief PS/2 glitch
-   -- (mouse-movement packet ~3 ms, keyboard repeat gap ~90 ms) resets the counter,
-   -- so spurious edges from held inputs cannot advance the screen.  Once the player
-   -- genuinely releases all inputs for 200 ms the screen arms; the next fresh
-   -- any_key_pressed pulse advances to mode_select.
-   -- SW1+KEY2 quickstart bypasses all guards and goes directly to game_running from
-   -- either title_screen or mode_select.
+   -- State machine with rising-edge mouse-click detection and SW1/KEY2 support.
+   -- title_advance_armed requires all inputs to be seen released at least once before
+   -- any_key_pressed can fire the title->mode_select transition. This prevents
+   -- PS/2 mouse-movement glitches (and held keys) from spuriously advancing the screen.
    State_Machine : process(video_clock, reset)
    begin
       if reset = '1' then
@@ -173,58 +168,37 @@ begin
          mouse_left_click_prev  <= '0';
          mode_click_armed       <= '0';
          title_advance_armed    <= '0';
-         title_clear_counter    <= 0;
       elsif rising_edge(video_clock) then
          mouse_left_click_prev <= mouse_left_click;
 
          case screen_state is
             when title_screen =>
-               -- Sustained-release arming: counter increments while no key held,
-               -- resets immediately if any key is detected.  Requires 200 ms of
-               -- complete input silence before any key (including KEY2) can advance.
-               if any_key_held = '1' then
-                  title_clear_counter <= 0;
-                  title_advance_armed <= '0';
-               elsif title_advance_armed = '0' then
-                  if title_clear_counter = 5000000 then
-                     title_advance_armed <= '1';
-                  else
-                     title_clear_counter <= title_clear_counter + 1;
-                  end if;
+               if any_key_held = '0' then
+                  title_advance_armed <= '1';
                end if;
-               -- Fire when armed: SW1+KEY2 goes straight to game, everything else
-               -- (including KEY2 alone when SW1=0) goes to mode_select.
                if any_key_pressed = '1' and title_advance_armed = '1' then
-                  if sw1 = '1' and key2_pressed = '1' then
-                     selected_mode_internal <= sw0;
-                     latched_mode_internal  <= sw0;
-                     screen_state           <= game_running;
-                  else
-                     screen_state     <= mode_select;
-                     mode_click_armed <= '0';
-                  end if;
+                  screen_state     <= mode_select;
+                  mode_click_armed <= '0';
                end if;
 
             when mode_select =>
-               -- SW1+KEY2 instant quickstart
+               if mouse_left_click = '0' then
+                  mode_click_armed <= '1';
+               end if;
+
                if sw1 = '1' and key2_pressed = '1' then
                   selected_mode_internal <= sw0;
                   latched_mode_internal  <= sw0;
                   screen_state           <= game_running;
-               else
-                  if mouse_left_click = '0' then
-                     mode_click_armed <= '1';
-                  end if;
-                  if mode_click_armed = '1' and mouse_left_click = '1' and mouse_left_click_prev = '0' then
-                     if training_hovered = '1' then
-                        selected_mode_internal <= '0';
-                        latched_mode_internal  <= '0';
-                        screen_state           <= game_running;
-                     elsif single_player_hovered = '1' then
-                        selected_mode_internal <= '1';
-                        latched_mode_internal  <= '1';
-                        screen_state           <= game_running;
-                     end if;
+               elsif mode_click_armed = '1' and mouse_left_click = '1' and mouse_left_click_prev = '0' then
+                  if training_hovered = '1' then
+                     selected_mode_internal <= '0';
+                     latched_mode_internal  <= '0';
+                     screen_state           <= game_running;
+                  elsif single_player_hovered = '1' then
+                     selected_mode_internal <= '1';
+                     latched_mode_internal  <= '1';
+                     screen_state           <= game_running;
                   end if;
                end if;
 
@@ -282,8 +256,8 @@ begin
                 pixel_row    => pixel_row, pixel_column => pixel_column,
                 red_out => credits_two_red, green_out => credits_two_green, blue_out => credits_two_blue);
 
-   -- Continue: "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (54 chars, SCALE 1)
-   Continue : Word_Display
+   -- Subtitle: "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (54 chars, SCALE 1)
+   Subtitle : Word_Display
       generic map (STRING_LENGTH => 54, SCALE => 1,
                    TEXT_RED => "1001", TEXT_GREEN => "0111", TEXT_BLUE => "1100")
       port map (clock        => video_clock,
@@ -296,10 +270,10 @@ begin
                                 "001110" & "011001" & "100000" & "001011" & "000101" & "011001" &
                                 "100000" & "010100" & "001111" & "100000" & "000011" & "001111" &
                                 "001110" & "010100" & "001001" & "001110" & "010101" & "000101",
-                x_position   => conv_std_logic_vector(CONTINUE_X, 10),
-                y_position   => conv_std_logic_vector(CONTINUE_Y, 10),
+                x_position   => conv_std_logic_vector(SUBTITLE_X, 10),
+                y_position   => conv_std_logic_vector(SUBTITLE_Y, 10),
                 pixel_row    => pixel_row, pixel_column => pixel_column,
-                red_out 	  => continue_red, green_out => continue_green, blue_out => continue_blue);
+                red_out => subtitle_red, green_out => subtitle_green, blue_out => subtitle_blue);
 
    -- Header: "SELECT YOUR GAME MODE:" (22 chars, SCALE 2)
    Header : Word_Display
@@ -648,7 +622,7 @@ begin
                                title_red,         title_green,         title_blue,
                                credits_one_red,   credits_one_green,   credits_one_blue,
                                credits_two_red,   credits_two_green,   credits_two_blue,
-                               continue_red,      continue_green,      continue_blue,
+                               subtitle_red,      subtitle_green,      subtitle_blue,
                                header_red,        header_green,        header_blue,
                                training_red,      training_green,      training_blue,
                                single_player_red, single_player_green, single_player_blue,
@@ -657,9 +631,9 @@ begin
    begin
       case screen_state is
          when title_screen =>
-            red_out   <= title_red   or credits_one_red   or credits_two_red   or continue_red;
-            green_out <= title_green or credits_one_green or credits_two_green or continue_green;
-            blue_out  <= title_blue  or credits_one_blue  or credits_two_blue  or continue_blue;
+            red_out   <= title_red   or credits_one_red   or credits_two_red   or subtitle_red;
+            green_out <= title_green or credits_one_green or credits_two_green or subtitle_green;
+            blue_out  <= title_blue  or credits_one_blue  or credits_two_blue  or subtitle_blue;
 
          when mode_select =>
             red_out   <= header_red   or training_red   or single_player_red
