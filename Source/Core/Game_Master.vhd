@@ -149,11 +149,10 @@ begin
 				
 				internal_pause_prev			<= pause_input;
 				
-				
-				
-				-- pause logic
-				if (pause_input = '1' and internal_pause_prev = '0') then
-					internal_pause_state <= not internal_pause_state;
+				if (current_state = NORMAL or current_state = TRAINING or current_state = PAUSE) then
+					if (pause_input = '1' and internal_pause_prev = '0') then
+						internal_pause_state <= not internal_pause_state;
+					end if;
 				end if;
 				
 				if current_state /= next_state then
@@ -188,7 +187,7 @@ begin
             end if;
 
             -- Score: increment on rising edge of collision only
-            if current_state = NORMAL or current_state = TRAINING then
+            if current_state = NORMAL or current_state = TRAINING then	
                if collision_guard = '1' and gift_collision = '1' and prev_gift_collision = '0' then
                   internal_score <= internal_score + 1;
                end if;

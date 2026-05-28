@@ -31,12 +31,10 @@ use IEEE.std_logic_unsigned.all;
 entity Screen_Compositor is
    port (clock					  : in  std_logic;
 			start_screen_active : in  std_logic;
-			paused				  : in  std_logic;
          end_screen_active   : in  std_logic;
          latched_mode        : in  std_logic;
 
          start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
-			pause_text_red, pause_text_green, pause_text_blue : in std_logic_vector(3 downto 0);
          start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
          mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
          HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
@@ -53,7 +51,6 @@ architecture screen_compositor_behaviour of Screen_Compositor is
    signal start_screen_sprite_active : std_logic;
    signal HUD_active                 : std_logic;
 	signal end_screen_text_active		 : std_logic;
-	signal pause_text_active			 : std_logic;
 	
 	signal red_next, green_next, blue_next : std_logic_vector(3 downto 0);
 
@@ -64,14 +61,12 @@ begin
    start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000" else '0';
    HUD_active                 <= '1' when (HUD_red             or HUD_green             or HUD_blue)             /= "0000" else '0';
 	end_screen_text_active   	<= '1' when (end_screen_red    or end_screen_green    or end_screen_blue)    /= "0000" else '0';
-	pause_text_active				<= '1' when (pause_text_red or pause_text_green or pause_text_blue) /= "000" else '0';
 	
    Final_Mux : process(start_screen_active, end_screen_active, latched_mode,
                        mouse_cursor_active, start_screen_text_active, start_screen_sprite_active,
-                       HUD_active, end_screen_text_active, pause_text_active,
+                       HUD_active, end_screen_text_active,
                        start_screen_red,        start_screen_green,        start_screen_blue,
                        start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
-							  pause_text_red,          pause_text_green, 			pause_text_blue,
                        mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
                        HUD_red,                 HUD_green,                 HUD_blue,
                        game_red,                game_green,                game_blue,
@@ -111,20 +106,7 @@ begin
             green_next <= (others => '0');
             blue_next  <= (others => '0');
          end if;
-		elsif (paused = '1') then
-			if pause_text_active = '1' then
-				red_next <= pause_text_red;
-				green_next <= pause_text_green;
-				blue_next <= pause_text_blue;
-			elsif HUD_active = '1' then
-            red_next   <= HUD_red;
-            green_next <= HUD_green;
-            blue_next  <= HUD_blue;
-         else
-            red_next   <= game_red;
-            green_next <= game_green;
-            blue_next  <= game_blue;
-         end if;
+
       else
          if HUD_active = '1' then
             red_next   <= HUD_red;

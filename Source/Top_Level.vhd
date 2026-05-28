@@ -224,9 +224,11 @@ architecture game_behaviour of Top_Level is
    component Screen_Compositor is
       port (clock					  : in  std_logic;
 				start_screen_active : in  std_logic;
+				paused				  : in  std_logic;
 				end_screen_active	  : in  std_logic;
             latched_mode        : in  std_logic;
             start_screen_red, start_screen_green, start_screen_blue : in std_logic_vector(3 downto 0);
+				pause_text_red, pause_text_green, pause_text_blue : in std_logic_vector(3 downto 0);
             start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue : in std_logic_vector(3 downto 0);
             mouse_cursor_red, mouse_cursor_green, mouse_cursor_blue : in std_logic_vector(3 downto 0);
             HUD_red, HUD_green, HUD_blue : in std_logic_vector(3 downto 0);
@@ -472,6 +474,11 @@ architecture game_behaviour of Top_Level is
 	signal end_screen_red	: std_logic_vector(3 downto 0);
 	signal end_screen_green	: std_logic_vector(3 downto 0);
 	signal end_screen_blue	: std_logic_vector(3 downto 0);
+	
+	-- paused
+	signal pause_red   : std_logic_vector(3 downto 0);
+	signal pause_green : std_logic_vector(3 downto 0);
+	signal pause_blue  : std_logic_vector(3 downto 0);
 	
 	-- fsm output signals
 	signal lane_0_enable : std_logic;
@@ -921,15 +928,40 @@ begin
 					 red_out      => HUD_red,
 					 green_out    => HUD_green,
 					 blue_out     => HUD_blue);
+					 
+	--=================================== Pause screen ==========================================
+	Pause_Label : Word_Display
+		generic map (STRING_LENGTH => 6,
+						 SCALE         => 8)
+		port map (clock        => video_clock,
+					 characters   => "010000" &   -- P (char 16)
+										  "000001" &   -- A (char  1)
+										  "010101" &   -- U (char 21)
+										  "010011" &   -- S (char 19)
+										  "000101" &   -- E (char  5)
+										  "000100",    -- D (char  4)
+					 x_position   => conv_std_logic_vector(128, 10),
+					 y_position   => conv_std_logic_vector(220, 10),
+					 pixel_row    => pixel_row,
+					 pixel_column => pixel_column,
+					 red_out      => pause_red,
+					 green_out    => pause_green,
+					 blue_out     => pause_blue);
+					 
+	-- ================================== screen compositor=====================================
 
    Final_Compositor_Inst : Screen_Compositor
       port map (clock							=> video_clock,
 					 start_screen_active       => startscreen_fsm,
+					 paused							=> pause_fsm,
 					 end_screen_active			=> endscreen_fsm,
                 latched_mode              => latched_mode,
                 start_screen_red          => start_screen_red,
                 start_screen_green        => start_screen_green,
                 start_screen_blue         => start_screen_blue,
+					 pause_text_red						=>	pause_red,
+					 pause_text_green					=>	pause_green,
+					 pause_text_blue						=> pause_blue,
                 start_screen_sprite_red   => start_screen_sprite_red,
                 start_screen_sprite_green => start_screen_sprite_green,
                 start_screen_sprite_blue  => start_screen_sprite_blue,
