@@ -7,6 +7,7 @@ entity Game_Master is
    port(clock             : in  std_logic;
         reset             : in  std_logic;
 		  pause_input		  : in  std_logic;
+		  god_mode			  : in  std_logic;
         lane_0_obj_type   : in  std_logic_vector(2 downto 0);
         lane_1_obj_type   : in  std_logic_vector(2 downto 0);
         lane_2_obj_type   : in  std_logic_vector(2 downto 0);
@@ -194,7 +195,7 @@ begin
             end if;
 				
 				-- object collisions removing lives
-				if collision_guard = '1' and object_collision = '1' and prev_object_collision = '0' then
+				if collision_guard = '1' and object_collision = '1' and prev_object_collision = '0' and god_mode = '0' then
 					internal_lives <= internal_lives + 1;
 				end if;
 				

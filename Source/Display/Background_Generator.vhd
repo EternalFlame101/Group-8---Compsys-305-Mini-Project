@@ -40,6 +40,7 @@ architecture background_generator_behaviour of Background_Generator is
    signal rom_address    : std_logic_vector(13 downto 0);
 
    signal rom_red, rom_green, rom_blue : std_logic_vector(3 downto 0);
+	signal red_reg, green_reg, blue_reg	: std_logic_vector(3 downto 0);
 
    constant HORIZON_ROW : std_logic_vector(9 downto 0) := conv_std_logic_vector(320, 10);
 
@@ -49,7 +50,7 @@ begin
 
    -- Split the screen along the horizon row. NOTE: see entity header comment;
    -- this gives sky below the horizon, which is geometrically backwards.
-   sky_on <= '1' when (pixel_row >= HORIZON_ROW) else '0';
+   sky_on <= '0' when (pixel_row >= HORIZON_ROW) else '1';
 	
 	BACKGROUND_INSTANCE : Background_ROM 
 		generic map (
@@ -70,9 +71,24 @@ begin
 		 (conv_integer(pixel_column) / 4), 14)
 		 when pixel_row < HORIZON_ROW
 		 else (others => '0');
-
-   red_out   <= rom_red;
-   green_out <= rom_green;
-   blue_out  <= rom_blue;
+		 
+	process(clock)
+	begin
+		if (rising_edge(clock)) then
+			if (sky_on = '1') then
+				red_reg   <= rom_red;
+				green_reg <= rom_green;
+				blue_reg  <= rom_blue;
+			else
+				red_reg   <= pixel_row(3 downto 0) xor pixel_column(3 downto 0);
+				green_reg <= pixel_row(4 downto 1);
+				blue_reg  <= "0000";
+			end if;
+		end if;
+	end process;
+	
+	red_out <= red_reg;
+	green_out <= green_reg;
+	blue_out <= blue_reg;
 
 end architecture background_generator_behaviour;

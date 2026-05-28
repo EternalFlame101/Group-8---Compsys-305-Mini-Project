@@ -298,6 +298,7 @@ architecture game_behaviour of Top_Level is
 		port(clock            	: in  std_logic;
 			  reset					: in  std_logic;
 			  pause_input			: in 	std_logic;
+			  god_mode			   : in	std_logic;
 			  lane_0_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_1_obj_type   	: in  std_logic_vector(2 downto 0);
 			  lane_2_obj_type   	: in  std_logic_vector(2 downto 0);
@@ -612,7 +613,7 @@ begin
    player_shift_left_raw  <= (not KEY(1)) or keyboard_left_key;
    player_shift_right_raw <= (not KEY(0)) or keyboard_right_key;
    player_jump_raw        <= left_click   or keyboard_jump_key;
-   player_dive_raw        <= right_click  or keyboard_dive_key;
+   player_dive_raw        <= right_click  or keyboard_dive_key or (not KEY(2));
 
    -- Per-input "must be released once after start screen closes" latch.
    -- While start_screen_active = '1' the latch is forced to '1' (gate closed).
@@ -1082,7 +1083,7 @@ begin
                    SPRITE_SIZE   => 64,
                    SPRITE_SCALE  => 2)
       port map (clock             => video_clock,
-                reset             => not RESET_N,
+                reset             => not RESET_N or startscreen_fsm,
 					 enable				 => game_enable,
                 vertical_sync     => vertical_sync,
                 pixel_row         => pixel_row,
@@ -1152,6 +1153,7 @@ begin
 		port map  (clock					=> video_clock,
 					  reset					=> not(RESET_N),
 					  pause_input			=> not KEY(3),
+					  god_mode				=> SW(3),
 					  lane_0_obj_type		=> lane_0_type,
 					  lane_1_obj_type		=> lane_1_type,
 					  lane_2_obj_type		=> lane_2_type,
