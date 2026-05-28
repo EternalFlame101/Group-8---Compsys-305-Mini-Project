@@ -4,10 +4,11 @@ use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity SD_Init is
-   generic (TOTAL_SECTORS : positive := 30280);   -- length of the song in sectors
    port (clock              : in  std_logic;
          reset              : in  std_logic;
          start_init         : in  std_logic;
+         start_sector       : in  std_logic_vector(31 downto 0);
+         track_length       : in  std_logic_vector(31 downto 0);
          byte_address       : in  std_logic_vector(9 downto 0);   -- 10 bits: bit 9 = buffer select
          spi_clock_out      : out std_logic;
          spi_mosi_out       : out std_logic;
@@ -228,7 +229,7 @@ begin
          acmd41_retry_count     <= 0;
          data_token_counter     <= 0;
          byte_write_index       <= 0;
-         sector_addr            <= (others => '0');
+         sector_addr            <= start_sector;
          fills_count            <= 0;
          init_complete_register <= '0';
          audio_ready_register   <= '0';
@@ -466,7 +467,7 @@ begin
                   if spi_received_byte = x"00" then
                      init_complete_register <= '1';
                      fill_buffer_target     <= '0';
-                     sector_addr            <= (others => '0');
+                     sector_addr            <= start_sector;
                      fills_count            <= 0;
                      next_command_state     <= s_cmd17_request;
                      byte_counter           <= 0;
@@ -609,8 +610,8 @@ begin
                if spi_transfer_done = '1' then
                   if byte_counter = 1 then
                      -- A sector finished. Decide what next.
-                     if sector_addr = conv_std_logic_vector(TOTAL_SECTORS - 1, 32) then
-                        sector_addr <= (others => '0');
+                     if sector_addr = start_sector + track_length - 1 then
+                        sector_addr <= start_sector;
                      else
                         sector_addr <= sector_addr + 1;
                      end if;

@@ -157,10 +157,11 @@ architecture game_behaviour of Top_Level is
    end component Word_Display;
 
 	component SD_Init is
-      generic (TOTAL_SECTORS : positive := 30280);
       port (clock              : in  std_logic;
             reset              : in  std_logic;
             start_init         : in  std_logic;
+            start_sector       : in  std_logic_vector(31 downto 0);
+            track_length       : in  std_logic_vector(31 downto 0);
             byte_address       : in  std_logic_vector(9 downto 0);
             spi_clock_out      : out std_logic;
             spi_mosi_out       : out std_logic;
@@ -445,9 +446,21 @@ architecture game_behaviour of Top_Level is
 
    signal audio_dac_high 		: std_logic_vector(7 downto 0);   -- high byte -> new DAC (GPIO_0[19..12])
    signal audio_dac_low  		: std_logic_vector(7 downto 0);   -- low byte  -> old DAC (GPIO_0[11..4])
+   signal dac_high_out        : std_logic_vector(7 downto 0);   -- muted-gated DAC high to GPIO
+   signal dac_low_out         : std_logic_vector(7 downto 0);   -- muted-gated DAC low to GPIO
 	signal audio_ready_signal 	: std_logic;
+   signal audio_gated_ready   : std_logic;
+   signal audio_sd_reset      : std_logic;
    signal sd_buffer_byte     	: std_logic_vector(7 downto 0);
-   signal audio_byte_address 	: std_logic_vector(9 downto 0);	
+   signal audio_byte_address 	: std_logic_vector(9 downto 0);
+   signal sd_start_sector     : std_logic_vector(31 downto 0);
+   signal sd_track_length     : std_logic_vector(31 downto 0);
+   signal track_sel_prev      : std_logic_vector(2 downto 0) := "000";
+   signal track_changed       : std_logic;
+   signal endscreen_50_s1     : std_logic := '0';
+   signal endscreen_50_s2     : std_logic := '0';
+   signal endscreen_50_prev   : std_logic := '0';
+   signal endscreen_50_rise   : std_logic;
 	
 	-- Spawn control signals 
 	signal lane_0_type : std_logic_vector(2 downto 0);
@@ -826,10 +839,11 @@ begin
                 mouse_cursor_column => mouse_column);
 
 	SD_Initialiser : SD_Init
-      generic map (TOTAL_SECTORS => 30280)
       port map (clock              => CLOCK_50,
-                reset              => not RESET_N,
-                start_init         => not KEY(2),
+                reset              => audio_sd_reset,
+                start_init         => '1',
+                start_sector       => sd_start_sector,
+                track_length       => sd_track_length,
                 byte_address       => audio_byte_address,
                 spi_clock_out      => sd_serial_clock,
                 spi_mosi_out       => sd_command,
@@ -846,12 +860,86 @@ begin
       generic map (CLOCK_FREQUENCY => 50_000_000,
                    SAMPLE_RATE     => 44_100)
       port map (clock        => CLOCK_50,
-                reset        => not RESET_N,
-                audio_ready  => audio_ready_signal,
+                reset        => audio_sd_reset,
+                audio_ready  => audio_gated_ready,
                 buffer_byte  => sd_buffer_byte,
                 byte_address => audio_byte_address,
                 dac_high     => audio_dac_high,
                 dac_low      => audio_dac_low);
+
+   -- ===========================================================================
+   -- AUDIO CONTROL (SW9-SW4)
+   -- SW9=1: normal play  SW9=0: audio reset (resets SD+playback to track start)
+   -- SW8=1: pause        SW8=0: play
+   -- SW7=1: mute (sector still advances)  SW7=0: normal
+   -- SW6-4: 3-bit track select (jukebox)
+   -- ===========================================================================
+
+   -- Synchronise endscreen_fsm (video_clock domain) into CLOCK_50 domain.
+   -- Two-flop synchroniser + prev register for rising-edge detection.
+   End_Screen_Sync : process(CLOCK_50)
+   begin
+      if rising_edge(CLOCK_50) then
+         endscreen_50_s1   <= endscreen_fsm;
+         endscreen_50_s2   <= endscreen_50_s1;
+         endscreen_50_prev <= endscreen_50_s2;
+      end if;
+   end process End_Screen_Sync;
+
+   -- One-cycle pulse the moment the end screen appears.
+   endscreen_50_rise <= endscreen_50_s2 and (not endscreen_50_prev);
+
+   -- Track-selection change detector (SW6-4 in CLOCK_50 domain).
+   Track_Change_Detector : process(CLOCK_50)
+   begin
+      if rising_edge(CLOCK_50) then
+         track_sel_prev <= SW(6 downto 4);
+      end if;
+   end process Track_Change_Detector;
+
+   track_changed <= '1' when track_sel_prev /= SW(6 downto 4) else '0';
+
+   -- SD/audio reset triggers:
+   --   RESET_N pressed    -> full reset
+   --   SW9 = 0            -> hold at track start (user-controlled reset)
+   --   track_changed      -> switch to first sector of newly selected track (any time)
+   --   endscreen_50_rise  -> ONE pulse when end screen appears; SD reinits DURING end screen
+   --                         so it is ready from track start the moment next game begins
+   audio_sd_reset <= (not RESET_N) or (not SW(9)) or track_changed or endscreen_50_rise;
+
+   -- Audio gate: silent on start screen or end screen; SW8=1 pauses; SW9=0 holds
+   audio_gated_ready <= audio_ready_signal and (not startscreen_fsm) and (not endscreen_50_s2) and (not SW(8)) and SW(9);
+
+   -- SW7=1 mutes both DACs (outputs x"80" = signed midpoint = silence); sector still progresses
+   dac_high_out <= x"80" when SW(7) = '1' else audio_dac_high;
+   dac_low_out  <= x"80" when SW(7) = '1' else audio_dac_low;
+
+   -- Jukebox: map SW(6 downto 4) to start sector and track length (in sectors)
+   -- Track lengths derived from the sector gap between consecutive track start addresses.
+   -- UPDATE sd_track_length for Track 5 once its size is known.
+   Jukebox_Process : process(SW)
+   begin
+      case SW(6 downto 4) is
+         when "000" =>
+            sd_start_sector <= x"03473BC0";                        -- Sector 55,000,000 - Subway Surfers
+            sd_track_length <= conv_std_logic_vector(23776, 32);
+         when "001" =>
+            sd_start_sector <= x"034798A0";                        -- Sector 55,023,776 - Espresso
+            sd_track_length <= conv_std_logic_vector(30280, 32);
+         when "010" =>
+            sd_start_sector <= x"03480EE8";                        -- Sector 55,054,056 - Rude!
+            sd_track_length <= conv_std_logic_vector(34456, 32);
+         when "011" =>
+            sd_start_sector <= x"03489580";                        -- Sector 55,088,512 - Dracula (Remix)
+            sd_track_length <= conv_std_logic_vector(36248, 32);
+         when "100" =>
+            sd_start_sector <= x"03492318";                        -- Sector 55,124,760 - AIZO (King Gnu)
+            sd_track_length <= conv_std_logic_vector(37199, 32);
+         when others =>
+            sd_start_sector <= x"03473BC0";
+            sd_track_length <= conv_std_logic_vector(23776, 32);
+      end case;
+   end process Jukebox_Process;
 
    -- ===========================================================================
    -- START SCREEN + BACKGROUND SPRITE + FINAL COMPOSITOR
@@ -1116,24 +1204,24 @@ begin
    GPIO_0(3) <= sd_data_in;        -- MISO
 
    -- High-byte DAC (new DAC, GPIO_0[19..12]) — B1=MSB, B8=LSB
-   GPIO_0(19) <= audio_dac_high(7);   -- B1 (MSB)
-   GPIO_0(18) <= audio_dac_high(6);   -- B2
-   GPIO_0(17) <= audio_dac_high(5);   -- B3
-   GPIO_0(16) <= audio_dac_high(4);   -- B4
-   GPIO_0(15) <= audio_dac_high(3);   -- B5
-   GPIO_0(14) <= audio_dac_high(2);   -- B6
-   GPIO_0(13) <= audio_dac_high(1);   -- B7
-   GPIO_0(12) <= audio_dac_high(0);   -- B8 (LSB)
+   GPIO_0(19) <= dac_high_out(7);   -- B1 (MSB)
+   GPIO_0(18) <= dac_high_out(6);   -- B2
+   GPIO_0(17) <= dac_high_out(5);   -- B3
+   GPIO_0(16) <= dac_high_out(4);   -- B4
+   GPIO_0(15) <= dac_high_out(3);   -- B5
+   GPIO_0(14) <= dac_high_out(2);   -- B6
+   GPIO_0(13) <= dac_high_out(1);   -- B7
+   GPIO_0(12) <= dac_high_out(0);   -- B8 (LSB)
 
    -- Low-byte DAC (old DAC, GPIO_0[11..4]) — B1=MSB, B8=LSB
-   GPIO_0(11) <= audio_dac_low(7);   -- B1 (MSB)
-   GPIO_0(10) <= audio_dac_low(6);   -- B2
-   GPIO_0(9)  <= audio_dac_low(5);   -- B3
-   GPIO_0(8)  <= audio_dac_low(4);   -- B4
-   GPIO_0(7)  <= audio_dac_low(3);   -- B5
-   GPIO_0(6)  <= audio_dac_low(2);   -- B6
-   GPIO_0(5)  <= audio_dac_low(1);   -- B7
-   GPIO_0(4)  <= audio_dac_low(0);   -- B8 (LSB)
+   GPIO_0(11) <= dac_low_out(7);   -- B1 (MSB)
+   GPIO_0(10) <= dac_low_out(6);   -- B2
+   GPIO_0(9)  <= dac_low_out(5);   -- B3
+   GPIO_0(8)  <= dac_low_out(4);   -- B4
+   GPIO_0(7)  <= dac_low_out(3);   -- B5
+   GPIO_0(6)  <= dac_low_out(2);   -- B6
+   GPIO_0(5)  <= dac_low_out(1);   -- B7
+   GPIO_0(4)  <= dac_low_out(0);   -- B8 (LSB)
 
    GPIO_0(35 downto 20) <= (others => '0');
 	
