@@ -27,7 +27,8 @@ entity Game_Master is
         endscreen_outcome : out std_logic;
 		  pause_fsm			  : out std_logic;
         speed_select      : out std_logic_vector(1 downto 0);
-        score             : out std_logic_vector(7 downto 0);
+        win_999           : in  std_logic;
+        score             : out std_logic_vector(9 downto 0);
 		  lives				  : out std_logic_vector(1 downto 0));
 end entity Game_Master;
 
@@ -56,7 +57,7 @@ architecture game_master_behaviour of Game_Master is
 
    signal internal_game_enable       : std_logic;
    signal internal_endscreen_state   : std_logic;
-   signal internal_score             : std_logic_vector(7 downto 0) := (others => '0');
+   signal internal_score             : std_logic_vector(9 downto 0) := (others => '0');
 	signal wave_scored 					 : std_logic;
 
    signal collision_guard            : std_logic := '0';
@@ -163,7 +164,7 @@ begin
 				-- wave logic
 				if lanes_arrived = '0' then
 					 wave_scored <= '0';
-				elsif (wave_scored = '0' and internal_score /= "1111111" 
+				elsif (wave_scored = '0' and conv_integer(internal_score) < 999
 				  and (current_state = NORMAL or current_state = TRAINING)) then
 					 internal_score <= internal_score + 1;
 					 wave_scored    <= '1';
@@ -285,7 +286,8 @@ begin
                             mode_selected,
 									 internal_lives,
 									 internal_score,
-									 internal_pause_state)
+									 internal_pause_state,
+									 win_999)
    begin
       next_state <= current_state;
 
@@ -303,7 +305,9 @@ begin
 					next_state	<= PAUSE;
             elsif (internal_lives = "11") then
 					next_state <= LOSE;
-				elsif (internal_score >= 10) then
+				elsif (win_999 = '1' and conv_integer(internal_score) >= 999) then
+					next_state <= WIN;
+				elsif (win_999 = '0' and internal_score >= 10) then
 					next_state <= WIN;
 				end if;
          when NORMAL =>
@@ -311,7 +315,9 @@ begin
 					next_state	<= PAUSE;
             elsif (internal_lives = "11") then
 					next_state <= LOSE;
-				elsif (internal_score >= 30) then
+				elsif (win_999 = '1' and conv_integer(internal_score) >= 999) then
+					next_state <= WIN;
+				elsif (win_999 = '0' and internal_score >= 30) then
 					next_state <= WIN;
 				end if;
          when PAUSE =>

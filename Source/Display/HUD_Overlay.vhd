@@ -27,7 +27,7 @@ entity HUD_Overlay is
 	port (video_clock                   : in  std_logic;
 			reset                         : in  std_logic;
 			pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-			score                         : in  std_logic_vector(7 downto 0);
+			score                         : in  std_logic_vector(9 downto 0);
 			HUD_enable                    : in  std_logic;
 			HUD_active                    : out std_logic;
 			health_digit                  : in  std_logic_vector(1 downto 0);  -- raw hit counter from Game_Master
@@ -281,7 +281,14 @@ begin
 		variable s, h, remainder, t, o : integer;
 	begin
 		s := conv_integer(score);
-		if    s >= 200 then h := 2; remainder := s - 200;
+		if    s >= 900 then h := 9; remainder := s - 900;
+		elsif s >= 800 then h := 8; remainder := s - 800;
+		elsif s >= 700 then h := 7; remainder := s - 700;
+		elsif s >= 600 then h := 6; remainder := s - 600;
+		elsif s >= 500 then h := 5; remainder := s - 500;
+		elsif s >= 400 then h := 4; remainder := s - 400;
+		elsif s >= 300 then h := 3; remainder := s - 300;
+		elsif s >= 200 then h := 2; remainder := s - 200;
 		elsif s >= 100 then h := 1; remainder := s - 100;
 		else                h := 0; remainder := s;
 		end if;

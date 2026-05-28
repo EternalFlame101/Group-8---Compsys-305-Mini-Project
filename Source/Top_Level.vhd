@@ -318,7 +318,8 @@ architecture game_behaviour of Top_Level is
 			  endscreen_outcome  : out std_logic; -- 0 = lose, 1 = win
 			  pause_fsm				: out std_logic;
 			  speed_select     	: out std_logic_vector(1 downto 0); -- 00=freeze,01=slow,10=medium,11=fast
-			  score            	: out std_logic_vector(7 downto 0);
+			  win_999            : in  std_logic; -- '1' = win condition is 999 for both modes
+			  score            	: out std_logic_vector(9 downto 0);
 			  lives					: out std_logic_vector(1 downto 0));
 	end component Game_Master;
 	
@@ -337,7 +338,7 @@ architecture game_behaviour of Top_Level is
 		port (video_clock                   : in  std_logic;
 				reset                         : in  std_logic;
 				pixel_row, pixel_column       : in  std_logic_vector(9 downto 0);
-				score                         : in  std_logic_vector(7 downto 0);
+				score                         : in  std_logic_vector(9 downto 0);
 				HUD_enable                    : in  std_logic;
 				HUD_active                    : out std_logic;
 				health_digit 						: in std_logic_vector(1 downto 0);	-- raw hit counter from Game_Master
@@ -516,7 +517,7 @@ architecture game_behaviour of Top_Level is
 	-- HUD
 	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
 	signal HUD_active                   : std_logic;
-	signal score_hud                    : std_logic_vector(7 downto 0) := (others => '0');
+	signal score_hud                    : std_logic_vector(9 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
 	signal lives								: std_logic_vector(1 downto 0);
 	signal hud_min_tens 						: std_logic_vector(3 downto 0);
@@ -1173,6 +1174,7 @@ begin
 					  endscreen_outcome	=> endscreen_outcome,
 					  pause_fsm			   => pause_fsm,
 					  speed_select			=> speed_select,
+					  win_999				=> SW(2),
 					  score					=> score_hud,
 					  lives					=> lives);
 					  
