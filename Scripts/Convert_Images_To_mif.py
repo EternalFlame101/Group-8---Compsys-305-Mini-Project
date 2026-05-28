@@ -9,10 +9,10 @@ project_root = script_dir.parent
 
 def get_luminance(pixel):
     r, g, b = pixel
-    return 0.299 * r + 0.587 * g + 0.114 * b
+    return 0.299 * r + 0.587 * g + 0.114 * b    
 
 
-def image_to_mif(image_path, output_path=None, output_folder='Images_To_mif/mif', target_width=64, target_height=64, num_colours=6):
+def image_to_mif(image_path, output_path=None, output_folder='Images_To_mif/mif', target_width=160, target_height=80, num_colours=20):
     image_path = Path(image_path)
     if output_path is None:
         output_folder = Path(output_folder)
@@ -89,7 +89,7 @@ def image_to_mif(image_path, output_path=None, output_folder='Images_To_mif/mif'
         print(f"Palette used: {palette}")
 
 
-def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_folder='Images_To_mif/mif', target_width=64, target_height=64, num_colours=6):
+def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_folder='Images_To_mif/mif', target_width=160, target_height=80, num_colours=20):
     input_folder = Path(input_folder)
     supported_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff'}
 
@@ -125,11 +125,11 @@ def convert_cat2_folder(input_folder='Images_To_mif/Images/cat_walking', output_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert all cat images to 12-bit RGB MIF files.')
-    parser.add_argument('--input',   default='Images_To_mif/Images/cat_walking',  help='Input folder containing cat2 images under project root')
+    parser.add_argument('--input',   default='Assets/Images',  help='Input folder containing cat2 images under project root')
     parser.add_argument('--output',  default='Images_To_mif/mif',       help='Output folder for MIF files under project root')
-    parser.add_argument('--width',   type=int, default=64, help='Target width (default: 64)')
-    parser.add_argument('--height',  type=int, default=64, help='Target height (default: 64)')
-    parser.add_argument('--colours', type=int, default=6, help='Reduce image to N colours (black + N-1 sprite colours)')
+    parser.add_argument('--width',   type=int, default=160, help='Target width (default: 160)')
+    parser.add_argument('--height',  type=int, default=80, help='Target height (default: 80)')
+    parser.add_argument('--colours', type=int, default=20, help='Reduce image to N colours (black + N-1 sprite colours)')
     args = parser.parse_args()
 
     convert_cat2_folder(
@@ -139,3 +139,11 @@ if __name__ == '__main__':
         target_height=args.height,
         num_colours=args.colours,
     )
+
+image_to_mif(
+    "Assets/Images/background.png",
+    output_folder="Assets/Images",
+    target_width=160,
+    target_height=80,
+    num_colours=20  # full colour
+)

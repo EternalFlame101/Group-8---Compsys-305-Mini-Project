@@ -22,25 +22,6 @@ end entity Background_Generator;
 
 architecture background_generator_behaviour of Background_Generator is
 
-	component Background_ROM is
-		generic (
-        DEPTH     : positive := 12800;
-        ADDR_BITS : positive := 14;
-        MIF_FILE  : string   := "background.mif"
-		 );
-		 port (
-			  clock   : in  std_logic;
-			  address : in  std_logic_vector(13 downto 0);
-			  red     : out std_logic_vector(3 downto 0);
-			  green   : out std_logic_vector(3 downto 0);
-			  blue    : out std_logic_vector(3 downto 0)
-		 );
-	end component Background_ROM;
-	
-   signal rom_address    : std_logic_vector(13 downto 0);
-
-   signal rom_red, rom_green, rom_blue : std_logic_vector(3 downto 0);
-
    constant HORIZON_ROW : std_logic_vector(9 downto 0) := conv_std_logic_vector(320, 10);
 
    signal sky_on : std_logic;
@@ -50,29 +31,9 @@ begin
    -- Split the screen along the horizon row. NOTE: see entity header comment;
    -- this gives sky below the horizon, which is geometrically backwards.
    sky_on <= '1' when (pixel_row >= HORIZON_ROW) else '0';
-	
-	BACKGROUND_INSTANCE : Background_ROM 
-		generic map (
-         DEPTH     => 12800,
-         ADDR_BITS => 14,
-         MIF_FILE  => "background.mif"
-      )
-      port map (
-         clock   => clock,
-         address => rom_address,
-         red     => rom_red,
-         green   => rom_green,
-         blue    => rom_blue
-      );
-		
-	rom_address <= conv_std_logic_vector(
-		 (conv_integer(pixel_row) / 4) * 160 +
-		 (conv_integer(pixel_column) / 4), 14)
-		 when pixel_row < HORIZON_ROW
-		 else (others => '0');
 
-   red_out   <= rom_red;
-   green_out <= rom_green;
-   blue_out  <= rom_blue;
+   red_out   <= "0111";
+   green_out <= "0111";
+   blue_out  <= "1111" when (sky_on = '0') else "0111";
 
 end architecture background_generator_behaviour;
