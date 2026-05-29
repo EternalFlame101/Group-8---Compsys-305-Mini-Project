@@ -214,6 +214,14 @@ architecture moving_object_behaviour of Moving_Object is
    signal top_max_extension_scaled_combinational     : std_logic_vector(9 downto 0);
    signal apply_baseline_cave_in_combinational       : std_logic;
 
+   -- Per-pixel Stage 1C precompute: object bottom minus side taper.
+   -- Computed in Stage 1C comb (inputs are Stage 1B reg + Frame Stage 2 reg) and
+   -- captured in Per_Pixel_Stage_1 so Stage 2 comb can do a pure register compare
+   -- instead of a register subtract + compare.  Removes the dominant ~5 ns subtract
+   -- from the left/right_side_on Stage 2 critical path.
+   signal object_y_minus_side_top_combinational : std_logic_vector(9 downto 0);
+   signal object_y_minus_side_top_stage_1       : std_logic_vector(9 downto 0);
+
    -- Per-pixel Stage 1 registers
    signal side_top_boundary_pixel_stage_1            : std_logic_vector(9 downto 0);
    signal pixel_row_pixel_stage_1                    : std_logic_vector(9 downto 0);
@@ -609,6 +617,9 @@ begin
 
    back_width_at_row_combinational            <= object_width_stage_2 - width_difference_product(17 downto 8);
    side_top_boundary_combinational            <= height_difference_product(18 downto 9);
+   object_y_minus_side_top_combinational     <= object_y_stage_2 - side_top_boundary_combinational
+                                                   when object_y_stage_2 >= side_top_boundary_combinational
+                                                   else (others => '0');
    top_skew_low_combinational                 <= top_skew_product(23 downto 14);
    top_skew_high_combinational                <= top_skew_low_combinational(8 downto 0) & '0';
    baseline_top_cave_in_combinational         <= baseline_top_cave_in_product(18 downto 9);
@@ -741,6 +752,7 @@ begin
    begin
       if rising_edge(clock) then
          side_top_boundary_pixel_stage_1            <= side_top_boundary_combinational;
+         object_y_minus_side_top_stage_1           <= object_y_minus_side_top_combinational;
          pixel_row_pixel_stage_1                    <= pixel_row_stage_1b;
          pixel_column_pixel_stage_1                 <= pixel_column_stage_1b;
 
@@ -796,7 +808,7 @@ begin
 
    left_side_on  <= '1' when (box_off_screen_pixel_stage_1 = '0' and
                               (pixel_row_pixel_stage_1    >= top_face_top_y_stage_2)                 and
-                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1) and
+                              (pixel_row_pixel_stage_1    <= object_y_minus_side_top_stage_1) and
                               (side_face_left_underflow_pixel_stage_1 = '1' or
                                pixel_column_pixel_stage_1 >= side_face_left_boundary_pixel_stage_1) and
                               (front_face_left_underflow_pixel_stage_1 = '1' or
@@ -805,7 +817,7 @@ begin
 
    right_side_on <= '1' when (box_off_screen_pixel_stage_1 = '0' and
                               (pixel_row_pixel_stage_1    >= top_face_top_y_stage_2)                  and
-                              (pixel_row_pixel_stage_1    <= object_y_stage_2 - side_top_boundary_pixel_stage_1) and
+                              (pixel_row_pixel_stage_1    <= object_y_minus_side_top_stage_1) and
                               (side_face_right_overflow_pixel_stage_1 = '1' or
                                pixel_column_pixel_stage_1 <= side_face_right_boundary_pixel_stage_1) and
                               (front_face_right_overflow_pixel_stage_1 = '1' or

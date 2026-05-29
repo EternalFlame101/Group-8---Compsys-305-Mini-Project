@@ -458,7 +458,8 @@ architecture game_behaviour of Top_Level is
    signal sd_start_sector     : std_logic_vector(31 downto 0);
    signal sd_track_length     : std_logic_vector(31 downto 0);
    signal track_sel_prev      : std_logic_vector(2 downto 0) := "000";
-   signal track_changed       : std_logic;
+   signal track_reset_ctr     : integer range 0 to 50000 := 0;
+   signal track_reset_active  : std_logic;
    signal endscreen_50_s1     : std_logic := '0';
    signal endscreen_50_s2     : std_logic := '0';
    signal endscreen_50_prev   : std_logic := '0';
@@ -515,8 +516,9 @@ architecture game_behaviour of Top_Level is
 	signal endscreen_fsm_rise   : std_logic;
 	
 	-- HUD
-	signal HUD_red, HUD_green, HUD_blue : std_logic_vector(3 downto 0);
-	signal HUD_active                   : std_logic;
+	signal HUD_red, HUD_green, HUD_blue     : std_logic_vector(3 downto 0);
+	signal HUD_red_r, HUD_green_r, HUD_blue_r : std_logic_vector(3 downto 0);
+	signal HUD_active                       : std_logic;
 	signal score_hud                    : std_logic_vector(9 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
 	signal lives								: std_logic_vector(1 downto 0);
@@ -891,23 +893,30 @@ begin
    -- One-cycle pulse the moment the end screen appears.
    endscreen_50_rise <= endscreen_50_s2 and (not endscreen_50_prev);
 
-   -- Track-selection change detector (SW6-4 in CLOCK_50 domain).
-   Track_Change_Detector : process(CLOCK_50)
+   -- Track-switch reset stretcher.
+   -- When SW6-4 changes, hold audio_sd_reset high for 1ms (50,000 cycles at 50MHz).
+   -- 1ms >> the ~0.33ms needed for the SD card to finish a 512-byte sector read at fast SPI
+   -- speed, so CS is deasserted long enough for the card to cleanly abort before CMD0 fires.
+   Track_Reset_Stretch : process(CLOCK_50)
    begin
       if rising_edge(CLOCK_50) then
-         track_sel_prev <= SW(6 downto 4);
+         if track_sel_prev /= SW(6 downto 4) then
+            track_sel_prev   <= SW(6 downto 4);
+            track_reset_ctr  <= 50000;
+         elsif track_reset_ctr > 0 then
+            track_reset_ctr  <= track_reset_ctr - 1;
+         end if;
       end if;
-   end process Track_Change_Detector;
+   end process Track_Reset_Stretch;
 
-   track_changed <= '1' when track_sel_prev /= SW(6 downto 4) else '0';
+   track_reset_active <= '1' when track_reset_ctr > 0 else '0';
 
    -- SD/audio reset triggers:
-   --   RESET_N pressed    -> full reset
-   --   SW9 = 0            -> hold at track start (user-controlled reset)
-   --   track_changed      -> switch to first sector of newly selected track (any time)
-   --   endscreen_50_rise  -> ONE pulse when end screen appears; SD reinits DURING end screen
-   --                         so it is ready from track start the moment next game begins
-   audio_sd_reset <= (not RESET_N) or (not SW(9)) or track_changed or endscreen_50_rise;
+   --   RESET_N pressed       -> full reset
+   --   SW9 = 0               -> hold at track start (user-controlled reset)
+   --   track_reset_active    -> 1ms reset when track selection changes (any game state)
+   --   endscreen_50_rise     -> one pulse when end screen appears; SD reinits during end screen
+   audio_sd_reset <= (not RESET_N) or (not SW(9)) or track_reset_active or endscreen_50_s2;
 
    -- Audio gate: silent on start screen or end screen; SW8=1 pauses; SW9=0 holds
    audio_gated_ready <= audio_ready_signal and (not startscreen_fsm) and (not endscreen_50_s2) and (not SW(8)) and SW(9);
@@ -1058,9 +1067,9 @@ begin
                 mouse_cursor_red          => mouse_cursor_red,
                 mouse_cursor_green        => mouse_cursor_green,
                 mouse_cursor_blue         => mouse_cursor_blue,
-                HUD_red                   => HUD_red,
-                HUD_green                 => HUD_green,
-                HUD_blue                  => HUD_blue,
+                HUD_red                   => HUD_red_r,
+                HUD_green                 => HUD_green_r,
+                HUD_blue                  => HUD_blue_r,
                 training_red              => "0000",
 					 training_green            => "0000",
                 training_blue             => "0000",
@@ -1185,6 +1194,19 @@ begin
 			  endscreen_fsm_prev   <= endscreen_fsm;
 		 end if;
 	end process;
+
+	-- Register HUD outputs before Screen_Compositor to break the long combinational
+	-- path: internal_score -> BCD chain -> ROM_Display -> OR -> compositor register.
+	-- This is the second pipeline stage (first is Bcd_Pipe in HUD_Overlay).
+	-- Adds 1 pixel of latency to the HUD display -- imperceptible.
+	Hud_Out_Pipe : process(video_clock)
+	begin
+		if rising_edge(video_clock) then
+			HUD_red_r   <= HUD_red;
+			HUD_green_r <= HUD_green;
+			HUD_blue_r  <= HUD_blue;
+		end if;
+	end process Hud_Out_Pipe;
 
 	startscreen_fsm_rise <= startscreen_fsm and not startscreen_fsm_prev;
 	endscreen_fsm_rise   <= endscreen_fsm   and not endscreen_fsm_prev;

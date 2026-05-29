@@ -48,92 +48,142 @@ end entity Screen_Compositor;
 
 architecture screen_compositor_behaviour of Screen_Compositor is
 
+   -- Input pipeline registers. All display-layer RGB inputs plus the control
+   -- signals are captured together every clock. This breaks the ~24 ns path
+   --   pixel_row -> (Start_Screen / Track_Generator / etc.) -> Final_Mux -> Output_Reg
+   -- into two stages each ~10-12 ns, clearing the 80 MHz target.
+   -- Control and data are registered in the same process so the compositor
+   -- always sees a consistent snapshot.
+   signal start_screen_active_r         : std_logic;
+   signal paused_r                      : std_logic;
+   signal end_screen_active_r           : std_logic;
+   signal start_screen_red_r,  start_screen_green_r,  start_screen_blue_r  : std_logic_vector(3 downto 0);
+   signal pause_text_red_r,    pause_text_green_r,    pause_text_blue_r    : std_logic_vector(3 downto 0);
+   signal start_screen_sprite_red_r,
+          start_screen_sprite_green_r,
+          start_screen_sprite_blue_r                                        : std_logic_vector(3 downto 0);
+   signal mouse_cursor_red_r,  mouse_cursor_green_r,  mouse_cursor_blue_r  : std_logic_vector(3 downto 0);
+   signal HUD_red_r,            HUD_green_r,            HUD_blue_r          : std_logic_vector(3 downto 0);
+   signal game_red_r,           game_green_r,           game_blue_r         : std_logic_vector(3 downto 0);
+   signal end_screen_red_r,    end_screen_green_r,    end_screen_blue_r    : std_logic_vector(3 downto 0);
+
    signal mouse_cursor_active        : std_logic;
    signal start_screen_text_active   : std_logic;
    signal start_screen_sprite_active : std_logic;
    signal HUD_active                 : std_logic;
 	signal end_screen_text_active		 : std_logic;
 	signal pause_text_active			 : std_logic;
-	
+
 	signal red_next, green_next, blue_next : std_logic_vector(3 downto 0);
 
 begin
 
-   mouse_cursor_active        <= '1' when (mouse_cursor_red    or mouse_cursor_green    or mouse_cursor_blue)    /= "0000" else '0';
-   start_screen_text_active   <= '1' when (start_screen_red    or start_screen_green    or start_screen_blue)    /= "0000" else '0';
-   start_screen_sprite_active <= '1' when (start_screen_sprite_red or start_screen_sprite_green or start_screen_sprite_blue) /= "0000" else '0';
-   HUD_active                 <= '1' when (HUD_red             or HUD_green             or HUD_blue)             /= "0000" else '0';
-	end_screen_text_active   	<= '1' when (end_screen_red    or end_screen_green    or end_screen_blue)    /= "0000" else '0';
-	pause_text_active				<= '1' when (pause_text_red or pause_text_green or pause_text_blue) /= "000" else '0';
-	
-   Final_Mux : process(start_screen_active, end_screen_active, latched_mode,
+   -- Input pipeline stage: register all inputs simultaneously so both data
+   -- and control signals see exactly 1 clock of added latency.
+   Input_Pipe : process(clock)
+   begin
+      if rising_edge(clock) then
+         start_screen_active_r       <= start_screen_active;
+         paused_r                    <= paused;
+         end_screen_active_r         <= end_screen_active;
+         start_screen_red_r          <= start_screen_red;
+         start_screen_green_r        <= start_screen_green;
+         start_screen_blue_r         <= start_screen_blue;
+         pause_text_red_r            <= pause_text_red;
+         pause_text_green_r          <= pause_text_green;
+         pause_text_blue_r           <= pause_text_blue;
+         start_screen_sprite_red_r   <= start_screen_sprite_red;
+         start_screen_sprite_green_r <= start_screen_sprite_green;
+         start_screen_sprite_blue_r  <= start_screen_sprite_blue;
+         mouse_cursor_red_r          <= mouse_cursor_red;
+         mouse_cursor_green_r        <= mouse_cursor_green;
+         mouse_cursor_blue_r         <= mouse_cursor_blue;
+         HUD_red_r                   <= HUD_red;
+         HUD_green_r                 <= HUD_green;
+         HUD_blue_r                  <= HUD_blue;
+         game_red_r                  <= game_red;
+         game_green_r                <= game_green;
+         game_blue_r                 <= game_blue;
+         end_screen_red_r            <= end_screen_red;
+         end_screen_green_r          <= end_screen_green;
+         end_screen_blue_r           <= end_screen_blue;
+      end if;
+   end process Input_Pipe;
+
+   mouse_cursor_active        <= '1' when (mouse_cursor_red_r    or mouse_cursor_green_r    or mouse_cursor_blue_r)    /= "0000" else '0';
+   start_screen_text_active   <= '1' when (start_screen_red_r    or start_screen_green_r    or start_screen_blue_r)    /= "0000" else '0';
+   start_screen_sprite_active <= '1' when (start_screen_sprite_red_r or start_screen_sprite_green_r or start_screen_sprite_blue_r) /= "0000" else '0';
+   HUD_active                 <= '1' when (HUD_red_r             or HUD_green_r             or HUD_blue_r)             /= "0000" else '0';
+	end_screen_text_active   	<= '1' when (end_screen_red_r    or end_screen_green_r    or end_screen_blue_r)    /= "0000" else '0';
+	pause_text_active				<= '1' when (pause_text_red_r or pause_text_green_r or pause_text_blue_r) /= "000" else '0';
+
+   Final_Mux : process(start_screen_active_r, end_screen_active_r, paused_r,
                        mouse_cursor_active, start_screen_text_active, start_screen_sprite_active,
                        HUD_active, end_screen_text_active, pause_text_active,
-                       start_screen_red,        start_screen_green,        start_screen_blue,
-                       start_screen_sprite_red, start_screen_sprite_green, start_screen_sprite_blue,
-							  pause_text_red,          pause_text_green, 			pause_text_blue,
-                       mouse_cursor_red,        mouse_cursor_green,        mouse_cursor_blue,
-                       HUD_red,                 HUD_green,                 HUD_blue,
-                       game_red,                game_green,                game_blue,
-                       end_screen_red,          end_screen_green,          end_screen_blue)
+                       start_screen_red_r,        start_screen_green_r,        start_screen_blue_r,
+                       start_screen_sprite_red_r, start_screen_sprite_green_r, start_screen_sprite_blue_r,
+							  pause_text_red_r,          pause_text_green_r, 			pause_text_blue_r,
+                       mouse_cursor_red_r,        mouse_cursor_green_r,        mouse_cursor_blue_r,
+                       HUD_red_r,                 HUD_green_r,                 HUD_blue_r,
+                       game_red_r,                game_green_r,                game_blue_r,
+                       end_screen_red_r,          end_screen_green_r,          end_screen_blue_r)
    begin
-      if start_screen_active = '1' then
+      if start_screen_active_r = '1' then
          if mouse_cursor_active = '1' then
-            red_next   <= mouse_cursor_red;
-            green_next <= mouse_cursor_green;
-            blue_next  <= mouse_cursor_blue;
+            red_next   <= mouse_cursor_red_r;
+            green_next <= mouse_cursor_green_r;
+            blue_next  <= mouse_cursor_blue_r;
          elsif start_screen_text_active = '1' then
-            red_next   <= start_screen_red;
-            green_next <= start_screen_green;
-            blue_next  <= start_screen_blue;
+            red_next   <= start_screen_red_r;
+            green_next <= start_screen_green_r;
+            blue_next  <= start_screen_blue_r;
          elsif start_screen_sprite_active = '1' then
-            red_next   <= start_screen_sprite_red;
-            green_next <= start_screen_sprite_green;
-            blue_next  <= start_screen_sprite_blue;
+            red_next   <= start_screen_sprite_red_r;
+            green_next <= start_screen_sprite_green_r;
+            blue_next  <= start_screen_sprite_blue_r;
          else
             red_next   <= (others => '0');
             green_next <= (others => '0');
             blue_next  <= (others => '0');
          end if;
 
-      elsif end_screen_active = '1' then
-         -- End screen: mouse cursor on top, then end screen text, then black
+      elsif end_screen_active_r = '1' then
          if mouse_cursor_active = '1' then
-            red_next   <= mouse_cursor_red;
-            green_next <= mouse_cursor_green;
-            blue_next  <= mouse_cursor_blue;
+            red_next   <= mouse_cursor_red_r;
+            green_next <= mouse_cursor_green_r;
+            blue_next  <= mouse_cursor_blue_r;
          elsif end_screen_text_active = '1' then
-            red_next   <= end_screen_red;
-            green_next <= end_screen_green;
-            blue_next  <= end_screen_blue;
+            red_next   <= end_screen_red_r;
+            green_next <= end_screen_green_r;
+            blue_next  <= end_screen_blue_r;
          else
             red_next   <= (others => '0');
             green_next <= (others => '0');
             blue_next  <= (others => '0');
          end if;
-		elsif (paused = '1') then
+		elsif (paused_r = '1') then
 			if pause_text_active = '1' then
-				red_next <= pause_text_red;
-				green_next <= pause_text_green;
-				blue_next <= pause_text_blue;
+				red_next <= pause_text_red_r;
+				green_next <= pause_text_green_r;
+				blue_next <= pause_text_blue_r;
 			elsif HUD_active = '1' then
-            red_next   <= HUD_red;
-            green_next <= HUD_green;
-            blue_next  <= HUD_blue;
+            red_next   <= HUD_red_r;
+            green_next <= HUD_green_r;
+            blue_next  <= HUD_blue_r;
          else
-            red_next   <= game_red;
-            green_next <= game_green;
-            blue_next  <= game_blue;
+            red_next   <= game_red_r;
+            green_next <= game_green_r;
+            blue_next  <= game_blue_r;
          end if;
       else
          if HUD_active = '1' then
-            red_next   <= HUD_red;
-            green_next <= HUD_green;
-            blue_next  <= HUD_blue;
+            red_next   <= HUD_red_r;
+            green_next <= HUD_green_r;
+            blue_next  <= HUD_blue_r;
          else
-            red_next   <= game_red;
-            green_next <= game_green;
-            blue_next  <= game_blue;
+            red_next   <= game_red_r;
+            green_next <= game_green_r;
+            blue_next  <= game_blue_r;
          end if;
       end if;
    end process Final_Mux;

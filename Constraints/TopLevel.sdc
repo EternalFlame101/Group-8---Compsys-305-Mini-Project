@@ -70,3 +70,19 @@ set_false_path -to   [get_ports {SD_DATA[0] GPIO_0[3]}]
 
 # mouse_clock_filter is a filtered PS/2 clock, ~16kHz max - cut false timing paths
 set_clock_groups -asynchronous -group { mouse_filter_clk }
+
+# =============================================================================
+# CLOCK_50 -> pixel clock CDC false paths
+#   Many signals originate in the CLOCK_50 domain (keyboard, mouse, switches,
+#   HUD timer, audio control) and are captured by registers in the pixel-clock
+#   (video_clock) domain.  These crossings are intentional and safe: the
+#   signals change slowly (human-rate inputs, vsync-rate counters) and all
+#   consuming modules tolerate metastability (200 ms arming counters, display
+#   enable gates, etc.).  Without these false paths Quartus times the crossing
+#   with a tight ~10 ns window derived from the PLL phase relationship, which
+#   makes the ~9 ns keyboard paths appear to limit the pixel-clock Fmax.
+# =============================================================================
+set_false_path -from [get_clocks {CLOCK_50}] \
+    -to [get_clocks {Pixel_Clock_PLL|video_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}]
+set_false_path -from [get_clocks {Pixel_Clock_PLL|video_pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] \
+    -to [get_clocks {CLOCK_50}]

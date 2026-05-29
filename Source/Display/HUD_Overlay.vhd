@@ -67,7 +67,7 @@ architecture beh of HUD_Overlay is
 	signal tmso_r,  tmso_g,  tmso_b      : std_logic_vector(3 downto 0);
 	signal tlbl_r,  tlbl_g,  tlbl_b      : std_logic_vector(3 downto 0);
 
-	-- Score decode
+	-- Score decode (combinational)
 	signal score_hundreds  : std_logic_vector(3 downto 0);
 	signal score_tens      : std_logic_vector(3 downto 0);
 	signal score_ones      : std_logic_vector(3 downto 0);
@@ -77,6 +77,16 @@ architecture beh of HUD_Overlay is
 	signal x_hundreds      : std_logic_vector(9 downto 0);
 	signal x_tens          : std_logic_vector(9 downto 0);
 	signal x_ones          : std_logic_vector(9 downto 0);
+
+	-- Registered score decode: breaks the ~21 ns path
+	--   internal_score -> BCD priority chain -> char encoding -> ROM_Display -> OR
+	--   -> Screen_Compositor register. Registering the char/x_pos signals splits
+	--   this into two stages each ~10 ns, clearing the 80 MHz target.
+	signal char_hundreds_r : std_logic_vector(5 downto 0);
+	signal char_tens_r     : std_logic_vector(5 downto 0);
+	signal char_ones_r     : std_logic_vector(5 downto 0);
+	signal x_tens_r        : std_logic_vector(9 downto 0);
+	signal x_ones_r        : std_logic_vector(9 downto 0);
 
 	signal remaining_lives : std_logic_vector(3 downto 0);
 
@@ -175,7 +185,7 @@ begin
 		generic map (STRING_LENGTH => 1, SCALE => 4,
 					   TEXT_RED => "1111", TEXT_GREEN => "1111", TEXT_BLUE => "1111")
 		port map (clock        => video_clock,
-				    characters  => char_hundreds,
+				    characters  => char_hundreds_r,
 				    x_position  => x_hundreds,
 				    y_position  => conv_std_logic_vector(VALUE_Y, 10),
 				    pixel_row   => pixel_row, pixel_column => pixel_column,
@@ -185,8 +195,8 @@ begin
 		generic map (STRING_LENGTH => 1, SCALE => 4,
 					   TEXT_RED => "1111", TEXT_GREEN => "1111", TEXT_BLUE => "1111")
 		port map (clock        => video_clock,
-				    characters  => char_tens,
-				    x_position  => x_tens,
+				    characters  => char_tens_r,
+				    x_position  => x_tens_r,
 				    y_position  => conv_std_logic_vector(VALUE_Y, 10),
 				    pixel_row   => pixel_row, pixel_column => pixel_column,
 				    red_out     => d_ten_r, green_out => d_ten_g, blue_out => d_ten_b);
@@ -195,8 +205,8 @@ begin
 		generic map (STRING_LENGTH => 1, SCALE => 4,
 					   TEXT_RED => "1111", TEXT_GREEN => "1111", TEXT_BLUE => "1111")
 		port map (clock        => video_clock,
-				    characters  => char_ones,
-				    x_position  => x_ones,
+				    characters  => char_ones_r,
+				    x_position  => x_ones_r,
 				    y_position  => conv_std_logic_vector(VALUE_Y, 10),
 				    pixel_row   => pixel_row, pixel_column => pixel_column,
 				    red_out     => d_one_r, green_out => d_one_g, blue_out => d_one_b);
@@ -323,6 +333,21 @@ begin
 	score_h <= score_hundreds;
 	score_t <= score_tens;
 	score_o <= score_ones;
+
+	-- Pipeline register: capture BCD char-codes and x-positions one clock after
+	-- the BCD priority chain resolves. x_hundreds is a constant (272) so it needs
+	-- no register; char_hundreds_r / char_tens_r / char_ones_r carry the
+	-- leading-zero blanking already baked in (CHAR_SPACE vs digit code).
+	Bcd_Pipe : process(video_clock)
+	begin
+		if rising_edge(video_clock) then
+			char_hundreds_r <= char_hundreds;
+			char_tens_r     <= char_tens;
+			char_ones_r     <= char_ones;
+			x_tens_r        <= x_tens;
+			x_ones_r        <= x_ones;
+		end if;
+	end process Bcd_Pipe;
 
 	-- ==========================================================
 	-- Output mux: OR all layers together
