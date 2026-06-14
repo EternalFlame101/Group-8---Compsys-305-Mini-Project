@@ -44,6 +44,15 @@ architecture start_screen_behaviour of Start_Screen is
    signal mode_click_armed       : std_logic := '0';
    signal title_advance_armed    : std_logic := '0';
    signal title_clear_counter    : integer range 0 to 5000000 := 0;
+   signal pixel_row_r, pixel_column_r : std_logic_vector(9 downto 0) := (others => '0');
+   signal continue_red_r, continue_green_r, continue_blue_r : std_logic_vector(3 downto 0) := (others => '0');
+   -- Intermediate combinational signals for the output compositor.
+   -- The Output_Reg process below registers these into the entity output ports,
+   -- creating a hard register boundary that prevents Quartus from sharing LUTs
+   -- across Start_Screen and End_Screen (they have identical 54-char subtitles
+   -- at the same position, so Quartus otherwise merges them into shared logic
+   -- and creates a long cross-module routing path).
+   signal red_comb, green_comb, blue_comb : std_logic_vector(3 downto 0);
 
    signal training_hovered      : std_logic;
    signal single_player_hovered : std_logic;
@@ -143,6 +152,23 @@ architecture start_screen_behaviour of Start_Screen is
    constant HOVER_BOTTOM : integer := 323;
 
 begin
+   -- Pipeline registers for pixel coordinates. VGA_Sync's horizontal_count drives
+   -- ~54+ Word_Display comparisons simultaneously; the fan-out routing alone adds
+   -- ~4 ns before any logic, making the path to Screen_Compositor too long.
+   -- Registering here cuts that to 1 load on VGA_Sync (fast) and lets each
+   -- Word_Display comparison start from a local register (short routing).
+   -- Adds 1 pixel of display latency to the start screen -- imperceptible.
+   Pixel_Coord_Pipe : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         pixel_row_r      <= pixel_row;
+         pixel_column_r   <= pixel_column;
+         continue_red_r   <= continue_red;
+         continue_green_r <= continue_green;
+         continue_blue_r  <= continue_blue;
+      end if;
+   end process Pixel_Coord_Pipe;
+
    -- Hover: left/right screen half, Y-bounded so outside the button+tip area neither side is active.
    -- SW1='1' lets SW0 override mouse position (SW0=0->Training, SW0=1->Single Player).
    training_hovered <= '1' when ((mouse_column <  conv_std_logic_vector(320, 10))
@@ -250,7 +276,7 @@ begin
                                 "001111" & "011001",
                 x_position   => conv_std_logic_vector(TITLE_X, 10),
                 y_position   => conv_std_logic_vector(TITLE_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => title_red, green_out => title_green, blue_out => title_blue);
 
    -- Credits line 1: "GROUP 8 - JASPER'S KNEE" (23 chars, SCALE 1)
@@ -264,7 +290,7 @@ begin
                                 "100000" & "001011" & "001110" & "000101" & "000101",
                 x_position   => conv_std_logic_vector(CREDITS_ONE_X, 10),
                 y_position   => conv_std_logic_vector(CREDITS_ONE_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => credits_one_red, green_out => credits_one_green, blue_out => credits_one_blue);
 
    -- Credits line 2: "FREDERICK, JASPER & JOHNNY" (26 chars, SCALE 1)
@@ -279,7 +305,7 @@ begin
                                 "001110" & "011001",
                 x_position   => conv_std_logic_vector(CREDITS_TWO_X, 10),
                 y_position   => conv_std_logic_vector(CREDITS_TWO_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => credits_two_red, green_out => credits_two_green, blue_out => credits_two_blue);
 
    -- Continue: "CLICK ANYWHERE ON THE SCREEN/PRESS ANY KEY TO CONTINUE" (54 chars, SCALE 1)
@@ -298,7 +324,7 @@ begin
                                 "001110" & "010100" & "001001" & "001110" & "010101" & "000101",
                 x_position   => conv_std_logic_vector(CONTINUE_X, 10),
                 y_position   => conv_std_logic_vector(CONTINUE_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out 	  => continue_red, green_out => continue_green, blue_out => continue_blue);
 
    -- Header: "SELECT YOUR GAME MODE:" (22 chars, SCALE 2)
@@ -312,7 +338,7 @@ begin
                                 "001111" & "000100" & "000101" & "011101",
                 x_position   => conv_std_logic_vector(HEADER_X, 10),
                 y_position   => conv_std_logic_vector(HEADER_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => header_red, green_out => header_green, blue_out => header_blue);
 
    -- TRAINING button small (SCALE 1, resting)
@@ -324,7 +350,7 @@ begin
                                 "001110" & "000111",
                 x_position   => conv_std_logic_vector(TRAINING_SMALL_X, 10),
                 y_position   => conv_std_logic_vector(TRAINING_SMALL_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => training_small_red, green_out => training_small_green, blue_out => training_small_blue);
 
    -- TRAINING button large (SCALE 2, hovered)
@@ -336,7 +362,7 @@ begin
                                 "001110" & "000111",
                 x_position   => conv_std_logic_vector(TRAINING_LARGE_X, 10),
                 y_position   => conv_std_logic_vector(TRAINING_LARGE_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => training_large_red, green_out => training_large_green, blue_out => training_large_blue);
 
    -- SINGLE PLAYER button small (SCALE 1, resting)
@@ -349,7 +375,7 @@ begin
                                 "010010",
                 x_position   => conv_std_logic_vector(SINGLE_PLAYER_SMALL_X, 10),
                 y_position   => conv_std_logic_vector(SINGLE_PLAYER_SMALL_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => single_player_small_red, green_out => single_player_small_green, blue_out => single_player_small_blue);
 
    -- SINGLE PLAYER button large (SCALE 2, hovered)
@@ -362,7 +388,7 @@ begin
                                 "010010",
                 x_position   => conv_std_logic_vector(SINGLE_PLAYER_LARGE_X, 10),
                 y_position   => conv_std_logic_vector(SINGLE_PLAYER_LARGE_Y, 10),
-                pixel_row    => pixel_row, pixel_column => pixel_column,
+                pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => single_player_large_red, green_out => single_player_large_green, blue_out => single_player_large_blue);
 
    -- Hover mux: show large version when hovered, small otherwise
@@ -387,7 +413,7 @@ begin
                               "000010" & "010011" & "010100" & "000001" & "000011" & "001100" &
                               "000101" & "010011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T1_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t1_red, green_out => tip_t1_green, blue_out => tip_t1_blue);
 
    -- "- AVOID BLUE OBSTACLES" (22)
@@ -399,7 +425,7 @@ begin
                               "100000" & "001111" & "000010" & "010011" & "010100" & "000001" &
                               "000011" & "001100" & "000101" & "010011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T2_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t2_red, green_out => tip_t2_green, blue_out => tip_t2_blue);
 
    -- "- JUMP OVER GREEN OBSTACLES" (27)
@@ -412,7 +438,7 @@ begin
                               "001111" & "000010" & "010011" & "010100" & "000001" & "000011" &
                               "001100" & "000101" & "010011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T3_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t3_red, green_out => tip_t3_green, blue_out => tip_t3_blue);
 
    -- "- COLLECT YELLOW GIFTS, 1 POINT EACH" (36)
@@ -426,7 +452,7 @@ begin
                               "110001" & "100000" & "010000" & "001111" & "001001" & "001110" &
                               "010100" & "100000" & "000101" & "000001" & "000011" & "001000",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T4_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t4_red, green_out => tip_t4_green, blue_out => tip_t4_blue);
 
    -- "- EACH WAVE SURVIVED GIVES 1 POINT" (34)
@@ -440,7 +466,7 @@ begin
                               "000101" & "010011" & "100000" & "110001" & "100000" & "010000" &
                               "001111" & "001001" & "001110" & "010100",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T5_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t5_red, green_out => tip_t5_green, blue_out => tip_t5_blue);
 
    -- "- KEY1 / LEFT ARROW: MOVE LEFT" (30)
@@ -453,7 +479,7 @@ begin
                               "010111" & "011101" & "100000" & "001101" & "001111" & "010110" &
                               "000101" & "100000" & "001100" & "000101" & "000110" & "010100",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T6_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t6_red, green_out => tip_t6_green, blue_out => tip_t6_blue);
 
    -- "- KEY0 / RIGHT ARROW: MOVE RIGHT" (32)
@@ -467,7 +493,7 @@ begin
                               "010110" & "000101" & "100000" & "010010" & "001001" & "000111" &
                               "001000" & "010100",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T7_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t7_red, green_out => tip_t7_green, blue_out => tip_t7_blue);
 
    -- "- LEFT CLICK / SPACE / UP ARROW: JUMP" (37)
@@ -482,7 +508,7 @@ begin
                               "010111" & "011101" & "100000" & "001010" & "010101" & "001101" &
                               "010000",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T8_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t8_red, green_out => tip_t8_green, blue_out => tip_t8_blue);
 
    -- "- RIGHT CLICK / DOWN ARROW: DUCK" (32)
@@ -496,7 +522,7 @@ begin
                               "001111" & "010111" & "011101" & "100000" & "000100" & "010101" &
                               "000011" & "001011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T9_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t9_red, green_out => tip_t9_green, blue_out => tip_t9_blue);
 
    -- "- GET 10 POINTS TO WIN, GOOD LUCK" (33)
@@ -510,7 +536,7 @@ begin
                               "000111" & "001111" & "001111" & "000100" & "100000" & "001100" &
                               "010101" & "000011" & "001011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_T10_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_t10_red, green_out => tip_t10_green, blue_out => tip_t10_blue);
 
    -- ---------------------------------------------------------------------------
@@ -527,7 +553,7 @@ begin
                               "010000" & "001111" & "010011" & "010011" & "001001" & "000010" &
                               "001100" & "000101",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S1_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s1_red, green_out => tip_s1_green, blue_out => tip_s1_blue);
 
    -- "- CANCEL ROLL WITH OPPOSITE DIRECTION" (37)
@@ -542,7 +568,7 @@ begin
                               "010010" & "000101" & "000011" & "010100" & "001001" & "001111" &
                               "001110",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S2_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s2_red, green_out => tip_s2_green, blue_out => tip_s2_blue);
 
    -- "- HOLD RIGHT CLICK OR DOWN ARROW: DUCK" (38)
@@ -557,7 +583,7 @@ begin
                               "001111" & "010111" & "011101" & "100000" & "000100" & "010101" &
                               "000011" & "001011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S3_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s3_red, green_out => tip_s3_green, blue_out => tip_s3_blue);
 
    -- "- CANCEL A JUMP WITH A DUCK" (27)
@@ -570,7 +596,7 @@ begin
                               "010100" & "001000" & "100000" & "000001" & "100000" & "000100" &
                               "010101" & "000011" & "001011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S4_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s4_red, green_out => tip_s4_green, blue_out => tip_s4_blue);
 
    -- "- BARREL ROLL MID-AIR: JUMP & ROLL" (34)
@@ -584,7 +610,7 @@ begin
                               "010101" & "001101" & "010000" & "100000" & "100110" & "100000" &
                               "010010" & "001111" & "001100" & "001100",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S5_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s5_red, green_out => tip_s5_green, blue_out => tip_s5_blue);
 
    -- "- CANCEL A DUCK WITH A ROLL" (27)
@@ -597,7 +623,7 @@ begin
                               "010100" & "001000" & "100000" & "000001" & "100000" & "010010" &
                               "001111" & "001100" & "001100",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S6_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s6_red, green_out => tip_s6_green, blue_out => tip_s6_blue);
 
    -- "- GET 30 POINTS TO WIN, GOOD LUCK" (33)
@@ -611,7 +637,7 @@ begin
                               "000111" & "001111" & "001111" & "000100" & "100000" & "001100" &
                               "010101" & "000011" & "001011",
                 x_position => conv_std_logic_vector(TIPS_X, 10), y_position => conv_std_logic_vector(TIP_S7_Y, 10),
-                pixel_row => pixel_row, pixel_column => pixel_column,
+                pixel_row => pixel_row_r, pixel_column => pixel_column_r,
                 red_out => tip_s7_red, green_out => tip_s7_green, blue_out => tip_s7_blue);
 
    -- Combined tip colours gated by hover (training has priority over single player)
@@ -648,7 +674,7 @@ begin
                                title_red,         title_green,         title_blue,
                                credits_one_red,   credits_one_green,   credits_one_blue,
                                credits_two_red,   credits_two_green,   credits_two_blue,
-                               continue_red,      continue_green,      continue_blue,
+                               continue_red_r,    continue_green_r,    continue_blue_r,
                                header_red,        header_green,        header_blue,
                                training_red,      training_green,      training_blue,
                                single_player_red, single_player_green, single_player_blue,
@@ -657,23 +683,36 @@ begin
    begin
       case screen_state is
          when title_screen =>
-            red_out   <= title_red   or credits_one_red   or credits_two_red   or continue_red;
-            green_out <= title_green or credits_one_green or credits_two_green or continue_green;
-            blue_out  <= title_blue  or credits_one_blue  or credits_two_blue  or continue_blue;
+            red_comb   <= title_red   or credits_one_red   or credits_two_red   or continue_red_r;
+            green_comb <= title_green or credits_one_green or credits_two_green or continue_green_r;
+            blue_comb  <= title_blue  or credits_one_blue  or credits_two_blue  or continue_blue_r;
 
          when mode_select =>
-            red_out   <= header_red   or training_red   or single_player_red
-                      or training_tips_red   or single_player_tips_red;
-            green_out <= header_green or training_green or single_player_green
-                      or training_tips_green or single_player_tips_green;
-            blue_out  <= header_blue  or training_blue  or single_player_blue
-                      or training_tips_blue  or single_player_tips_blue;
+            red_comb   <= header_red   or training_red   or single_player_red
+                       or training_tips_red   or single_player_tips_red;
+            green_comb <= header_green or training_green or single_player_green
+                       or training_tips_green or single_player_tips_green;
+            blue_comb  <= header_blue  or training_blue  or single_player_blue
+                       or training_tips_blue  or single_player_tips_blue;
 
          when game_running =>
-            red_out   <= (others => '0');
-            green_out <= (others => '0');
-            blue_out  <= (others => '0');
+            red_comb   <= (others => '0');
+            green_comb <= (others => '0');
+            blue_comb  <= (others => '0');
       end case;
    end process Output_Compositor;
+
+   -- Register the compositor output so the entity ports are driven by flip-flops,
+   -- not combinational logic. This creates a hard register boundary that prevents
+   -- Quartus from extending the pixel_column_r fan-out through this module's
+   -- output into neighbouring registers elsewhere on the chip.
+   Output_Reg : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         red_out   <= red_comb;
+         green_out <= green_comb;
+         blue_out  <= blue_comb;
+      end if;
+   end process Output_Reg;
 
 end architecture start_screen_behaviour;

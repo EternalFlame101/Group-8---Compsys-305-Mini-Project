@@ -519,6 +519,12 @@ architecture game_behaviour of Top_Level is
 	signal HUD_red, HUD_green, HUD_blue     : std_logic_vector(3 downto 0);
 	signal HUD_red_r, HUD_green_r, HUD_blue_r : std_logic_vector(3 downto 0);
 	signal HUD_active                       : std_logic;
+	-- NOTE: start_screen_* and end_screen_* are registered inside their respective
+	-- modules (Output_Reg process). A second Top_Level register is NOT added here
+	-- because 3 consecutive stages for the same 4-bit signal triggers Quartus to
+	-- infer an altshift_taps (M9K RAM shift register) instead of flip-flops, which
+	-- has far worse timing. Two stages (module Output_Reg + Screen_Compositor
+	-- Input_Pipe) keeps it as plain flip-flops and meets 80 MHz.
 	signal score_hud                    : std_logic_vector(9 downto 0) := (others => '0');
 	signal wave_scored                  : std_logic;
 	signal lives								: std_logic_vector(1 downto 0);
@@ -1074,7 +1080,7 @@ begin
 					 training_green            => "0000",
                 training_blue             => "0000",
 					 end_screen_red				=> end_screen_red,
-					 end_screen_green				=>	end_screen_green,
+					 end_screen_green				=> end_screen_green,
 					 end_screen_blue				=> end_screen_blue,
                 game_red                  => game_red,
                 game_green                => game_green,
@@ -1207,6 +1213,7 @@ begin
 			HUD_blue_r  <= HUD_blue;
 		end if;
 	end process Hud_Out_Pipe;
+
 
 	startscreen_fsm_rise <= startscreen_fsm and not startscreen_fsm_prev;
 	endscreen_fsm_rise   <= endscreen_fsm   and not endscreen_fsm_prev;

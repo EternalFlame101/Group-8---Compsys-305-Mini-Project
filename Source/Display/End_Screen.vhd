@@ -42,6 +42,12 @@ architecture end_screen_behaviour of End_Screen is
    signal win_red,  win_green,  win_blue  : std_logic_vector(3 downto 0);
    signal lose_red, lose_green, lose_blue : std_logic_vector(3 downto 0);
    signal cont_red, cont_green, cont_blue : std_logic_vector(3 downto 0);
+   -- Registered subtitle outputs: the 54-char OR tree from pixel_column_r to
+   -- cont_* is ~6 ns; registering it here keeps the Output_Compositor path
+   -- (cont_r + you/win/lose OR) short enough for the 80 MHz target.
+   signal cont_red_r, cont_green_r, cont_blue_r : std_logic_vector(3 downto 0) := (others => '0');
+   signal pixel_row_r, pixel_column_r    : std_logic_vector(9 downto 0) := (others => '0');
+   signal red_comb, green_comb, blue_comb : std_logic_vector(3 downto 0);
 
    -- ---------------------------------------------------------------------------
    -- Layout
@@ -65,6 +71,17 @@ begin
    -- ---------------------------------------------------------------------------
    -- Screen active latch: goes low on click or key press
    -- ---------------------------------------------------------------------------
+   Pixel_Coord_Pipe : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         pixel_row_r    <= pixel_row;
+         pixel_column_r <= pixel_column;
+         cont_red_r     <= cont_red;
+         cont_green_r   <= cont_green;
+         cont_blue_r    <= cont_blue;
+      end if;
+   end process Pixel_Coord_Pipe;
+
    Screen_Latch : process(video_clock, reset)
    begin
       if reset = '1' then
@@ -93,8 +110,8 @@ begin
                                   "010101",   -- U
                 x_position     => conv_std_logic_vector(YOU_X,  10),
                 y_position     => conv_std_logic_vector(YOU_Y,  10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
+                pixel_row      => pixel_row_r,
+                pixel_column   => pixel_column_r,
                 red_out        => you_red,
                 green_out      => you_green,
                 blue_out       => you_blue);
@@ -114,8 +131,8 @@ begin
                                   "001110",   -- N
                 x_position     => conv_std_logic_vector(WIN_X,  10),
                 y_position     => conv_std_logic_vector(WIN_Y,  10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
+                pixel_row      => pixel_row_r,
+                pixel_column   => pixel_column_r,
                 red_out        => win_red,
                 green_out      => win_green,
                 blue_out       => win_blue);
@@ -136,8 +153,8 @@ begin
                                   "000101",   -- E
                 x_position     => conv_std_logic_vector(LOSE_X, 10),
                 y_position     => conv_std_logic_vector(LOSE_Y, 10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
+                pixel_row      => pixel_row_r,
+                pixel_column   => pixel_column_r,
                 red_out        => lose_red,
                 green_out      => lose_green,
                 blue_out       => lose_blue);
@@ -208,8 +225,8 @@ begin
                                   "000101",   -- E
                 x_position     => conv_std_logic_vector(CONT_X, 10),
                 y_position     => conv_std_logic_vector(CONT_Y, 10),
-                pixel_row      => pixel_row,
-                pixel_column   => pixel_column,
+                pixel_row      => pixel_row_r,
+                pixel_column   => pixel_column_r,
                 red_out        => cont_red,
                 green_out      => cont_green,
                 blue_out       => cont_blue);
@@ -223,17 +240,26 @@ begin
                                you_red,  you_green,  you_blue,
                                win_red,  win_green,  win_blue,
                                lose_red, lose_green, lose_blue,
-                               cont_red, cont_green, cont_blue)
+                               cont_red_r, cont_green_r, cont_blue_r)
    begin
       if end_screen_outcome = '1' then
-         red_out   <= you_red   or win_red   or cont_red;
-         green_out <= you_green or win_green or cont_green;
-         blue_out  <= you_blue  or win_blue  or cont_blue;
+         red_comb   <= you_red   or win_red   or cont_red_r;
+         green_comb <= you_green or win_green or cont_green_r;
+         blue_comb  <= you_blue  or win_blue  or cont_blue_r;
       else
-         red_out   <= you_red   or lose_red   or cont_red;
-         green_out <= you_green or lose_green or cont_green;
-         blue_out  <= you_blue  or lose_blue  or cont_blue;
+         red_comb   <= you_red   or lose_red   or cont_red_r;
+         green_comb <= you_green or lose_green or cont_green_r;
+         blue_comb  <= you_blue  or lose_blue  or cont_blue_r;
       end if;
    end process Output_Compositor;
+
+   Output_Reg : process(video_clock)
+   begin
+      if rising_edge(video_clock) then
+         red_out   <= red_comb;
+         green_out <= green_comb;
+         blue_out  <= blue_comb;
+      end if;
+   end process Output_Reg;
 
 end architecture end_screen_behaviour;
