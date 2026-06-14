@@ -1230,33 +1230,27 @@ begin
    LEDR(8)          <= init_failed_signal;
    LEDR(9)          <= audio_ready_signal;
 
-   -- Debug mirror to GPIO_0 header for oscilloscope probing
-   GPIO_0(0) <= sd_serial_clock;   -- CLK
-   GPIO_0(1) <= sd_chip_select;    -- CS (HIGH = deasserted, LOW = active)
-   GPIO_0(2) <= sd_command;        -- MOSI
-   GPIO_0(3) <= sd_data_in;        -- MISO
+   -- Low-byte DAC (old DAC, GPIO_0[7..0]) — B8(LSB)=GPIO_0[0], B1(MSB)=GPIO_0[7]
+   GPIO_0(7) <= dac_low_out(7);   -- B1 (MSB)
+   GPIO_0(6) <= dac_low_out(6);   -- B2
+   GPIO_0(5) <= dac_low_out(5);   -- B3
+   GPIO_0(4) <= dac_low_out(4);   -- B4
+   GPIO_0(3) <= dac_low_out(3);   -- B5
+   GPIO_0(2) <= dac_low_out(2);   -- B6
+   GPIO_0(1) <= dac_low_out(1);   -- B7
+   GPIO_0(0) <= dac_low_out(0);   -- B8 (LSB)
 
-   -- High-byte DAC (new DAC, GPIO_0[19..12]) — B1=MSB, B8=LSB
-   GPIO_0(19) <= dac_high_out(7);   -- B1 (MSB)
-   GPIO_0(18) <= dac_high_out(6);   -- B2
-   GPIO_0(17) <= dac_high_out(5);   -- B3
-   GPIO_0(16) <= dac_high_out(4);   -- B4
-   GPIO_0(15) <= dac_high_out(3);   -- B5
-   GPIO_0(14) <= dac_high_out(2);   -- B6
-   GPIO_0(13) <= dac_high_out(1);   -- B7
-   GPIO_0(12) <= dac_high_out(0);   -- B8 (LSB)
+   -- High-byte DAC (new DAC, GPIO_0[15..8]) — B8(LSB)=GPIO_0[8], B1(MSB)=GPIO_0[15]
+   GPIO_0(15) <= dac_high_out(7);   -- B1 (MSB)
+   GPIO_0(14) <= dac_high_out(6);   -- B2
+   GPIO_0(13) <= dac_high_out(5);   -- B3
+   GPIO_0(12) <= dac_high_out(4);   -- B4
+   GPIO_0(11) <= dac_high_out(3);   -- B5
+   GPIO_0(10) <= dac_high_out(2);   -- B6
+   GPIO_0(9)  <= dac_high_out(1);   -- B7
+   GPIO_0(8)  <= dac_high_out(0);   -- B8 (LSB)
 
-   -- Low-byte DAC (old DAC, GPIO_0[11..4]) — B1=MSB, B8=LSB
-   GPIO_0(11) <= dac_low_out(7);   -- B1 (MSB)
-   GPIO_0(10) <= dac_low_out(6);   -- B2
-   GPIO_0(9)  <= dac_low_out(5);   -- B3
-   GPIO_0(8)  <= dac_low_out(4);   -- B4
-   GPIO_0(7)  <= dac_low_out(3);   -- B5
-   GPIO_0(6)  <= dac_low_out(2);   -- B6
-   GPIO_0(5)  <= dac_low_out(1);   -- B7
-   GPIO_0(4)  <= dac_low_out(0);   -- B8 (LSB)
-
-   GPIO_0(35 downto 20) <= (others => '0');
+   GPIO_0(35 downto 16) <= (others => '0');
 	
 	-- LFSR testing
 	--	LEDR(8) <= vertical_sync;
