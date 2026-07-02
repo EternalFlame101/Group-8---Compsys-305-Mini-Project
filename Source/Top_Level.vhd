@@ -28,7 +28,7 @@ entity Top_Level is
          SD_CMD              : out   std_logic;
          SD_DATA             : inout std_logic_vector(3 downto 0);
 
-         GPIO_1              : out   std_logic_vector(35 downto 0));
+         GPIO_0              : out   std_logic_vector(35 downto 0));
 end entity Top_Level;
 
 architecture game_behaviour of Top_Level is
@@ -446,8 +446,8 @@ architecture game_behaviour of Top_Level is
    signal sd_chip_select  	: std_logic;
    signal sd_data_in      	: std_logic;
 
-   signal audio_dac_high 		: std_logic_vector(7 downto 0);   -- high byte -> new DAC (GPIO_1[19..12])
-   signal audio_dac_low  		: std_logic_vector(7 downto 0);   -- low byte  -> old DAC (GPIO_1[11..4])
+   signal audio_dac_high 		: std_logic_vector(7 downto 0);   -- high byte -> new DAC (GPIO_0[35..28])
+   signal audio_dac_low  		: std_logic_vector(7 downto 0);   -- low byte  -> old DAC (GPIO_0[7..0])
    signal dac_high_out        : std_logic_vector(7 downto 0);   -- muted-gated DAC high to GPIO
    signal dac_low_out         : std_logic_vector(7 downto 0);   -- muted-gated DAC low to GPIO
 	signal audio_ready_signal 	: std_logic;
@@ -1230,27 +1230,27 @@ begin
    LEDR(8)          <= init_failed_signal;
    LEDR(9)          <= audio_ready_signal;
 
-   -- Low-byte DAC (old DAC, GPIO_1[7..0]) — B8(LSB)=GPIO_1[0], B1(MSB)=GPIO_1[7]
-   GPIO_1(7) <= dac_low_out(7);   -- B1 (MSB)
-   GPIO_1(6) <= dac_low_out(6);   -- B2
-   GPIO_1(5) <= dac_low_out(5);   -- B3
-   GPIO_1(4) <= dac_low_out(4);   -- B4
-   GPIO_1(3) <= dac_low_out(3);   -- B5
-   GPIO_1(2) <= dac_low_out(2);   -- B6
-   GPIO_1(1) <= dac_low_out(1);   -- B7
-   GPIO_1(0) <= dac_low_out(0);   -- B8 (LSB)
+   -- Low-byte DAC (old DAC, GPIO_0[7..0]) — B8(LSB)=GPIO_0[0], B1(MSB)=GPIO_0[7]
+   GPIO_0(7) <= dac_low_out(7);   -- B1 (MSB)
+   GPIO_0(6) <= dac_low_out(6);   -- B2
+   GPIO_0(5) <= dac_low_out(5);   -- B3
+   GPIO_0(4) <= dac_low_out(4);   -- B4
+   GPIO_0(3) <= dac_low_out(3);   -- B5
+   GPIO_0(2) <= dac_low_out(2);   -- B6
+   GPIO_0(1) <= dac_low_out(1);   -- B7
+   GPIO_0(0) <= dac_low_out(0);   -- B8 (LSB)
 
-   -- High-byte DAC (new DAC, GPIO_1[15..8]) — B8(LSB)=GPIO_1[8], B1(MSB)=GPIO_1[15]
-   GPIO_1(15) <= dac_high_out(7);   -- B1 (MSB)
-   GPIO_1(14) <= dac_high_out(6);   -- B2
-   GPIO_1(13) <= dac_high_out(5);   -- B3
-   GPIO_1(12) <= dac_high_out(4);   -- B4
-   GPIO_1(11) <= dac_high_out(3);   -- B5
-   GPIO_1(10) <= dac_high_out(2);   -- B6
-   GPIO_1(9)  <= dac_high_out(1);   -- B7
-   GPIO_1(8)  <= dac_high_out(0);   -- B8 (LSB)
+   -- High-byte DAC (new DAC, GPIO_0[35..28]) — B8(LSB)=GPIO_0[28], B1(MSB)=GPIO_0[35]
+   GPIO_0(35) <= dac_high_out(7);   -- B1 (MSB)
+   GPIO_0(34) <= dac_high_out(6);   -- B2
+   GPIO_0(33) <= dac_high_out(5);   -- B3
+   GPIO_0(32) <= dac_high_out(4);   -- B4
+   GPIO_0(31) <= dac_high_out(3);   -- B5
+   GPIO_0(30) <= dac_high_out(2);   -- B6
+   GPIO_0(29) <= dac_high_out(1);   -- B7
+   GPIO_0(28) <= dac_high_out(0);   -- B8 (LSB)
 
-   GPIO_1(35 downto 16) <= (others => '0');
+   GPIO_0(27 downto 8) <= (others => '0');
 	
 	-- LFSR testing
 	--	LEDR(8) <= vertical_sync;
