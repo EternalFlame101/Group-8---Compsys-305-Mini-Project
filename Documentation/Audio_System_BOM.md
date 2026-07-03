@@ -78,6 +78,10 @@ This part is well-documented and consistent across all design passes — matches
 | 15 (VREF−) | — | GND rail |
 | 16 (COMP) | — | 10nF ceramic cap to −5V rail — frequency-compensation pin for the DAC's internal output amp (datasheet-recommended, prevents output ringing/instability). **Confirmed.** |
 
+> **DAC 1 pin 13 +5V wire — added June 2026:** A breadboard audit found DAC 1
+> (high-byte) was missing its +5V jumper to pin 13 — only the decoupling cap
+> was present. The wire has been added. DAC 2 was already correct.
+
 > **Note on VREF = 4.7kΩ:** This sets matched full-scale IOUT on both DACs (good —
 > both bytes share the same current range, which is required for the byte-weighting
 > math in §4 to work at all). The byte-weighting *ratio* itself is set by the
@@ -161,14 +165,14 @@ closer to 0V/GND), but not urgent for the breadboard.
 
 | Pin | Connect to |
 |---|---|
-| 1 (GAIN) | See pot config above |
+| 1 (GAIN) | Open (Config A — gain set by default ×20) |
 | 2 (−IN) | GND |
 | 3 (+IN) | From coupling cap (see above) |
 | 4 (GND) | GND rail |
 | 5 (OUTPUT) | Output coupling cap → speaker |
 | 6 (VS) | +5V rail + 0.1µF ceramic decoupling cap to GND |
-| 7 (BYPASS) | Leave open (unless Config A — then may be left open regardless) |
-| 8 (GAIN) | See pot config above |
+| 7 (BYPASS) | **10µF electrolytic** to GND (+ve to pin 7, −ve to GND). Standard LM386 noise-reduction bypass — decouples the internal bias node. **Added June 2026** (was previously open; a 10nF cap was incorrectly placed on pin 8 instead). |
+| 8 (GAIN) | Open (Config A). **Note:** was previously wired with a 10nF cap to GND in error — **removed June 2026**. |
 
 ### Output coupling cap → Speaker
 - **220µF electrolytic — confirmed.**
@@ -417,7 +421,19 @@ diameter on arrival before finalizing the front baffle hole.
 
 ---
 
-*Document version: 12 (June 2026). Item 3 (buck converter) swapped to an
+*Document version: 13 (June 2026). Breadboard audit (v12→v13): DAC 1 (high-byte)
+pin 13 was missing its +5V jumper wire — added. LM386 pin 8 had an erroneous
+10nF cap to GND — removed; bypass cap added to pin 7 (BYPASS) instead
+(standard noise-reduction configuration; upgrade to 10µF electrolytic at
+labs — current 10nF ceramic is a placeholder). §3 and §5 tables updated
+accordingly. Supply decoupling caps confirmed 0.1µF (100nF) as specified — 
+original breadboard description misstated 10nF. Summing-stage resistor values
+(Rf_A, R_in, Rf_B) are hand-picked from standard-value batches to target
+the ideal 256 ratio; nominal labels in §4 are approximate. Remaining lab
+tasks: swap pin 7 bypass cap to 10µF, add Zobel network (10Ω + 47nF) on
+LM386 output. Previous changes: see v12 note below.
+
+v12: Item 3 (buck converter) swapped to an
 LM2596-ADJ module (NZ$2.66, 4.8★/164 reviews/2,000+ sold) — better-reviewed
 and cheaper than the previous pick, same 5V trim-pot configuration step
 required on arrival. §9 amp upgraded from PAM8403 (2×3W) to
