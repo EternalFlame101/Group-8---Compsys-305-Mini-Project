@@ -1,3 +1,17 @@
+-- ------------------------------------------------------------------------------
+-- Spawn_Control
+--   Decides which obstacle/gift type (if any) appears in each of the three lanes.
+--   When the previous wave of objects has arrived, it advances to the next wave,
+--   using an 8-bit LFSR (lfsr_8bit) as a pseudo-random source so spawns are not
+--   fully predictable.
+--
+--   arrived_0/1/2 report when each lane's current object has reached the player;
+--   lane_N_type drives the corresponding Moving_Object instance. debug_* outputs
+--   expose the LFSR/vsync internals for on-board testing.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 
@@ -47,7 +61,7 @@ architecture beh of Spawn_Control is
 
     -- Arrived edge detector: fire exactly one spawn per arrival pulse
     signal any_arrived       : std_logic;
-    signal any_arrived_prev  : std_logic := '0';
+    signal any_arrived_previous  : std_logic := '0';
     signal arrived_rising    : std_logic;
 
     -- Spawn FSM: drives one LFSR-advance + ROM-read + lane-latch sequence
@@ -79,21 +93,21 @@ begin
         );
 
     any_arrived    <= arrived_0 or arrived_1 or arrived_2;
-    arrived_rising <= any_arrived and (not any_arrived_prev);
+    arrived_rising <= any_arrived and (not any_arrived_previous);
 
     -- Spawn FSM + lane register
     process(clock)
     begin
         if rising_edge(clock) then
             -- Edge detector latch
-            any_arrived_prev <= any_arrived;
+            any_arrived_previous <= any_arrived;
 
             -- Default: don't advance the LFSR
             lfsr_enable <= '0';
 
             if reset = '1' then
                 state             <= PULSE;  -- spawn wave 1 fresh after reset
-                any_arrived_prev  <= '0';
+                any_arrived_previous  <= '0';
                 lane_0_type       <= "000";
                 lane_1_type       <= "000";
                 lane_2_type       <= "000";

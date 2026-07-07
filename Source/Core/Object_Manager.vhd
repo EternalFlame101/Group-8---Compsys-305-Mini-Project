@@ -1,14 +1,17 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-
 -- ------------------------------------------------------------------------------
 -- Object_Manager
---    Combines three lane-based sprite outputs into a single layer. 
---    Priority is determined strictly by the cat's current lane position:
+--   Combines three lane-based sprite outputs into a single layer. Priority is
+--   determined strictly by the cat's current lane position:
 --      - Cat in Left (00):   Sprite 0 (Left) -> Sprite 1 (Mid)  -> Sprite 2 (Right)
 --      - Cat in Middle (01): Sprite 1 (Mid)  -> Sprite 0 (Left) -> Sprite 2 (Right)
 --      - Cat in Right (10):  Sprite 2 (Right)-> Sprite 1 (Mid)  -> Sprite 0 (Left)
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
 -- ------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.all;
+
 entity Object_Manager is
     generic (
         SPRITE_0_LANE : integer range 0 to 2 := 0; -- Left Lane
@@ -44,7 +47,7 @@ begin
             sprite_2_red, sprite_2_green, sprite_2_blue)
     begin
         case cat_lane is
-            
+
             -- ==================================================================
             -- CAT IN LEFT LANE (00)
             -- Priority Order: Sprite 0 (Left) -> Sprite 1 (Mid) -> Sprite 2 (Right)

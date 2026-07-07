@@ -1,3 +1,13 @@
+-- ------------------------------------------------------------------------------
+-- Background_ROM
+--   altsyncram-backed colour ROM holding the background image, initialised from
+--   the MIF_FILE generic. Registered read: given an address it returns the 4-bit
+--   red/green/blue components of that pixel one clock later. DEPTH / ADDR_BITS
+--   size the memory for the image in use.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;

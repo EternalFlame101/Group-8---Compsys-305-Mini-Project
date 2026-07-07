@@ -1,13 +1,18 @@
+-- ------------------------------------------------------------------------------
+-- VGA_Sync
+--   Generates the 640x480 @ 60 Hz VGA horizontal/vertical sync timing and the
+--   current pixel_row / pixel_column, gating RGB output to black during blanking
+--   (video_on). Now driven by a true 25 MHz pixel_clock from the Video_PLL instead
+--   of the old 50 MHz + enable_pulse arrangement, so counters advance every rising
+--   edge.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
-
--- ------------------------------------------------------------------------------
--- VGA_Sync
---   Now driven by a true 25 MHz pixel_clock from the Video_PLL instead of the
---   old 50 MHz + enable_pulse arrangement. Counters advance every rising edge.
--- ------------------------------------------------------------------------------
 
 entity VGA_Sync is
    port (pixel_clock                            : in  std_logic;

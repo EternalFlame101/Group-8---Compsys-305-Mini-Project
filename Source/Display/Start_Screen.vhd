@@ -1,3 +1,16 @@
+-- ------------------------------------------------------------------------------
+-- Start_Screen
+--   Renders the title/menu screen and handles game-mode selection. The player
+--   picks training vs normal via SW0/SW1 or a mouse click; the chosen mode is
+--   latched (latched_mode) and held so an input that selected the mode cannot
+--   bleed through as a gameplay action the instant the game starts.
+--
+--   Drives start_screen_active while the menu is up and reports the selected /
+--   latched mode to Game_Master and the compositor.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -40,7 +53,7 @@ architecture start_screen_behaviour of Start_Screen is
    signal screen_state           : screen_state_type := title_screen;
    signal selected_mode_internal : std_logic := '0';
    signal latched_mode_internal  : std_logic := '0';
-   signal mouse_left_click_prev  : std_logic := '0';
+   signal mouse_left_click_previous  : std_logic := '0';
    signal mode_click_armed       : std_logic := '0';
    signal title_advance_armed    : std_logic := '0';
    signal title_clear_counter    : integer range 0 to 5000000 := 0;
@@ -172,14 +185,14 @@ begin
    -- Hover: left/right screen half, Y-bounded so outside the button+tip area neither side is active.
    -- SW1='1' lets SW0 override mouse position (SW0=0->Training, SW0=1->Single Player).
    training_hovered <= '1' when ((mouse_column <  conv_std_logic_vector(320, 10))
-										and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
-										and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
-									else '0';
+                              and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
+                              and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
+                           else '0';
 
    single_player_hovered <= '1' when ((mouse_column >= conv_std_logic_vector(320, 10))
-										     and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
-											  and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
-										  else '0';
+                                   and (mouse_row    >= conv_std_logic_vector(HOVER_TOP, 10))
+                                   and (mouse_row    <= conv_std_logic_vector(HOVER_BOTTOM, 10)))
+                                else '0';
 
    -- State machine.
    -- Title screen arming: title_advance_armed is set only after any_key_held has been
@@ -196,12 +209,12 @@ begin
          screen_state           <= title_screen;
          selected_mode_internal <= '0';
          latched_mode_internal  <= '0';
-         mouse_left_click_prev  <= '0';
+         mouse_left_click_previous  <= '0';
          mode_click_armed       <= '0';
          title_advance_armed    <= '0';
          title_clear_counter    <= 0;
       elsif rising_edge(video_clock) then
-         mouse_left_click_prev <= mouse_left_click;
+         mouse_left_click_previous <= mouse_left_click;
 
          case screen_state is
             when title_screen =>
@@ -241,7 +254,7 @@ begin
                   if mouse_left_click = '0' then
                      mode_click_armed <= '1';
                   end if;
-                  if mode_click_armed = '1' and mouse_left_click = '1' and mouse_left_click_prev = '0' then
+                  if mode_click_armed = '1' and mouse_left_click = '1' and mouse_left_click_previous = '0' then
                      if training_hovered = '1' then
                         selected_mode_internal <= '0';
                         latched_mode_internal  <= '0';
@@ -325,7 +338,7 @@ begin
                 x_position   => conv_std_logic_vector(CONTINUE_X, 10),
                 y_position   => conv_std_logic_vector(CONTINUE_Y, 10),
                 pixel_row    => pixel_row_r, pixel_column => pixel_column_r,
-                red_out 	  => continue_red, green_out => continue_green, blue_out => continue_blue);
+                red_out      => continue_red, green_out => continue_green, blue_out => continue_blue);
 
    -- Header: "SELECT YOUR GAME MODE:" (22 chars, SCALE 2)
    Header : Word_Display

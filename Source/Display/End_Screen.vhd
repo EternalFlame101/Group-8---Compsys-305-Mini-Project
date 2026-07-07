@@ -1,3 +1,13 @@
+-- ------------------------------------------------------------------------------
+-- End_Screen
+--   Renders the win/lose end screen. end_screen_outcome selects which message is
+--   shown (0 = lose, 1 = win); end_screen_active gates it on. Pulses end_screen
+--   when the player dismisses it (any key / click) so Game_Master can return to
+--   the start screen.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -10,7 +20,7 @@ entity End_Screen is
          mouse_row, mouse_column      : in  std_logic_vector(9 downto 0);
          any_key_pressed              : in  std_logic;
          end_screen_outcome           : in  std_logic;
-			end_screen_active				  : in  std_logic;
+         end_screen_active            : in  std_logic;
          end_screen                   : out std_logic;
          red_out, green_out, blue_out : out std_logic_vector(3 downto 0));
 end entity End_Screen;

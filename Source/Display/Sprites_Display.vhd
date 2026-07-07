@@ -1,7 +1,3 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
-
 -- ------------------------------------------------------------------------------
 -- Sprites_Display
 --   Draws a rectangular sprite at a given (sprite_x, sprite_y) screen position,
@@ -18,7 +14,13 @@ use IEEE.numeric_std.all;
 --   Outputs are black outside the sprite footprint, so this block can be
 --   layered with other graphics using the standard "non-zero means active"
 --   convention used elsewhere in the project.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
 -- ------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
 entity Sprites_Display is
    generic (SPRITE_WIDTH  : positive := 64;

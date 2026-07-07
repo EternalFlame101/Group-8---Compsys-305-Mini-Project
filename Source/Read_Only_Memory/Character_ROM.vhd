@@ -1,12 +1,19 @@
+-- ------------------------------------------------------------------------------
+-- Character_ROM
+--   64-character 8x8 font stored as a VHDL constant array. Synthesises to LUTs
+--   (zero M10K blocks). When character_address is a compile-time constant (all
+--   static Word_Display text), Quartus constant-folds the lookup entirely.
+--
+--   The clock port is kept for interface compatibility with ROM_Display but is
+--   intentionally unused.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
--- Character_ROM: 64-character 8x8 font stored as a VHDL constant array.
--- Synthesises to LUTs (zero M10K blocks).  When character_address is a
--- compile-time constant (all static Word_Display text), Quartus constant-folds
--- the lookup entirely.  The clock port is kept for interface compatibility
--- with ROM_Display but is intentionally unused.
 entity Character_ROM is
    port (clock                  : in  std_logic;
          font_column, font_row  : in  std_logic_vector(2 downto 0);

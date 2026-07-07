@@ -1,3 +1,19 @@
+-- ------------------------------------------------------------------------------
+-- SD_Init
+--   SD-card controller: brings the card up in SPI mode (CMD0/CMD8/CMD55/ACMD41),
+--   then continuously streams a track by reading 512-byte sectors (CMD17) into a
+--   double buffer that Audio_Playback drains. Drives chip-select and orchestrates
+--   SPI_Master for every byte.
+--
+--   NOTE: on every (re-)init a drain phase clocks 520 bytes with CS LOW first. A
+--   re-init triggered mid-song can catch the card partway through a block read;
+--   CS-high dummy clocks do not abort it (the card only shifts data while CS is
+--   low), so without the drain the card ignores CMD0 and returns 0xFF. The drain
+--   lets the interrupted block finish so re-init succeeds first try.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -40,6 +56,7 @@ architecture behavioural of SD_Init is
 
    type init_state_type is (
       s_idle,
+      s_drain_request,           s_drain_wait,
       s_power_up_wait,
       s_dummy_clocks_request,    s_dummy_clocks_wait,
       s_cmd0_request,            s_cmd0_wait,
@@ -63,17 +80,37 @@ architecture behavioural of SD_Init is
    signal next_command_state : init_state_type;
 
    constant POWER_UP_WAIT_CYCLES : integer := 100000;
-   constant DUMMY_CLOCK_BYTES    : integer := 10;
+   -- 160 dummy-clock bytes = 1280 SPI clocks with CS HIGH at ~390 kHz.
+   -- Cold boot only needs the SD-spec minimum of 74 (10 bytes). This is
+   -- deliberately much larger so a RE-init triggered mid-song (audio_sd_reset
+   -- flipped while the card was mid CMD17 block read) reliably flushes the
+   -- card's interrupted read and lets it return to idle before CMD0 is sent.
+   -- Without this, CMD0 receives garbage (card still driving the aborted
+   -- read) and init freezes at the CMD0 state code -- the intermittent
+   -- LEDR=0011 failure. 1280 clocks >> one 512-byte block, so any partial
+   -- read is guaranteed to complete/abort.
+   constant DUMMY_CLOCK_BYTES    : integer := 160;
+   -- Drain phase: clock this many bytes with CS LOW before the normal power-up /
+   -- dummy-clock sequence. Diagnostics proved the real failure: when re-init is
+   -- triggered mid-song the card is often partway through a CMD17 512-byte block
+   -- read. Deasserting CS and sending dummy clocks with CS HIGH does NOT abort
+   -- that read -- the card only shifts data out while CS is LOW, so it stays
+   -- stuck and returns 0xFF to CMD0/CMD8 (the "HEX=FF, stage=CMD8/CMD0" result).
+   -- Draining 520 bytes with CS LOW lets the interrupted block (512 data + 2 CRC,
+   -- rounded up) finish so the card releases the bus and returns to idle. Only
+   -- then do the standard CS-HIGH dummy clocks + CMD0 land cleanly.
+   constant DRAIN_BYTES          : integer := 520;
    constant POLL_TIMEOUT_BYTES   : integer := 16;
    constant ACMD41_MAX_RETRIES   : integer := 1000;
    constant DATA_TOKEN_TIMEOUT   : integer := 50000;
 
    signal power_up_counter    : integer range 0 to POWER_UP_WAIT_CYCLES;
-   signal byte_counter        : integer range 0 to 16;
+   signal byte_counter        : integer range 0 to DUMMY_CLOCK_BYTES;
    signal poll_counter        : integer range 0 to POLL_TIMEOUT_BYTES;
    signal acmd41_retry_count  : integer range 0 to ACMD41_MAX_RETRIES;
    signal data_token_counter  : integer range 0 to DATA_TOKEN_TIMEOUT;
    signal byte_write_index    : integer range 0 to 512;
+   signal drain_counter       : integer range 0 to DRAIN_BYTES;
    signal sector_addr         : std_logic_vector(31 downto 0);
    signal fills_count         : integer range 0 to 3;
 
@@ -164,6 +201,7 @@ begin
    byte_write_enable <= '1' when (current_state = s_data_byte_wait and spi_transfer_done = '1') else '0';
 
    current_state_code <= "0000" when current_state = s_idle
+                    else "1101" when current_state = s_drain_request          or current_state = s_drain_wait
                     else "0001" when current_state = s_power_up_wait
                     else "0010" when current_state = s_dummy_clocks_request    or current_state = s_dummy_clocks_wait
                     else "0011" when current_state = s_cmd0_request            or current_state = s_cmd0_wait
@@ -229,6 +267,7 @@ begin
          acmd41_retry_count     <= 0;
          data_token_counter     <= 0;
          byte_write_index       <= 0;
+         drain_counter          <= 0;
          sector_addr            <= start_sector;
          fills_count            <= 0;
          init_complete_register <= '0';
@@ -246,8 +285,35 @@ begin
                power_up_counter <= 0;
                byte_counter     <= 0;
                poll_counter     <= 0;
+               drain_counter    <= 0;
                if start_init = '1' then
-                  current_state <= s_power_up_wait;
+                  current_state <= s_drain_request;
+               end if;
+
+            -- ===== DRAIN PHASE (CS LOW) =====
+            -- Clock DRAIN_BYTES with CS asserted LOW so any CMD17 block read that
+            -- was interrupted by this (re-)init completes and the card releases
+            -- the bus. Without this the card ignores CMD0/CMD8 (returns 0xFF).
+            -- On a cold boot the card isn't mid-read, so this just clocks
+            -- harmless 0xFF bytes -- no downside.
+            when s_drain_request =>
+               cs_internal <= '0';
+               if spi_busy_signal = '0' then
+                  spi_transmit_byte  <= x"FF";
+                  spi_start_transfer <= '1';
+                  current_state      <= s_drain_wait;
+               end if;
+
+            when s_drain_wait =>
+               cs_internal <= '0';
+               if spi_transfer_done = '1' then
+                  if drain_counter = DRAIN_BYTES - 1 then
+                     drain_counter <= 0;
+                     current_state <= s_power_up_wait;
+                  else
+                     drain_counter <= drain_counter + 1;
+                     current_state <= s_drain_request;
+                  end if;
                end if;
 
             when s_power_up_wait =>

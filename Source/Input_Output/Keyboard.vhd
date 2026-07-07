@@ -1,9 +1,4 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
-
--- =============================================================================
+-- ------------------------------------------------------------------------------
 -- Keyboard
 --   PS/2 keyboard controller. Decodes a small set of scan codes into level-held
 --   output signals, intended to be consumed by Player.vhd in place of (or in
@@ -31,7 +26,14 @@ use IEEE.std_logic_unsigned.all;
 --     - Arrow keys are "extended" -- the device sends 0xE0 first, then the make
 --       code (e.g. up arrow press = 0xE0 0x75, up arrow release = 0xE0 0xF0
 --       0x75). We track an extended_flag and a break_flag latch across bytes.
--- =============================================================================
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_unsigned.all;
 
 entity Keyboard is
    port (clock              : in    std_logic;

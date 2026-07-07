@@ -1,3 +1,17 @@
+-- ------------------------------------------------------------------------------
+-- Mouse
+--   PS/2 mouse controller. Initialises the mouse into streaming mode, then decodes
+--   the 3-byte movement packets into an on-screen cursor position and left/right
+--   button states.
+--
+--   Relative X/Y deltas from each packet are accumulated into cursor_row /
+--   cursor_column, clamped to the 640x480 screen. left_button / right_button are
+--   level outputs (high while held); Player.vhd / Start_Screen.vhd edge-detect
+--   them where a single click is required.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;

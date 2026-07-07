@@ -1,3 +1,17 @@
+-- ------------------------------------------------------------------------------
+-- SPI_Master
+--   Byte-at-a-time SPI master (mode 0) for the SD card. Asserting start_transfer
+--   with a byte on transmit_byte shifts it out MSB-first while simultaneously
+--   shifting the card's response into received_byte; transfer_done pulses for one
+--   clock when the byte completes.
+--
+--   use_fast_clock selects the SPI bit rate: slow (~195 kHz) for initialisation,
+--   where a marginal MISO line needs time to settle, and fast (~3.125 MHz) for
+--   streaming audio data. This module does not drive chip-select; SD_Init does.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -22,11 +36,15 @@ architecture behavioural of SPI_Master is
    type spi_state_type is (state_idle, state_transferring, state_completed);
    signal current_state : spi_state_type;
 
-   constant SLOW_HALF_PERIOD : integer := 63;   -- 50 MHz / 128 ≈ 390 kHz (init)
+   constant SLOW_HALF_PERIOD : integer := 127;  -- 50 MHz / 256 ≈ 195 kHz (init)
    constant FAST_HALF_PERIOD : integer := 7;    -- 50 MHz / 16  ≈ 3.125 MHz (data)
 
-   signal half_period_max   : integer range 0 to 63;
-   signal divider_counter   : integer range 0 to 63;
+   -- Init runs at the slow rate: it needs no speed, and the halved clock gives
+   -- the card's MISO/DAT0 line (weak pull-up only) twice as long to settle per
+   -- bit, hardening the init handshake against marginal signal integrity.
+   -- Streaming still uses FAST_HALF_PERIOD, so audio bandwidth is unchanged.
+   signal half_period_max   : integer range 0 to SLOW_HALF_PERIOD;
+   signal divider_counter   : integer range 0 to SLOW_HALF_PERIOD;
    signal bit_counter       : integer range 0 to 8;
    signal sclk_internal     : std_logic;
    signal transmit_register : std_logic_vector(7 downto 0);

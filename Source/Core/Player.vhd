@@ -1,3 +1,16 @@
+-- ------------------------------------------------------------------------------
+-- Player
+--   The controllable cat. Edge-detects the four input signals (shift left/right,
+--   jump, dive) so a held key/button yields exactly one action, and animates lane
+--   transitions, the walk cycle, jumping (via Jump_Offset_LUT), and diving.
+--
+--   Outputs the player sprite pixels, the current lane, and state flags
+--   (jumping/diving) used by Collision_Detector, plus cat_view_position which
+--   drives the perspective scaling of the track and obstacles.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -105,7 +118,7 @@ architecture player_behaviour of Player is
    signal view_pos_target   : integer range -LANE_RESOLUTION to LANE_RESOLUTION := 0;
    signal transition_active : std_logic := '0';
    signal transition_step   : integer range -TRANSITION_SPEED to TRANSITION_SPEED := 0;
-	
+
    -- '0' = left roll (negative direction), '1' = right roll (positive direction).
    -- Latched at transition start so the playback direction stays consistent even
    -- when view_pos_int crosses zero on a lane-2 -> lane-0 style move.
@@ -135,7 +148,7 @@ architecture player_behaviour of Player is
    signal shift_right_input_meta, shift_right_input_sync : std_logic := '0';
    signal jump_input_meta,        jump_input_sync        : std_logic := '0';
    signal dive_input_meta,        dive_input_sync        : std_logic := '0';
-	
+
    signal sprite_x_position : std_logic_vector(9 downto 0);
 
    -- Registered pixel coordinates for the 24 Sprites_Display ROMs.
@@ -687,19 +700,19 @@ begin
             -- dive_edge = dive_input  rising edge
             -- (Computed in-line below via the *_previous registers.)
 
-				-- =============================================================
+            -- =============================================================
             -- 1. DIVE (Squish) Logic
             -- =============================================================
             if (dive_input_sync = '1') and (dive_input_previous = '0') then
                -- NEW PRESS OR SPAM: Restart dive perfectly
                dive_active      <= '1';
                dive_frame_count <= 0;
-               
+
                -- Fast drop if currently jumping
                if current_state = '1' then
                   jump_frame_count <= JUMP_TOTAL_FRAMES - FAST_DROP_TAIL_FRAMES;
                end if;
-               
+
             elsif dive_active = '1' then
                -- ANIMATING OR HOLDING DIVE
                if (dive_input_sync = '1') and (dive_frame_count = 15) then
@@ -720,7 +733,7 @@ begin
                current_state    <= '1';
                jump_frame_count <= 0;
                dive_active      <= '0';
-               
+
             elsif current_state = '1' then
                -- Guard against overriding the dive's fast-drop assignment
                if not ((dive_input_sync = '1') and (dive_input_previous = '0')) then

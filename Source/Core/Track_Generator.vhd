@@ -1,3 +1,16 @@
+-- ------------------------------------------------------------------------------
+-- Track_Generator
+--   Draws the perspective race track: three lanes receding to a vanishing point.
+--   Uses Perspective_ROM to look up the track's horizontal extents per screen row
+--   and cat_view_position to shift the perspective as the player bobs, giving the
+--   illusion of forward motion.
+--
+--   Purely pixel-domain rendering; emits per-pixel RGB that Background_Manager
+--   composites beneath the sprites.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;

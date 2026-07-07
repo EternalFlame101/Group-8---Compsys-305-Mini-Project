@@ -1,8 +1,3 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
-
 -- ------------------------------------------------------------------------------
 -- Word_Display
 --   Renders a fixed-length string of characters by instantiating one ROM_Display
@@ -11,7 +6,14 @@ use IEEE.std_logic_unsigned.all;
 --   TEXT_RED / TEXT_GREEN / TEXT_BLUE control the colour of all characters in
 --   this word. Defaults to white (1111) so existing instantiations with no
 --   colour generic map continue to work unchanged.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
 -- ------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_unsigned.all;
 
 entity Word_Display is
    generic (STRING_LENGTH : positive                     := 16;

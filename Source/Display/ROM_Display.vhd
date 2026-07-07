@@ -1,8 +1,3 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
-
 -- ------------------------------------------------------------------------------
 -- ROM_Display
 --   Renders a single 8x8 character from Character_ROM, scaled by integer SCALE.
@@ -17,7 +12,14 @@ use IEEE.std_logic_unsigned.all;
 --
 --   TEXT_RED / TEXT_GREEN / TEXT_BLUE generics colour the rendered pixels.
 --   Default white so any existing instantiation continues to work unchanged.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
 -- ------------------------------------------------------------------------------
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_unsigned.all;
 
 entity ROM_Display is
    generic (SCALE      : positive                    := 1;

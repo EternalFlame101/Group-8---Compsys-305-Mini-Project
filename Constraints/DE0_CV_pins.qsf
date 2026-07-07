@@ -261,6 +261,15 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_DATA[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_DATA[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_DATA[3]
 
+# SD_DATA[0] is the card's MISO/DAT0 line. The FPGA tri-states it ('Z') and
+# reads it back, so between bytes -- when the card releases the bus -- the pin
+# floats and reads random noise. That noise corrupted SPI response bytes at
+# random init stages (intermittent CMD0/CMD8/ACMD41 failures on re-init), while
+# streaming was immune because the card drives DAT0 continuously during a block
+# read. Enabling the FPGA's internal weak pull-up makes the line idle high
+# (also the state the SD SPI spec requires), giving clean reads between bytes.
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DATA[0]
+
 #============================================================
 # SW
 #============================================================

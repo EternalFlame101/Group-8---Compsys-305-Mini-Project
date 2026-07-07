@@ -1,3 +1,17 @@
+-- ------------------------------------------------------------------------------
+-- Moving_Object
+--   Renders and animates one obstacle/gift travelling down a single lane toward
+--   the player, scaling it up as it approaches to fake perspective. Emits its
+--   current on-track row (row_out) for collision detection and pulses arrived
+--   when it reaches the player line.
+--
+--   Instanced once per lane (LANE generic selects the horizontal path). obj_type
+--   selects which sprite/box to draw; speed_select scales travel speed with the
+--   game's difficulty ramp.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
@@ -8,9 +22,9 @@ entity Moving_Object is
             REAL_WIDTH  : positive             := 80;
             LANE        : integer range 0 to 2 := 1);
    port (enable, clock, vertical_sync : in  std_logic;
-         reset  							  : in  std_logic;
-			obj_type                     : in  std_logic_vector(2 downto 0);
-			arrived 			  				  : out std_logic;
+         reset                        : in  std_logic;
+         obj_type                     : in  std_logic_vector(2 downto 0);
+         arrived                      : out std_logic;
          pixel_column, pixel_row      : in  std_logic_vector(9 downto 0);
          speed_select                  : in  std_logic_vector(1 downto 0);
          cat_view_position            : in  std_logic_vector(7 downto 0);
@@ -272,41 +286,41 @@ architecture moving_object_behaviour of Moving_Object is
    -- Output registers
    signal red_out_register, green_out_register, blue_out_register : std_logic_vector(3 downto 0);
 
-	
-	-- Lane detection
-	signal object_arrived : std_logic;
-	signal object_reset   : std_logic;
-	signal object_active  : std_logic;
-	
 
-	signal effective_height : std_logic_vector(9 downto 0);
-	signal effective_width	: std_logic_vector(9 downto 0);
+   -- Lane detection
+   signal object_arrived : std_logic;
+   signal object_reset   : std_logic;
+   signal object_active  : std_logic;
 
-	signal enable_latch : std_logic := '0';
 
-	signal enable_seen_low : std_logic := '1';
+   signal effective_height : std_logic_vector(9 downto 0);
+   signal effective_width  : std_logic_vector(9 downto 0);
 
-	signal frame_div_counter : std_logic_vector(1 downto 0) := "00";
+   signal enable_latch : std_logic := '0';
 
-	-- frac_counter increments on every actual advance (not every vsync) to produce
-	-- fractional average step sizes across 5 distance zones:
-	--   zone 1 (  0- 31): step always 1    -> avg 1.00
-	--   zone 2 ( 32- 63): step 2 once/4   -> avg 1.25
-	--   zone 3 ( 64- 95): step alternates  -> avg 1.50
-	--   zone 4 ( 96-127): step 1 once/4   -> avg 1.75
-	--   zone 5 (128-159): step always 2    -> avg 2.00
-	signal frac_counter : std_logic_vector(1 downto 0) := "00";
-	signal dist_step    : std_logic_vector(9 downto 0);
+   signal enable_seen_low : std_logic := '1';
+
+   signal frame_div_counter : std_logic_vector(1 downto 0) := "00";
+
+   -- frac_counter increments on every actual advance (not every vsync) to produce
+   -- fractional average step sizes across 5 distance zones:
+   --   zone 1 (  0- 31): step always 1    -> avg 1.00
+   --   zone 2 ( 32- 63): step 2 once/4   -> avg 1.25
+   --   zone 3 ( 64- 95): step alternates  -> avg 1.50
+   --   zone 4 ( 96-127): step 1 once/4   -> avg 1.75
+   --   zone 5 (128-159): step always 2    -> avg 2.00
+   signal frac_counter : std_logic_vector(1 downto 0) := "00";
+   signal dist_step    : std_logic_vector(9 downto 0);
 begin
 
-	dist_step <=
-		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 128 else
-		conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 96 and frac_counter = "11" else
-		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 96 else
-		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 64 and frac_counter(0) = '0' else
-		conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 64 else
-		conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 32 and frac_counter = "00" else
-		conv_std_logic_vector(1, 10);
+   dist_step <=
+      conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 128 else
+      conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 96 and frac_counter = "11" else
+      conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 96 else
+      conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 64 and frac_counter(0) = '0' else
+      conv_std_logic_vector(1, 10) when conv_integer(object_distance) >= 64 else
+      conv_std_logic_vector(2, 10) when conv_integer(object_distance) >= 32 and frac_counter = "00" else
+      conv_std_logic_vector(1, 10);
 
    -- ROM lookups
    Object_Geometry_Lookup : Object_ROM
@@ -332,76 +346,76 @@ begin
                        conv_std_logic_vector(60, 10);
    effective_width  <= conv_std_logic_vector(30, 10) when obj_type = "001" else
                        conv_std_logic_vector(70, 10);
-     
+
    Moving : process(clock)
-	 begin
-		 if rising_edge(clock) then
-			  object_arrived     <= '0';
-			  vertical_sync_previous <= vertical_sync;
+    begin
+       if rising_edge(clock) then
+           object_arrived     <= '0';
+           vertical_sync_previous <= vertical_sync;
 
-			  if reset = '1' then
-					object_distance   <= (others => '1');
-					object_active     <= '0';
-					enable_latch      <= '0';
-					enable_seen_low   <= '1';
-					frame_div_counter <= "00";
-				frac_counter      <= "00";
-			  else
-					-- Update enable latch combinationally each cycle
-					if enable = '0' then
-						 enable_latch    <= '0';
-						 enable_seen_low <= '1';
-					elsif object_active = '0' and enable_seen_low = '1' then
-						 enable_latch    <= enable;
-						 enable_seen_low <= '0';
-					end if;
+           if reset = '1' then
+               object_distance   <= (others => '1');
+               object_active     <= '0';
+               enable_latch      <= '0';
+               enable_seen_low   <= '1';
+               frame_div_counter <= "00";
+            frac_counter      <= "00";
+           else
+               -- Update enable latch combinationally each cycle
+               if enable = '0' then
+                   enable_latch    <= '0';
+                   enable_seen_low <= '1';
+               elsif object_active = '0' and enable_seen_low = '1' then
+                   enable_latch    <= enable;
+                   enable_seen_low <= '0';
+               end if;
 
-					if (vertical_sync = '0') and (vertical_sync_previous = '1') then
-						 -- Tick the frame divider on every vsync (free-running, used below)
-						 frame_div_counter <= frame_div_counter + 1;
+               if (vertical_sync = '0') and (vertical_sync_previous = '1') then
+                   -- Tick the frame divider on every vsync (free-running, used below)
+                   frame_div_counter <= frame_div_counter + 1;
 
-						 if enable_latch = '1' and object_active = '0' then
-							  object_active   <= '1';
-							  object_distance <= (others => '0');
-							  frac_counter    <= "00";
-						 end if;
+                   if enable_latch = '1' and object_active = '0' then
+                       object_active   <= '1';
+                       object_distance <= (others => '0');
+                       frac_counter    <= "00";
+                   end if;
 
-						 if object_active = '1' then
-							  -- Arrival threshold kept inside ROM depth (160 entries,
-							  -- 8-bit address). See Object_ROM.vhd line 68.
-							  if object_distance >= conv_std_logic_vector(159, 10) then
-									object_arrived  <= '1';
-									object_distance <= (others => '0');
-									object_active   <= '0';
-							  else
-									-- speed_select: "00"=freeze
-									--               "01"=easy   (1 step / 2 vsyncs, ~5.3 s/wave)
-									--               "10"=medium (3 steps / 4 vsyncs, ~3.5 s/wave)
-									--               "11"=hard   (1 step / vsync,     ~2.6 s/wave)
-									-- dist_step adds perspective correction: step doubles past distance 80
-									-- so the object visually accelerates toward the player.
-									case speed_select is
-										when "00" => null;
-										when "01" =>
-											if frame_div_counter(0) = '1' then
-												object_distance <= object_distance + dist_step;
-												frac_counter    <= frac_counter + 1;
-											end if;
-										when "10" =>
-											if frame_div_counter /= "01" then
-												object_distance <= object_distance + dist_step;
-												frac_counter    <= frac_counter + 1;
-											end if;
-										when others =>
-											object_distance <= object_distance + dist_step;
-											frac_counter    <= frac_counter + 1;
-									end case;
-							  end if;
-						 end if;
-					end if;
-			  end if;
-		 end if;
-	 end process;
+                   if object_active = '1' then
+                       -- Arrival threshold kept inside ROM depth (160 entries,
+                       -- 8-bit address). See Object_ROM.vhd line 68.
+                       if object_distance >= conv_std_logic_vector(159, 10) then
+                           object_arrived  <= '1';
+                           object_distance <= (others => '0');
+                           object_active   <= '0';
+                       else
+                           -- speed_select: "00"=freeze
+                           --               "01"=easy   (1 step / 2 vsyncs, ~5.3 s/wave)
+                           --               "10"=medium (3 steps / 4 vsyncs, ~3.5 s/wave)
+                           --               "11"=hard   (1 step / vsync,     ~2.6 s/wave)
+                           -- dist_step adds perspective correction: step doubles past distance 80
+                           -- so the object visually accelerates toward the player.
+                           case speed_select is
+                              when "00" => null;
+                              when "01" =>
+                                 if frame_div_counter(0) = '1' then
+                                    object_distance <= object_distance + dist_step;
+                                    frac_counter    <= frac_counter + 1;
+                                 end if;
+                              when "10" =>
+                                 if frame_div_counter /= "01" then
+                                    object_distance <= object_distance + dist_step;
+                                    frac_counter    <= frac_counter + 1;
+                                 end if;
+                              when others =>
+                                 object_distance <= object_distance + dist_step;
+                                 frac_counter    <= frac_counter + 1;
+                           end case;
+                       end if;
+                   end if;
+               end if;
+           end if;
+       end if;
+    end process;
 
    -- ========================================================================
    -- Frame Stage 1 combinational
@@ -891,7 +905,7 @@ begin
    green_out <= green_out_register;
    blue_out  <= blue_out_register;
 
-	arrived 	 <= object_arrived;
-	row_out <= object_distance when object_active = '1' else (others => '0');
+   arrived   <= object_arrived;
+   row_out <= object_distance when object_active = '1' else (others => '0');
 
 end architecture moving_object_behaviour;

@@ -1,3 +1,13 @@
+-- ------------------------------------------------------------------------------
+-- Sprites_ROM
+--   altsyncram-backed colour ROM holding sprite pixel data, initialised from the
+--   MIF_FILE generic. Registered read returning 4-bit red/green/blue for the
+--   addressed pixel one clock later. DEPTH / ADDR_BITS size it for the sprite in
+--   use; read by Sprites_Display.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;

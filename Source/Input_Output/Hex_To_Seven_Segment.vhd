@@ -1,3 +1,15 @@
+-- ------------------------------------------------------------------------------
+-- Hex_To_Seven_Segment
+--   Combinational decoder mapping a 4-bit hex value (0-F) to the seven active-low
+--   segment lines of a DE0-CV HEX display.
+--
+--   Only IEEE.std_logic_1164 is needed: this is a pure selected-assignment LUT
+--   with no arithmetic, so the project's arith/unsigned libraries are omitted
+--   deliberately.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 

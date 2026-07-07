@@ -1,18 +1,24 @@
+-- ------------------------------------------------------------------------------
+-- Jump_Offset_LUT
+--   Precomputed parabolic jump offsets indexed by jump_frame_count. Replaces a
+--   runtime divide by JUMP_TOTAL_FRAMES**2 with a single table read, which was
+--   the dominant critical path inside Player's jump math.
+--
+--   offset(f) = JUMP_PEAK_HEIGHT - (JUMP_PEAK_HEIGHT * d(f)**2)/(JUMP_TOTAL_FRAMES**2)
+--   where d(f) = |JUMP_TOTAL_FRAMES - 2*f|, so offset peaks at f = frames/2.
+--
+--   Output is registered so the index-to-offset path has a clean clock-to-clock
+--   hop; jump_frame_count only ticks once per vsync, so the 1-cycle latency is
+--   invisible at the pixel pipeline level.
+--
+--   Project: Pusheen's Ploy
+--   Group:   Group 8 - Jasper's Knee
+-- ------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
--- Precomputed parabolic jump offsets indexed by jump_frame_count.
--- Replaces a runtime divide by JUMP_TOTAL_FRAMES**2 with a single table read,
--- which was the dominant critical path inside Player's jump math.
---
--- offset(f) = JUMP_PEAK_HEIGHT - (JUMP_PEAK_HEIGHT * d(f)**2) / (JUMP_TOTAL_FRAMES**2)
--- where d(f) = |JUMP_TOTAL_FRAMES - 2*f|, so offset peaks at f = JUMP_TOTAL_FRAMES/2.
---
--- Output is registered so the index-to-offset path has a clean clock-to-clock
--- hop; jump_frame_count only ticks once per vsync, so the 1-cycle latency is
--- invisible at the pixel pipeline level.
 entity Jump_Offset_LUT is
    generic (JUMP_TOTAL_FRAMES : positive := 120;
             JUMP_PEAK_HEIGHT  : positive := 60);
