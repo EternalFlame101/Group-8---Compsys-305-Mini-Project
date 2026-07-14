@@ -1,0 +1,3262 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "Convert_Images_To_mif.py",
+      "file_type": "code",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_convert_images_to_mif",
+      "community": 16,
+      "norm_label": "convert_images_to_mif.py"
+    },
+    {
+      "label": "get_luminance()",
+      "file_type": "code",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "scripts_convert_images_to_mif_get_luminance",
+      "community": 16,
+      "norm_label": "get_luminance()"
+    },
+    {
+      "label": "image_to_mif()",
+      "file_type": "code",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "scripts_convert_images_to_mif_image_to_mif",
+      "community": 16,
+      "norm_label": "image_to_mif()"
+    },
+    {
+      "label": "convert_cat2_folder()",
+      "file_type": "code",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "scripts_convert_images_to_mif_convert_cat2_folder",
+      "community": 16,
+      "norm_label": "convert_cat2_folder()"
+    },
+    {
+      "label": "Object_Wave.py",
+      "file_type": "code",
+      "source_file": "Scripts/Object_Wave.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_object_wave",
+      "community": 19,
+      "norm_label": "object_wave.py"
+    },
+    {
+      "label": "get_weight()",
+      "file_type": "code",
+      "source_file": "Scripts/Object_Wave.py",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "scripts_object_wave_get_weight",
+      "community": 19,
+      "norm_label": "get_weight()"
+    },
+    {
+      "label": "Size_Scaler.py",
+      "file_type": "code",
+      "source_file": "Scripts/Size_Scaler.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "scripts_size_scaler",
+      "community": 22,
+      "norm_label": "size_scaler.py"
+    },
+    {
+      "label": "Video_PLL_0002.v",
+      "file_type": "code",
+      "source_file": "Video_PLL/Video_PLL_0002.v",
+      "source_location": "L1",
+      "confidence_score": 1.0,
+      "_origin": "ast",
+      "id": "video_pll_video_pll_0002",
+      "community": 17,
+      "norm_label": "video_pll_0002.v"
+    },
+    {
+      "label": "Video_PLL_0002",
+      "file_type": "code",
+      "source_file": "Video_PLL/Video_PLL_0002.v",
+      "source_location": "L2",
+      "confidence_score": 1.0,
+      "_origin": "ast",
+      "id": "video_pll_video_pll_0002_video_pll_0002",
+      "community": 17,
+      "norm_label": "video_pll_0002"
+    },
+    {
+      "label": "altera_pll",
+      "file_type": "code",
+      "source_file": "Video_PLL/Video_PLL_0002.v",
+      "source_location": "L17",
+      "confidence_score": 1.0,
+      "_origin": "ast",
+      "id": "altera_pll",
+      "community": 17,
+      "norm_label": "altera_pll"
+    },
+    {
+      "label": "Video_PLL_sim.f",
+      "file_type": "code",
+      "source_file": "Video_PLL_sim.f",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "video_pll_sim",
+      "community": 23,
+      "norm_label": "video_pll_sim.f"
+    },
+    {
+      "label": "ncsim_setup.sh",
+      "file_type": "code",
+      "source_file": "Video_PLL_sim/cadence/ncsim_setup.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "_origin": "ast",
+      "id": "video_pll_sim_cadence_ncsim_setup",
+      "community": 20,
+      "norm_label": "ncsim_setup.sh"
+    },
+    {
+      "label": "ncsim_setup.sh script",
+      "file_type": "code",
+      "source_file": "Video_PLL_sim/cadence/ncsim_setup.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_entrypoint"
+      },
+      "_origin": "ast",
+      "id": "video_pll_sim_cadence_ncsim_setup_sh__entry",
+      "community": 20,
+      "norm_label": "ncsim_setup.sh script"
+    },
+    {
+      "label": "vcsmx_setup.sh",
+      "file_type": "code",
+      "source_file": "Video_PLL_sim/synopsys/vcsmx/vcsmx_setup.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "_origin": "ast",
+      "id": "video_pll_sim_synopsys_vcsmx_vcsmx_setup",
+      "community": 21,
+      "norm_label": "vcsmx_setup.sh"
+    },
+    {
+      "label": "vcsmx_setup.sh script",
+      "file_type": "code",
+      "source_file": "Video_PLL_sim/synopsys/vcsmx/vcsmx_setup.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_entrypoint"
+      },
+      "_origin": "ast",
+      "id": "video_pll_sim_synopsys_vcsmx_vcsmx_setup_sh__entry",
+      "community": 21,
+      "norm_label": "vcsmx_setup.sh script"
+    },
+    {
+      "label": "Audio_System_BOM.md",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom",
+      "community": 2,
+      "norm_label": "audio_system_bom.md"
+    },
+    {
+      "label": "Audio System \u2014 Bill of Materials & Wiring Reference (Living Document)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "community": 2,
+      "norm_label": "audio system \u2014 bill of materials & wiring reference (living document)"
+    },
+    {
+      "label": "1. Confirmed Physical Inventory (as of June 2026)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_1_confirmed_physical_inventory_as_of_june_2026",
+      "community": 2,
+      "norm_label": "1. confirmed physical inventory (as of june 2026)"
+    },
+    {
+      "label": "2. Digital Interface (FPGA \u2194 DACs)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_2_digital_interface_fpga_dacs",
+      "community": 2,
+      "norm_label": "2. digital interface (fpga \u2194 dacs)"
+    },
+    {
+      "label": "High-Byte DAC (DAC0802 #1) \u2014 receives `dac_high`",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_high_byte_dac_dac0802_1_receives_dac_high",
+      "community": 2,
+      "norm_label": "high-byte dac (dac0802 #1) \u2014 receives `dac_high`"
+    },
+    {
+      "label": "Low-Byte DAC (DAC0802 #2) \u2014 receives `dac_low`",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_low_byte_dac_dac0802_2_receives_dac_low",
+      "community": 2,
+      "norm_label": "low-byte dac (dac0802 #2) \u2014 receives `dac_low`"
+    },
+    {
+      "label": "3. DAC0802 Analog-Side Wiring (per chip, both chips identical except IOUT routing)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L74",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_3_dac0802_analog_side_wiring_per_chip_both_chips_identical_except_iout_routing",
+      "community": 2,
+      "norm_label": "3. dac0802 analog-side wiring (per chip, both chips identical except iout routing)"
+    },
+    {
+      "label": "4. TLC082 Summing Stage \u2014 **CONFIRMED VALUES (measured via DMM)**",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L100",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_4_tlc082_summing_stage_confirmed_values_measured_via_dmm",
+      "community": 2,
+      "norm_label": "4. tlc082 summing stage \u2014 **confirmed values (measured via dmm)**"
+    },
+    {
+      "label": "5. Output Stage \u2014 Coupling, Volume, LM386, Speaker",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L143",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "community": 8,
+      "norm_label": "5. output stage \u2014 coupling, volume, lm386, speaker"
+    },
+    {
+      "label": "Coupling capacitor (TLC082 \u2192 LM386)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L145",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_coupling_capacitor_tlc082_lm386",
+      "community": 8,
+      "norm_label": "coupling capacitor (tlc082 \u2192 lm386)"
+    },
+    {
+      "label": "Volume potentiometer (10k\u03a9) \u2014 **CONFIRMED: Configuration A (signal-path divider)**",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L148",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_volume_potentiometer_10k\u03c9_confirmed_configuration_a_signal_path_divider",
+      "community": 8,
+      "norm_label": "volume potentiometer (10k\u03c9) \u2014 **confirmed: configuration a (signal-path divider)**"
+    },
+    {
+      "label": "LM386N-1",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L170",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_lm386n_1",
+      "community": 8,
+      "norm_label": "lm386n-1"
+    },
+    {
+      "label": "Output coupling cap \u2192 Speaker",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L183",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_output_coupling_cap_speaker",
+      "community": 8,
+      "norm_label": "output coupling cap \u2192 speaker"
+    },
+    {
+      "label": "Speaker",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L187",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_speaker",
+      "community": 8,
+      "norm_label": "speaker"
+    },
+    {
+      "label": "6. Verification Checklist (use your DMM)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L192",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "community": 11,
+      "norm_label": "6. verification checklist (use your dmm)"
+    },
+    {
+      "label": "6.1 \u2014 Pot wiring \u2014 \u2705 DONE",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L194",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_6_1_pot_wiring_done",
+      "community": 11,
+      "norm_label": "6.1 \u2014 pot wiring \u2014 \u2705 done"
+    },
+    {
+      "label": "6.2 \u2014 Summing stage resistors \u2014 \u2705 DONE",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L197",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_6_2_summing_stage_resistors_done",
+      "community": 11,
+      "norm_label": "6.2 \u2014 summing stage resistors \u2014 \u2705 done"
+    },
+    {
+      "label": "6.3 \u2014 COMP cap (10nF) \u2014 \u2705 DONE",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L200",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_6_3_comp_cap_10nf_done",
+      "community": 11,
+      "norm_label": "6.3 \u2014 comp cap (10nf) \u2014 \u2705 done"
+    },
+    {
+      "label": "6.4 \u2014 Output coupling cap \u2014 \u2705 DONE",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L203",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_6_4_output_coupling_cap_done",
+      "community": 11,
+      "norm_label": "6.4 \u2014 output coupling cap \u2014 \u2705 done"
+    },
+    {
+      "label": "7. Open-Day Upgrade Path (Loud + Clear, Budget Flexible)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L208",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "community": 9,
+      "norm_label": "7. open-day upgrade path (loud + clear, budget flexible)"
+    },
+    {
+      "label": "7.1 \u2014 Speaker upgrade (highest impact for \"loud\") \u2014 sourced",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L212",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_1_speaker_upgrade_highest_impact_for_loud_sourced",
+      "community": 9,
+      "norm_label": "7.1 \u2014 speaker upgrade (highest impact for \"loud\") \u2014 sourced"
+    },
+    {
+      "label": "7.2 \u2014 Amplifier upgrade: PAM8403 module \u2014 sourced",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L217",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_2_amplifier_upgrade_pam8403_module_sourced",
+      "community": 9,
+      "norm_label": "7.2 \u2014 amplifier upgrade: pam8403 module \u2014 sourced"
+    },
+    {
+      "label": "7.3 \u2014 Stereo expansion (if you want it for the open day \"wow\" factor) \u2014 sourced",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L224",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_3_stereo_expansion_if_you_want_it_for_the_open_day_wow_factor_sourced",
+      "community": 9,
+      "norm_label": "7.3 \u2014 stereo expansion (if you want it for the open day \"wow\" factor) \u2014 sourced"
+    },
+    {
+      "label": "7.4 \u2014 Quick win: the one-resistor ratio fix \u2014 \u2705 DONE",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L230",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_4_quick_win_the_one_resistor_ratio_fix_done",
+      "community": 9,
+      "norm_label": "7.4 \u2014 quick win: the one-resistor ratio fix \u2014 \u2705 done"
+    },
+    {
+      "label": "7.5 \u2014 Power Supply Plan (Open Day)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L233",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_7_5_power_supply_plan_open_day",
+      "community": 9,
+      "norm_label": "7.5 \u2014 power supply plan (open day)"
+    },
+    {
+      "label": "8. Critical Reminders for the \u00a71\u2013\u00a77 Breadboard (kept as fallback \u2014 see \u00a79)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L247",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_8_critical_reminders_for_the_1_7_breadboard_kept_as_fallback_see_9",
+      "community": 2,
+      "norm_label": "8. critical reminders for the \u00a71\u2013\u00a77 breadboard (kept as fallback \u2014 see \u00a79)"
+    },
+    {
+      "label": "9. PCB Redesign \u2014 I2S / PCM5102A Architecture (FINAL ORDER LIST)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L255",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "community": 4,
+      "norm_label": "9. pcb redesign \u2014 i2s / pcm5102a architecture (final order list)"
+    },
+    {
+      "label": "9.1 \u2014 Architecture overview",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L262",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_1_architecture_overview",
+      "community": 4,
+      "norm_label": "9.1 \u2014 architecture overview"
+    },
+    {
+      "label": "9.2 \u2014 Carrier PCB Order List",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L289",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_2_carrier_pcb_order_list",
+      "community": 4,
+      "norm_label": "9.2 \u2014 carrier pcb order list"
+    },
+    {
+      "label": "9.3 \u2014 Signal Map (FPGA GPIO_1 \u2192 PCB)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L310",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_3_signal_map_fpga_gpio_1_pcb",
+      "community": 4,
+      "norm_label": "9.3 \u2014 signal map (fpga gpio_1 \u2192 pcb)"
+    },
+    {
+      "label": "9.4 \u2014 Power Architecture (single 12\u201324V rail, TPA3116D2)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L334",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_4_power_architecture_single_12_24v_rail_tpa3116d2",
+      "community": 4,
+      "norm_label": "9.4 \u2014 power architecture (single 12\u201324v rail, tpa3116d2)"
+    },
+    {
+      "label": "9.5 \u2014 VHDL Changes Required",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L376",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_5_vhdl_changes_required",
+      "community": 4,
+      "norm_label": "9.5 \u2014 vhdl changes required"
+    },
+    {
+      "label": "9.6 \u2014 Mechanical",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L391",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_6_mechanical",
+      "community": 4,
+      "norm_label": "9.6 \u2014 mechanical"
+    },
+    {
+      "label": "9.7 \u2014 Speaker Enclosures (3D Printed)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L405",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_9_7_speaker_enclosures_3d_printed",
+      "community": 4,
+      "norm_label": "9.7 \u2014 speaker enclosures (3d printed)"
+    },
+    {
+      "label": "10. DAC0802 Carrier PCB (Board 1) \u2014 Designed & Ordered",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L432",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "community": 6,
+      "norm_label": "10. dac0802 carrier pcb (board 1) \u2014 designed & ordered"
+    },
+    {
+      "label": "10.1 \u2014 Key Design Decisions vs. Breadboard",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L438",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_1_key_design_decisions_vs_breadboard",
+      "community": 6,
+      "norm_label": "10.1 \u2014 key design decisions vs. breadboard"
+    },
+    {
+      "label": "10.2 \u2014 Board Specs",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L452",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_2_board_specs",
+      "community": 6,
+      "norm_label": "10.2 \u2014 board specs"
+    },
+    {
+      "label": "10.3 \u2014 Fab Order (JLCPCB)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L463",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_3_fab_order_jlcpcb",
+      "community": 6,
+      "norm_label": "10.3 \u2014 fab order (jlcpcb)"
+    },
+    {
+      "label": "10.4 \u2014 Breadboard Fixes Carried Into the PCB Layout",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L476",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_4_breadboard_fixes_carried_into_the_pcb_layout",
+      "community": 6,
+      "norm_label": "10.4 \u2014 breadboard fixes carried into the pcb layout"
+    },
+    {
+      "label": "10.5 \u2014 Breadboard Re-Verification (post-PCB-order, same fixes applied to breadboard) \u2014 \u2705 RESOLVED",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L486",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_5_breadboard_re_verification_post_pcb_order_same_fixes_applied_to_breadboard_resolved",
+      "community": 6,
+      "norm_label": "10.5 \u2014 breadboard re-verification (post-pcb-order, same fixes applied to breadboard) \u2014 \u2705 resolved"
+    },
+    {
+      "label": "10.6 \u2014 Remaining Tasks",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L539",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_10_6_remaining_tasks",
+      "community": 6,
+      "norm_label": "10.6 \u2014 remaining tasks"
+    },
+    {
+      "label": "11. \u00a79 Shield PCB \u2014 Design Kickoff (July 2026)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L549",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "community": 2,
+      "norm_label": "11. \u00a79 shield pcb \u2014 design kickoff (july 2026)"
+    },
+    {
+      "label": "11.1 \u2014 Physical Architecture (Finalized)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L555",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_1_physical_architecture_finalized",
+      "community": 2,
+      "norm_label": "11.1 \u2014 physical architecture (finalized)"
+    },
+    {
+      "label": "11.2 \u2014 Dual-Source I2S Mux Architecture (Pico 2W + FPGA)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L604",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_2_dual_source_i2s_mux_architecture_pico_2w_fpga",
+      "community": 2,
+      "norm_label": "11.2 \u2014 dual-source i2s mux architecture (pico 2w + fpga)"
+    },
+    {
+      "label": "11.3 \u2014 Case Design Concept",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L665",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_3_case_design_concept",
+      "community": 2,
+      "norm_label": "11.3 \u2014 case design concept"
+    },
+    {
+      "label": "11.4 \u2014 Shield PCB Power Routing Summary",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L672",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_4_shield_pcb_power_routing_summary",
+      "community": 2,
+      "norm_label": "11.4 \u2014 shield pcb power routing summary"
+    },
+    {
+      "label": "11.5 \u2014 Board Type",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L684",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_5_board_type",
+      "community": 2,
+      "norm_label": "11.5 \u2014 board type"
+    },
+    {
+      "label": "11.6 \u2014 Altium Progress (July 2026)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L690",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_6_altium_progress_july_2026",
+      "community": 2,
+      "norm_label": "11.6 \u2014 altium progress (july 2026)"
+    },
+    {
+      "label": "11.7 \u2014 Fab Order (JLCPCB)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L749",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_7_fab_order_jlcpcb",
+      "community": 2,
+      "norm_label": "11.7 \u2014 fab order (jlcpcb)"
+    },
+    {
+      "label": "11.8 \u2014 Remaining Tasks",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L762",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_11_8_remaining_tasks",
+      "community": 2,
+      "norm_label": "11.8 \u2014 remaining tasks"
+    },
+    {
+      "label": "12. 3D-Printed Enclosure \u2014 Design (July 2026)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L778",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "community": 7,
+      "norm_label": "12. 3d-printed enclosure \u2014 design (july 2026)"
+    },
+    {
+      "label": "12.1 \u2014 Overall Concept",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L783",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_1_overall_concept",
+      "community": 7,
+      "norm_label": "12.1 \u2014 overall concept"
+    },
+    {
+      "label": "12.2 \u2014 Speaker Towers (Left + Right) \u2014 \u2705 Designed",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L799",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_2_speaker_towers_left_right_designed",
+      "community": 7,
+      "norm_label": "12.2 \u2014 speaker towers (left + right) \u2014 \u2705 designed"
+    },
+    {
+      "label": "12.3 \u2014 Center Box \u2014 IN PROGRESS (outsourced to friend)",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L825",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_3_center_box_in_progress_outsourced_to_friend",
+      "community": 7,
+      "norm_label": "12.3 \u2014 center box \u2014 in progress (outsourced to friend)"
+    },
+    {
+      "label": "12.4 \u2014 Knob Extensions \u2014 TO DO",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L832",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_4_knob_extensions_to_do",
+      "community": 7,
+      "norm_label": "12.4 \u2014 knob extensions \u2014 to do"
+    },
+    {
+      "label": "12.5 \u2014 Remaining Tasks",
+      "file_type": "document",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L840",
+      "_origin": "ast",
+      "id": "documentation_audio_system_bom_12_5_remaining_tasks",
+      "community": 7,
+      "norm_label": "12.5 \u2014 remaining tasks"
+    },
+    {
+      "label": "Coding_Conventions.md",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions",
+      "community": 1,
+      "norm_label": "coding_conventions.md"
+    },
+    {
+      "label": "Coding Conventions",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_coding_conventions",
+      "community": 1,
+      "norm_label": "coding conventions"
+    },
+    {
+      "label": "Purpose",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_purpose",
+      "community": 1,
+      "norm_label": "purpose"
+    },
+    {
+      "label": "Table of Contents",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_table_of_contents",
+      "community": 1,
+      "norm_label": "table of contents"
+    },
+    {
+      "label": "1. File Header Block",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_1_file_header_block",
+      "community": 1,
+      "norm_label": "1. file header block"
+    },
+    {
+      "label": "2. Library Declarations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_2_library_declarations",
+      "community": 1,
+      "norm_label": "2. library declarations"
+    },
+    {
+      "label": "3. Naming Conventions",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L107",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_3_naming_conventions",
+      "community": 1,
+      "norm_label": "3. naming conventions"
+    },
+    {
+      "label": "No abbreviations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L119",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_no_abbreviations",
+      "community": 1,
+      "norm_label": "no abbreviations"
+    },
+    {
+      "label": "Pairs and triples",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L137",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_pairs_and_triples",
+      "community": 1,
+      "norm_label": "pairs and triples"
+    },
+    {
+      "label": "4. Indentation and Spacing",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L150",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_4_indentation_and_spacing",
+      "community": 1,
+      "norm_label": "4. indentation and spacing"
+    },
+    {
+      "label": "5. Entity Declarations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L168",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_5_entity_declarations",
+      "community": 1,
+      "norm_label": "5. entity declarations"
+    },
+    {
+      "label": "6. Architecture Bodies",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L197",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_6_architecture_bodies",
+      "community": 1,
+      "norm_label": "6. architecture bodies"
+    },
+    {
+      "label": "7. Component Declarations and Instantiations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L246",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_7_component_declarations_and_instantiations",
+      "community": 1,
+      "norm_label": "7. component declarations and instantiations"
+    },
+    {
+      "label": "Component declarations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L248",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_component_declarations",
+      "community": 1,
+      "norm_label": "component declarations"
+    },
+    {
+      "label": "Component instantiations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L271",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_component_instantiations",
+      "community": 1,
+      "norm_label": "component instantiations"
+    },
+    {
+      "label": "8. Processes",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L305",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_8_processes",
+      "community": 1,
+      "norm_label": "8. processes"
+    },
+    {
+      "label": "9. Constants and Generics",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L325",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_9_constants_and_generics",
+      "community": 1,
+      "norm_label": "9. constants and generics"
+    },
+    {
+      "label": "10. Comments (Inline and Sectional)",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L356",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_10_comments_inline_and_sectional",
+      "community": 1,
+      "norm_label": "10. comments (inline and sectional)"
+    },
+    {
+      "label": "Section dividers",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L358",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_section_dividers",
+      "community": 1,
+      "norm_label": "section dividers"
+    },
+    {
+      "label": "Inline comments",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L378",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_inline_comments",
+      "community": 1,
+      "norm_label": "inline comments"
+    },
+    {
+      "label": "Flag non-obvious behaviour",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L398",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_flag_non_obvious_behaviour",
+      "community": 1,
+      "norm_label": "flag non-obvious behaviour"
+    },
+    {
+      "label": "11. Signal Declarations",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L412",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_11_signal_declarations",
+      "community": 1,
+      "norm_label": "11. signal declarations"
+    },
+    {
+      "label": "12. General Style Rules",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L441",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_12_general_style_rules",
+      "community": 1,
+      "norm_label": "12. general style rules"
+    },
+    {
+      "label": "Quick Reference: A Minimal Conforming File",
+      "file_type": "document",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L469",
+      "_origin": "ast",
+      "id": "documentation_coding_conventions_quick_reference_a_minimal_conforming_file",
+      "community": 1,
+      "norm_label": "quick reference: a minimal conforming file"
+    },
+    {
+      "label": "PROJECT_CONTEXT_FOR_REPORT.md",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report",
+      "community": 0,
+      "norm_label": "project_context_for_report.md"
+    },
+    {
+      "label": "COMPSYS 305 Mini Project \u2013 Full Technical Context Document",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "community": 0,
+      "norm_label": "compsys 305 mini project \u2013 full technical context document"
+    },
+    {
+      "label": "Group 8 | Final Report Reference",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L2",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_group_8_final_report_reference",
+      "community": 0,
+      "norm_label": "group 8 | final report reference"
+    },
+    {
+      "label": "1. Project Brief vs. What We Actually Built",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_1_project_brief_vs_what_we_actually_built",
+      "community": 0,
+      "norm_label": "1. project brief vs. what we actually built"
+    },
+    {
+      "label": "What the spec asked for",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_what_the_spec_asked_for",
+      "community": 0,
+      "norm_label": "what the spec asked for"
+    },
+    {
+      "label": "What we built instead \u2014 and why",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_what_we_built_instead_and_why",
+      "community": 0,
+      "norm_label": "what we built instead \u2014 and why"
+    },
+    {
+      "label": "2. Hardware Platform",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L25",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_2_hardware_platform",
+      "community": 0,
+      "norm_label": "2. hardware platform"
+    },
+    {
+      "label": "3. High-Level Architecture Overview",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L47",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_3_high_level_architecture_overview",
+      "community": 0,
+      "norm_label": "3. high-level architecture overview"
+    },
+    {
+      "label": "4. Clock Domains",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L79",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_4_clock_domains",
+      "community": 15,
+      "norm_label": "4. clock domains"
+    },
+    {
+      "label": "CLOCK_50 (50 MHz)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L83",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_clock_50_50_mhz",
+      "community": 15,
+      "norm_label": "clock_50 (50 mhz)"
+    },
+    {
+      "label": "video_clock / Pixel Clock (25 MHz)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_video_clock_pixel_clock_25_mhz",
+      "community": 15,
+      "norm_label": "video_clock / pixel clock (25 mhz)"
+    },
+    {
+      "label": "Cross-Domain Signal Handling",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_cross_domain_signal_handling",
+      "community": 15,
+      "norm_label": "cross-domain signal handling"
+    },
+    {
+      "label": "5. Display Pipeline (Layered Rendering)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L100",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_5_display_pipeline_layered_rendering",
+      "community": 0,
+      "norm_label": "5. display pipeline (layered rendering)"
+    },
+    {
+      "label": "VGA_Sync",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L104",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_vga_sync",
+      "community": 0,
+      "norm_label": "vga_sync"
+    },
+    {
+      "label": "Rendering Layers (bottom to top)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L107",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_rendering_layers_bottom_to_top",
+      "community": 0,
+      "norm_label": "rendering layers (bottom to top)"
+    },
+    {
+      "label": "6. Game Logic FSM \u2014 Game_Master.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L148",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "community": 13,
+      "norm_label": "6. game logic fsm \u2014 game_master.vhd"
+    },
+    {
+      "label": "States",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L152",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_states",
+      "community": 13,
+      "norm_label": "states"
+    },
+    {
+      "label": "Speed Escalation (Combinational on Score)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L187",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_speed_escalation_combinational_on_score",
+      "community": 13,
+      "norm_label": "speed escalation (combinational on score)"
+    },
+    {
+      "label": "Lives System",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L197",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_lives_system",
+      "community": 13,
+      "norm_label": "lives system"
+    },
+    {
+      "label": "Scoring",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L206",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_scoring",
+      "community": 13,
+      "norm_label": "scoring"
+    },
+    {
+      "label": "7. Player \u2014 Player.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L213",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_7_player_player_vhd",
+      "community": 10,
+      "norm_label": "7. player \u2014 player.vhd"
+    },
+    {
+      "label": "Animation System (24 Sprite ROMs)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L217",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_animation_system_24_sprite_roms",
+      "community": 10,
+      "norm_label": "animation system (24 sprite roms)"
+    },
+    {
+      "label": "Lane Shifting",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L231",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_lane_shifting",
+      "community": 10,
+      "norm_label": "lane shifting"
+    },
+    {
+      "label": "Jump \u2014 Jump_Offset_LUT.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L239",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_jump_jump_offset_lut_vhd",
+      "community": 10,
+      "norm_label": "jump \u2014 jump_offset_lut.vhd"
+    },
+    {
+      "label": "Dive and Fast-Drop",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L249",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_dive_and_fast_drop",
+      "community": 10,
+      "norm_label": "dive and fast-drop"
+    },
+    {
+      "label": "Cross-Domain Synchronization (Critical)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L253",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_cross_domain_synchronization_critical",
+      "community": 10,
+      "norm_label": "cross-domain synchronization (critical)"
+    },
+    {
+      "label": "8. Moving_Object \u2014 Moving_Object.vhd (Per Lane \u00d7 3)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L258",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "community": 5,
+      "norm_label": "8. moving_object \u2014 moving_object.vhd (per lane \u00d7 3)"
+    },
+    {
+      "label": "Distance and Speed Management",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L262",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_distance_and_speed_management",
+      "community": 5,
+      "norm_label": "distance and speed management"
+    },
+    {
+      "label": "Object Geometry \u2014 Object_ROM.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L277",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_object_geometry_object_rom_vhd",
+      "community": 5,
+      "norm_label": "object geometry \u2014 object_rom.vhd"
+    },
+    {
+      "label": "Perspective Scaling \u2014 Perspective_ROM.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L292",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_perspective_scaling_perspective_rom_vhd",
+      "community": 5,
+      "norm_label": "perspective scaling \u2014 perspective_rom.vhd"
+    },
+    {
+      "label": "3D Frustum Rendering",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L295",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_3d_frustum_rendering",
+      "community": 5,
+      "norm_label": "3d frustum rendering"
+    },
+    {
+      "label": "Object Type Colors",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L303",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_object_type_colors",
+      "community": 5,
+      "norm_label": "object type colors"
+    },
+    {
+      "label": "Overflow/Underflow Protection",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L312",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_overflow_underflow_protection",
+      "community": 5,
+      "norm_label": "overflow/underflow protection"
+    },
+    {
+      "label": "Pipeline Architecture",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L315",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_pipeline_architecture",
+      "community": 5,
+      "norm_label": "pipeline architecture"
+    },
+    {
+      "label": "9. Collision Detection \u2014 Collision_Detector.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L324",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_9_collision_detection_collision_detector_vhd",
+      "community": 0,
+      "norm_label": "9. collision detection \u2014 collision_detector.vhd"
+    },
+    {
+      "label": "Collision Rules",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L328",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_collision_rules",
+      "community": 0,
+      "norm_label": "collision rules"
+    },
+    {
+      "label": "10. Obstacle Spawning \u2014 Spawn_Control.vhd + Wave_ROM.vhd + LFSR",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L351",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_10_obstacle_spawning_spawn_control_vhd_wave_rom_vhd_lfsr",
+      "community": 0,
+      "norm_label": "10. obstacle spawning \u2014 spawn_control.vhd + wave_rom.vhd + lfsr"
+    },
+    {
+      "label": "LFSR (Linear Feedback Shift Register)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L353",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_lfsr_linear_feedback_shift_register",
+      "community": 0,
+      "norm_label": "lfsr (linear feedback shift register)"
+    },
+    {
+      "label": "Wave_ROM.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L356",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_wave_rom_vhd",
+      "community": 0,
+      "norm_label": "wave_rom.vhd"
+    },
+    {
+      "label": "Spawn_Control FSM (4 States)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L362",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_spawn_control_fsm_4_states",
+      "community": 0,
+      "norm_label": "spawn_control fsm (4 states)"
+    },
+    {
+      "label": "11. Input Handling",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L370",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_11_input_handling",
+      "community": 0,
+      "norm_label": "11. input handling"
+    },
+    {
+      "label": "Keyboard \u2014 Keyboard.vhd (PS/2 Port 1)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L372",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_keyboard_keyboard_vhd_ps_2_port_1",
+      "community": 0,
+      "norm_label": "keyboard \u2014 keyboard.vhd (ps/2 port 1)"
+    },
+    {
+      "label": "Mouse \u2014 Mouse.vhd (PS/2 Port 2)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L384",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_mouse_mouse_vhd_ps_2_port_2",
+      "community": 0,
+      "norm_label": "mouse \u2014 mouse.vhd (ps/2 port 2)"
+    },
+    {
+      "label": "Input Gating (Top_Level)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L393",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_input_gating_top_level",
+      "community": 0,
+      "norm_label": "input gating (top_level)"
+    },
+    {
+      "label": "12. Start Screen \u2014 Start_Screen.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L398",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_12_start_screen_start_screen_vhd",
+      "community": 0,
+      "norm_label": "12. start screen \u2014 start_screen.vhd"
+    },
+    {
+      "label": "State Machine (3 States)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L400",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_state_machine_3_states",
+      "community": 0,
+      "norm_label": "state machine (3 states)"
+    },
+    {
+      "label": "13. End Screen \u2014 End_Screen.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L411",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_13_end_screen_end_screen_vhd",
+      "community": 0,
+      "norm_label": "13. end screen \u2014 end_screen.vhd"
+    },
+    {
+      "label": "14. HUD Overlay \u2014 HUD_Overlay.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L424",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_14_hud_overlay_hud_overlay_vhd",
+      "community": 0,
+      "norm_label": "14. hud overlay \u2014 hud_overlay.vhd"
+    },
+    {
+      "label": "15. Game Timer \u2014 Game_Timer.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L451",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_15_game_timer_game_timer_vhd",
+      "community": 0,
+      "norm_label": "15. game timer \u2014 game_timer.vhd"
+    },
+    {
+      "label": "16. Audio System",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L463",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_16_audio_system",
+      "community": 12,
+      "norm_label": "16. audio system"
+    },
+    {
+      "label": "SD Card \u2014 SD_Init.vhd + SPI_Master.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L465",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_sd_card_sd_init_vhd_spi_master_vhd",
+      "community": 12,
+      "norm_label": "sd card \u2014 sd_init.vhd + spi_master.vhd"
+    },
+    {
+      "label": "Audio Playback \u2014 Audio_Playback.vhd",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L473",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_audio_playback_audio_playback_vhd",
+      "community": 12,
+      "norm_label": "audio playback \u2014 audio_playback.vhd"
+    },
+    {
+      "label": "Jukebox (Top_Level process)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L482",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_jukebox_top_level_process",
+      "community": 12,
+      "norm_label": "jukebox (top_level process)"
+    },
+    {
+      "label": "Audio Gating",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L485",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_audio_gating",
+      "community": 12,
+      "norm_label": "audio gating"
+    },
+    {
+      "label": "17. Synthesis Results",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L493",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_17_synthesis_results",
+      "community": 14,
+      "norm_label": "17. synthesis results"
+    },
+    {
+      "label": "Resource Utilization",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L499",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_resource_utilization",
+      "community": 14,
+      "norm_label": "resource utilization"
+    },
+    {
+      "label": "Why DSP Usage is High",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L517",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_why_dsp_usage_is_high",
+      "community": 14,
+      "norm_label": "why dsp usage is high"
+    },
+    {
+      "label": "Timing Performance",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L524",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_timing_performance",
+      "community": 14,
+      "norm_label": "timing performance"
+    },
+    {
+      "label": "18. Key Design Decisions and Trade-offs",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L540",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "community": 3,
+      "norm_label": "18. key design decisions and trade-offs"
+    },
+    {
+      "label": "3D Perspective vs. Flat Side-Scroller",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L542",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_3d_perspective_vs_flat_side_scroller",
+      "community": 3,
+      "norm_label": "3d perspective vs. flat side-scroller"
+    },
+    {
+      "label": "Precomputed LUTs vs. Runtime Math",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L547",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_precomputed_luts_vs_runtime_math",
+      "community": 3,
+      "norm_label": "precomputed luts vs. runtime math"
+    },
+    {
+      "label": "Two Clock Domains",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L552",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_two_clock_domains",
+      "community": 3,
+      "norm_label": "two clock domains"
+    },
+    {
+      "label": "GLOBAL Buffer on video_clock",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L557",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_global_buffer_on_video_clock",
+      "community": 3,
+      "norm_label": "global buffer on video_clock"
+    },
+    {
+      "label": "Pipeline Registers Inserted for Timing (Not Function)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L562",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_pipeline_registers_inserted_for_timing_not_function",
+      "community": 3,
+      "norm_label": "pipeline registers inserted for timing (not function)"
+    },
+    {
+      "label": "Input Gating",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L570",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_input_gating",
+      "community": 3,
+      "norm_label": "input gating"
+    },
+    {
+      "label": "LFSR for Pseudo-Random Spawning",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L575",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_lfsr_for_pseudo_random_spawning",
+      "community": 3,
+      "norm_label": "lfsr for pseudo-random spawning"
+    },
+    {
+      "label": "Fractional Stepping for Object Speed",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L580",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_fractional_stepping_for_object_speed",
+      "community": 3,
+      "norm_label": "fractional stepping for object speed"
+    },
+    {
+      "label": "19. File Structure Reference",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L587",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_19_file_structure_reference",
+      "community": 0,
+      "norm_label": "19. file structure reference"
+    },
+    {
+      "label": "20. Possible Future Improvements (for report discussion)",
+      "file_type": "document",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L649",
+      "_origin": "ast",
+      "id": "documentation_project_context_for_report_20_possible_future_improvements_for_report_discussion",
+      "community": 0,
+      "norm_label": "20. possible future improvements (for report discussion)"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "Documentation/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_readme",
+      "community": 18,
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "Group-8---Compsys-305-Mini-Project",
+      "file_type": "document",
+      "source_file": "Documentation/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "documentation_readme_group_8_compsys_305_mini_project",
+      "community": 18,
+      "norm_label": "group-8---compsys-305-mini-project"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "scripts_convert_images_to_mif",
+      "target": "scripts_convert_images_to_mif_convert_cat2_folder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "scripts_convert_images_to_mif",
+      "target": "scripts_convert_images_to_mif_get_luminance",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "scripts_convert_images_to_mif",
+      "target": "scripts_convert_images_to_mif_image_to_mif",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "scripts_convert_images_to_mif_image_to_mif",
+      "target": "scripts_convert_images_to_mif_get_luminance",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Convert_Images_To_mif.py",
+      "source_location": "L116",
+      "weight": 1.0,
+      "source": "scripts_convert_images_to_mif_convert_cat2_folder",
+      "target": "scripts_convert_images_to_mif_image_to_mif",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Scripts/Object_Wave.py",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "scripts_object_wave",
+      "target": "scripts_object_wave_get_weight",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "Video_PLL/Video_PLL_0002.v",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "video_pll_video_pll_0002",
+      "target": "video_pll_video_pll_0002_video_pll_0002"
+    },
+    {
+      "relation": "instantiates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "Video_PLL/Video_PLL_0002.v",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "video_pll_video_pll_0002_video_pll_0002",
+      "target": "altera_pll"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Video_PLL_sim/cadence/ncsim_setup.sh",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "video_pll_sim_cadence_ncsim_setup",
+      "target": "video_pll_sim_cadence_ncsim_setup_sh__entry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Video_PLL_sim/synopsys/vcsmx/vcsmx_setup.sh",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "video_pll_sim_synopsys_vcsmx_vcsmx_setup",
+      "target": "video_pll_sim_synopsys_vcsmx_vcsmx_setup_sh__entry",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom",
+      "target": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L432",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L549",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L778",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L24",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_1_confirmed_physical_inventory_as_of_june_2026",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_2_digital_interface_fpga_dacs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_3_dac0802_analog_side_wiring_per_chip_both_chips_identical_except_iout_routing",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_4_tlc082_summing_stage_confirmed_values_measured_via_dmm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L192",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L208",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L247",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_8_critical_reminders_for_the_1_7_breadboard_kept_as_fallback_see_9",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L255",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_audio_system_bill_of_materials_wiring_reference_living_document",
+      "target": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L42",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_2_digital_interface_fpga_dacs",
+      "target": "documentation_audio_system_bom_high_byte_dac_dac0802_1_receives_dac_high",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L55",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_2_digital_interface_fpga_dacs",
+      "target": "documentation_audio_system_bom_low_byte_dac_dac0802_2_receives_dac_low",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L145",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "target": "documentation_audio_system_bom_coupling_capacitor_tlc082_lm386",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L170",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "target": "documentation_audio_system_bom_lm386n_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L183",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "target": "documentation_audio_system_bom_output_coupling_cap_speaker",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L187",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "target": "documentation_audio_system_bom_speaker",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_5_output_stage_coupling_volume_lm386_speaker",
+      "target": "documentation_audio_system_bom_volume_potentiometer_10k\u03c9_confirmed_configuration_a_signal_path_divider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L194",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "target": "documentation_audio_system_bom_6_1_pot_wiring_done",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "target": "documentation_audio_system_bom_6_2_summing_stage_resistors_done",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L200",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "target": "documentation_audio_system_bom_6_3_comp_cap_10nf_done",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L203",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_6_verification_checklist_use_your_dmm",
+      "target": "documentation_audio_system_bom_6_4_output_coupling_cap_done",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L212",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "target": "documentation_audio_system_bom_7_1_speaker_upgrade_highest_impact_for_loud_sourced",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L217",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "target": "documentation_audio_system_bom_7_2_amplifier_upgrade_pam8403_module_sourced",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L224",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "target": "documentation_audio_system_bom_7_3_stereo_expansion_if_you_want_it_for_the_open_day_wow_factor_sourced",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L230",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "target": "documentation_audio_system_bom_7_4_quick_win_the_one_resistor_ratio_fix_done",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L233",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_7_open_day_upgrade_path_loud_clear_budget_flexible",
+      "target": "documentation_audio_system_bom_7_5_power_supply_plan_open_day",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L262",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_1_architecture_overview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L289",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_2_carrier_pcb_order_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L310",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_3_signal_map_fpga_gpio_1_pcb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L334",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_4_power_architecture_single_12_24v_rail_tpa3116d2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L376",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_5_vhdl_changes_required",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L391",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_6_mechanical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L405",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_9_pcb_redesign_i2s_pcm5102a_architecture_final_order_list",
+      "target": "documentation_audio_system_bom_9_7_speaker_enclosures_3d_printed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L438",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_1_key_design_decisions_vs_breadboard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L452",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_2_board_specs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L463",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_3_fab_order_jlcpcb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L476",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_4_breadboard_fixes_carried_into_the_pcb_layout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L486",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_5_breadboard_re_verification_post_pcb_order_same_fixes_applied_to_breadboard_resolved",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L539",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_10_dac0802_carrier_pcb_board_1_designed_ordered",
+      "target": "documentation_audio_system_bom_10_6_remaining_tasks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L555",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_1_physical_architecture_finalized",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L604",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_2_dual_source_i2s_mux_architecture_pico_2w_fpga",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L665",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_3_case_design_concept",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L672",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_4_shield_pcb_power_routing_summary",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L684",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_5_board_type",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L690",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_6_altium_progress_july_2026",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L749",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_7_fab_order_jlcpcb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L762",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_11_9_shield_pcb_design_kickoff_july_2026",
+      "target": "documentation_audio_system_bom_11_8_remaining_tasks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L783",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "target": "documentation_audio_system_bom_12_1_overall_concept",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L799",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "target": "documentation_audio_system_bom_12_2_speaker_towers_left_right_designed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L825",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "target": "documentation_audio_system_bom_12_3_center_box_in_progress_outsourced_to_friend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L832",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "target": "documentation_audio_system_bom_12_4_knob_extensions_to_do",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Audio_System_BOM.md",
+      "source_location": "L840",
+      "weight": 1.0,
+      "source": "documentation_audio_system_bom_12_3d_printed_enclosure_design_july_2026",
+      "target": "documentation_audio_system_bom_12_5_remaining_tasks",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions",
+      "target": "documentation_coding_conventions_coding_conventions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L356",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_10_comments_inline_and_sectional",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L412",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_11_signal_declarations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L441",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_12_general_style_rules",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_1_file_header_block",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L86",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_2_library_declarations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L107",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_3_naming_conventions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L150",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_4_indentation_and_spacing",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L168",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_5_entity_declarations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_6_architecture_bodies",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L246",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_7_component_declarations_and_instantiations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L305",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_8_processes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L325",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_9_constants_and_generics",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_purpose",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L469",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_quick_reference_a_minimal_conforming_file",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_coding_conventions",
+      "target": "documentation_coding_conventions_table_of_contents",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L119",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_3_naming_conventions",
+      "target": "documentation_coding_conventions_no_abbreviations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L137",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_3_naming_conventions",
+      "target": "documentation_coding_conventions_pairs_and_triples",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L248",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_7_component_declarations_and_instantiations",
+      "target": "documentation_coding_conventions_component_declarations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L271",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_7_component_declarations_and_instantiations",
+      "target": "documentation_coding_conventions_component_instantiations",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L398",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_10_comments_inline_and_sectional",
+      "target": "documentation_coding_conventions_flag_non_obvious_behaviour",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L378",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_10_comments_inline_and_sectional",
+      "target": "documentation_coding_conventions_inline_comments",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/Coding_Conventions.md",
+      "source_location": "L358",
+      "weight": 1.0,
+      "source": "documentation_coding_conventions_10_comments_inline_and_sectional",
+      "target": "documentation_coding_conventions_section_dividers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report",
+      "target": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L351",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_10_obstacle_spawning_spawn_control_vhd_wave_rom_vhd_lfsr",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L370",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_11_input_handling",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L398",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_12_start_screen_start_screen_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L411",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_13_end_screen_end_screen_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L424",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_14_hud_overlay_hud_overlay_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L451",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_15_game_timer_game_timer_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L463",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_16_audio_system",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L493",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_17_synthesis_results",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L540",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L587",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_19_file_structure_reference",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_1_project_brief_vs_what_we_actually_built",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L649",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_20_possible_future_improvements_for_report_discussion",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L25",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_2_hardware_platform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L47",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_3_high_level_architecture_overview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L79",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_4_clock_domains",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L100",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_5_display_pipeline_layered_rendering",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L148",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L213",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_7_player_player_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L258",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L324",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_9_collision_detection_collision_detector_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_compsys_305_mini_project_full_technical_context_document",
+      "target": "documentation_project_context_for_report_group_8_final_report_reference",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_1_project_brief_vs_what_we_actually_built",
+      "target": "documentation_project_context_for_report_what_the_spec_asked_for",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_1_project_brief_vs_what_we_actually_built",
+      "target": "documentation_project_context_for_report_what_we_built_instead_and_why",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L83",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_4_clock_domains",
+      "target": "documentation_project_context_for_report_clock_50_50_mhz",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L93",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_4_clock_domains",
+      "target": "documentation_project_context_for_report_cross_domain_signal_handling",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L87",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_4_clock_domains",
+      "target": "documentation_project_context_for_report_video_clock_pixel_clock_25_mhz",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L107",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_5_display_pipeline_layered_rendering",
+      "target": "documentation_project_context_for_report_rendering_layers_bottom_to_top",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_5_display_pipeline_layered_rendering",
+      "target": "documentation_project_context_for_report_vga_sync",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "target": "documentation_project_context_for_report_lives_system",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L206",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "target": "documentation_project_context_for_report_scoring",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L187",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "target": "documentation_project_context_for_report_speed_escalation_combinational_on_score",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L152",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_6_game_logic_fsm_game_master_vhd",
+      "target": "documentation_project_context_for_report_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L217",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_7_player_player_vhd",
+      "target": "documentation_project_context_for_report_animation_system_24_sprite_roms",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L253",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_7_player_player_vhd",
+      "target": "documentation_project_context_for_report_cross_domain_synchronization_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L249",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_7_player_player_vhd",
+      "target": "documentation_project_context_for_report_dive_and_fast_drop",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L239",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_7_player_player_vhd",
+      "target": "documentation_project_context_for_report_jump_jump_offset_lut_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L231",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_7_player_player_vhd",
+      "target": "documentation_project_context_for_report_lane_shifting",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L295",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_3d_frustum_rendering",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L262",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_distance_and_speed_management",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L277",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_object_geometry_object_rom_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L303",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_object_type_colors",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L312",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_overflow_underflow_protection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L292",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_perspective_scaling_perspective_rom_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L315",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_8_moving_object_moving_object_vhd_per_lane_3",
+      "target": "documentation_project_context_for_report_pipeline_architecture",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L328",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_9_collision_detection_collision_detector_vhd",
+      "target": "documentation_project_context_for_report_collision_rules",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L353",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_10_obstacle_spawning_spawn_control_vhd_wave_rom_vhd_lfsr",
+      "target": "documentation_project_context_for_report_lfsr_linear_feedback_shift_register",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L362",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_10_obstacle_spawning_spawn_control_vhd_wave_rom_vhd_lfsr",
+      "target": "documentation_project_context_for_report_spawn_control_fsm_4_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L356",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_10_obstacle_spawning_spawn_control_vhd_wave_rom_vhd_lfsr",
+      "target": "documentation_project_context_for_report_wave_rom_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L393",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_11_input_handling",
+      "target": "documentation_project_context_for_report_input_gating_top_level",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L372",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_11_input_handling",
+      "target": "documentation_project_context_for_report_keyboard_keyboard_vhd_ps_2_port_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L384",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_11_input_handling",
+      "target": "documentation_project_context_for_report_mouse_mouse_vhd_ps_2_port_2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L400",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_12_start_screen_start_screen_vhd",
+      "target": "documentation_project_context_for_report_state_machine_3_states",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L485",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_16_audio_system",
+      "target": "documentation_project_context_for_report_audio_gating",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L473",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_16_audio_system",
+      "target": "documentation_project_context_for_report_audio_playback_audio_playback_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L482",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_16_audio_system",
+      "target": "documentation_project_context_for_report_jukebox_top_level_process",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L465",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_16_audio_system",
+      "target": "documentation_project_context_for_report_sd_card_sd_init_vhd_spi_master_vhd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L499",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_17_synthesis_results",
+      "target": "documentation_project_context_for_report_resource_utilization",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L524",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_17_synthesis_results",
+      "target": "documentation_project_context_for_report_timing_performance",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L517",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_17_synthesis_results",
+      "target": "documentation_project_context_for_report_why_dsp_usage_is_high",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L542",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_3d_perspective_vs_flat_side_scroller",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L580",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_fractional_stepping_for_object_speed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L557",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_global_buffer_on_video_clock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L570",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_input_gating",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L575",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_lfsr_for_pseudo_random_spawning",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L562",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_pipeline_registers_inserted_for_timing_not_function",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L547",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_precomputed_luts_vs_runtime_math",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/PROJECT_CONTEXT_FOR_REPORT.md",
+      "source_location": "L552",
+      "weight": 1.0,
+      "source": "documentation_project_context_for_report_18_key_design_decisions_and_trade_offs",
+      "target": "documentation_project_context_for_report_two_clock_domains",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "Documentation/README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "documentation_readme",
+      "target": "documentation_readme_group_8_compsys_305_mini_project",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "b693775260762b456953fae814d4b1fa3e8ec10a"
+}

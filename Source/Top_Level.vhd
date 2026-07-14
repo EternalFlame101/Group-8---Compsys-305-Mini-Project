@@ -986,29 +986,34 @@ begin
    dac_low_out  <= x"80" when SW_clean(7) = '1' else audio_dac_low;
 
    -- Jukebox: map SW(6 downto 4) to start sector and track length (in sectors)
-   -- Track lengths derived from the sector gap between consecutive track start addresses.
-   -- UPDATE sd_track_length for Track 5 once its size is known.
+   -- 44.1 kHz build, LBA 45,000,000 base. Start sectors + lengths per slot map.
    Jukebox_Process : process(SW_clean)
    begin
       case SW_clean(6 downto 4) is
          when "000" =>
-            sd_start_sector <= x"03473BC0";                        -- Sector 55,000,000 - Subway Surfers
+            sd_start_sector <= x"02AEA540";                        -- Subway Surfers
             sd_track_length <= conv_std_logic_vector(23776, 32);
          when "001" =>
-            sd_start_sector <= x"034798A0";                        -- Sector 55,023,776 - Espresso
-            sd_track_length <= conv_std_logic_vector(30280, 32);
+            sd_start_sector <= x"02AF0220";                        -- Stay
+            sd_track_length <= conv_std_logic_vector(36707, 32);
          when "010" =>
-            sd_start_sector <= x"03480EE8";                        -- Sector 55,054,056 - Rude!
-            sd_track_length <= conv_std_logic_vector(34456, 32);
+            sd_start_sector <= x"02AF9183";                        -- It Ain't Me
+            sd_track_length <= conv_std_logic_vector(41553, 32);
          when "011" =>
-            sd_start_sector <= x"03489580";                        -- Sector 55,088,512 - Dracula (Remix)
-            sd_track_length <= conv_std_logic_vector(36248, 32);
+            sd_start_sector <= x"02B033D4";                        -- Don't Start Now
+            sd_track_length <= conv_std_logic_vector(31199, 32);
          when "100" =>
-            sd_start_sector <= x"03492318";                        -- Sector 55,124,760 - AIZO (King Gnu)
-            sd_track_length <= conv_std_logic_vector(37199, 32);
+            sd_start_sector <= x"02B0ADB3";                        -- Can't Stop The Feeling
+            sd_track_length <= conv_std_logic_vector(49241, 32);
+         when "101" =>
+            sd_start_sector <= x"02B16E0C";                        -- FRIENDS
+            sd_track_length <= conv_std_logic_vector(39822, 32);
+         when "110" =>
+            sd_start_sector <= x"02B2099A";                        -- Love Yourself
+            sd_track_length <= conv_std_logic_vector(46895, 32);
          when others =>
-            sd_start_sector <= x"03473BC0";
-            sd_track_length <= conv_std_logic_vector(23776, 32);
+            sd_start_sector <= x"02B2C0C9";                        -- Sorry
+            sd_track_length <= conv_std_logic_vector(35335, 32);
       end case;
    end process Jukebox_Process;
 
